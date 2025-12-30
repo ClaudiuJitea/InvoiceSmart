@@ -1,0 +1,267 @@
+// Romanian translations
+export default {
+    // App
+    appName: 'Manager Facturi',
+
+    // Navigation
+    nav: {
+        dashboard: 'Panou Principal',
+        reports: 'Rapoarte',
+        invoices: 'Facturi',
+        clients: 'Clienți',
+        settings: 'Setări',
+    },
+
+    // Common actions
+    actions: {
+        save: 'Salvează',
+        cancel: 'Anulează',
+        delete: 'Șterge',
+        edit: 'Editează',
+        view: 'Vizualizează',
+        create: 'Creează',
+        add: 'Adaugă',
+        remove: 'Elimină',
+        search: 'Caută',
+        filter: 'Filtrează',
+        apply: 'Aplică',
+        clear: 'Curăță',
+        export: 'Exportă',
+        exportExcel: 'Exportă Excel',
+        print: 'Printează',
+        download: 'Descarcă',
+        duplicate: 'Duplică',
+        close: 'Închide',
+        confirm: 'Confirmă',
+        back: 'Înapoi',
+        next: 'Următorul',
+    },
+
+    // Dashboard
+    dashboard: {
+        title: 'Panou Principal',
+        subtitle: 'Privire de ansamblu asupra afacerii tale',
+        totalInvoices: 'Total Facturi',
+        totalClients: 'Total Clienți',
+        totalRevenue: 'Venituri Totale',
+        pendingInvoices: 'Facturi în Așteptare',
+        recentInvoices: 'Facturi Recente',
+        quickActions: 'Acțiuni Rapide',
+        newInvoice: 'Factură Nouă',
+        newClient: 'Client Nou',
+    },
+
+    // Reports
+    reports: {
+        title: 'Rapoarte',
+        subtitle: 'Statistici și analiză',
+        revenueOverTime: 'Venituri în Timp',
+        statusDistribution: 'Distribuție Status Facturi',
+        topClients: 'Top Clienți',
+        overview: 'Privire de Ansamblu',
+        totalRevenue: 'Venituri Totale',
+        outstanding: 'Sume Restante',
+        overdue: 'Sume Întârziate',
+        filters: 'Filtre',
+        dateRange: 'Interval',
+        allClients: 'Toți Clienții',
+        startDate: 'De la',
+        endDate: 'Până la',
+    },
+
+    // Invoices
+    invoices: {
+        title: 'Facturi',
+        subtitle: 'Gestionează facturile tale',
+        newInvoice: 'Factură Nouă',
+        editInvoice: 'Editare Factură',
+        invoiceNumber: 'Număr Factură',
+        series: 'Serie',
+        number: 'Număr',
+        date: 'Data',
+        issueDate: 'Data Emiterii',
+        dueDate: 'Data Scadentă',
+        client: 'Client',
+        selectClient: 'Selectează un client',
+        total: 'Total',
+        subtotal: 'Subtotal',
+        tax: 'TVA',
+        taxRate: 'Cotă TVA',
+        currency: 'Moneda',
+        exchangeRate: 'Curs Valutar',
+        bnrRate: 'Curs BNR',
+        customRate: 'Curs Personalizat',
+        status: 'Status',
+        template: 'Șablon',
+        notes: 'Observații',
+        paymentMethod: 'Modalitate de Plată',
+        paymentTerms: 'Termen de Plată',
+        days: 'zile',
+
+        // Status
+        statusDraft: 'Ciornă',
+        statusSent: 'Trimisă',
+        statusPaid: 'Plătită',
+        statusOverdue: 'Scadentă',
+        statusCancelled: 'Anulată',
+
+        // Items
+        items: 'Produse/Servicii',
+        addItem: 'Adaugă Produs/Serviciu',
+        itemDescription: 'Denumire',
+        itemUnit: 'U.M.',
+        itemQuantity: 'Cantitate',
+        itemPrice: 'Preț Unitar',
+        itemTotal: 'Total',
+
+        // Units
+        unitHours: 'ore',
+        unitPiece: 'buc',
+        unitService: 'serv',
+        unitDay: 'zi',
+
+        // Preview & Export
+        preview: 'Previzualizare',
+        exportPdf: 'Exportă PDF',
+        selectTemplate: 'Selectează Șablon',
+
+        // Empty state
+        emptyTitle: 'Nu există facturi',
+        emptyDescription: 'Creează prima ta factură pentru a începe',
+
+        // Confirmations
+        deleteConfirm: 'Ești sigur că vrei să ștergi această factură?',
+        deleteSuccess: 'Factura a fost ștearsă cu succes',
+        saveSuccess: 'Factura a fost salvată cu succes',
+    },
+
+    // Clients
+    clients: {
+        title: 'Clienți',
+        subtitle: 'Gestionează clienții tăi',
+        newClient: 'Client Nou',
+        editClient: 'Editare Client',
+        name: 'Nume',
+        companyName: 'Denumire Firmă',
+        cif: 'CIF/CUI',
+        regNo: 'Nr. Reg. Com.',
+        address: 'Adresa',
+        city: 'Oraș',
+        email: 'Email',
+        phone: 'Telefon',
+        country: 'Țara',
+        notes: 'Observații',
+
+        // Empty state
+        emptyTitle: 'Nu există clienți',
+        emptyDescription: 'Adaugă primul tău client pentru a începe',
+
+        // Confirmations
+        deleteConfirm: 'Ești sigur că vrei să ștergi acest client?',
+        deleteSuccess: 'Clientul a fost șters cu succes',
+        saveSuccess: 'Clientul a fost salvat cu succes',
+    },
+
+    // Settings
+    settings: {
+        title: 'Setări',
+        subtitle: 'Configurează detaliile afacerii tale',
+
+        // Company
+        companyDetails: 'Detalii Firmă',
+        companyName: 'Denumire Firmă',
+        companyCif: 'CIF/CUI',
+        companyRegNo: 'Nr. Reg. Com.',
+        companyAddress: 'Adresa',
+        companyCity: 'Oraș',
+        companyCountry: 'Țara',
+        companyEmail: 'Email',
+        companyPhone: 'Telefon',
+
+        // Bank details
+        bankDetails: 'Detalii Bancare',
+        bankAccount: 'Cont Bancar (IBAN)',
+        bankSwift: 'SWIFT/BIC',
+        bankName: 'Banca',
+
+        // Invoice settings
+        invoiceSettings: 'Setări Facturi',
+        defaultCurrency: 'Moneda Implicită',
+        secondaryCurrency: 'Moneda Secundară',
+        defaultPaymentTerms: 'Termen de Plată Implicit (zile)',
+        invoiceSeries: 'Serie Facturi',
+        nextInvoiceNumber: 'Următorul Număr Factură',
+
+        // App settings
+        appSettings: 'Setări Aplicație',
+        language: 'Limba',
+
+        // Save
+        saveSuccess: 'Setările au fost salvate cu succes',
+    },
+
+    // Invoice Templates
+    templates: {
+        modern: 'Modern',
+        modernDesc: 'Design curat și minimalist',
+        classic: 'Clasic Negru',
+        classicDesc: 'Stil de afaceri tradițional',
+        classicBlue: 'Clasic Albastru',
+        classicBlueDesc: 'Stil profesional albastru',
+        creative: 'Creativ',
+        creativeDesc: 'Colorat și modern',
+    },
+
+    // Invoice document
+    invoice: {
+        invoice: 'FACTURĂ',
+        from: 'De la',
+        to: 'Către',
+        supplier: 'Furnizor',
+        client: 'Client',
+        invoiceNo: 'Factură Nr.',
+        date: 'Data',
+        dueDate: 'Data Scadentă',
+        description: 'Denumire produs sau serviciu',
+        unit: 'U.M.',
+        quantity: 'Cant.',
+        unitPrice: 'Preț Unitar',
+        amount: 'Valoare',
+        subtotal: 'Subtotal',
+        tax: 'TVA',
+        total: 'Total',
+        totalDue: 'Total de Plată',
+        bankDetails: 'Detalii Bancare',
+        iban: 'IBAN',
+        swift: 'SWIFT',
+        bank: 'Banca',
+        paymentTerms: 'Termen de Plată',
+        signature: 'Semnătura',
+        customerSignature: 'Semnătura de primire',
+    },
+
+    // Validation
+    validation: {
+        required: 'Acest câmp este obligatoriu',
+        invalidEmail: 'Adresă de email invalidă',
+        invalidNumber: 'Număr invalid',
+        minLength: 'Minim {min} caractere necesare',
+        maxLength: 'Maxim {max} caractere permise',
+    },
+
+    // General
+    general: {
+        loading: 'Se încarcă...',
+        noResults: 'Nu s-au găsit rezultate',
+        error: 'A apărut o eroare',
+        success: 'Succes',
+        warning: 'Atenție',
+        info: 'Info',
+        yes: 'Da',
+        no: 'Nu',
+        or: 'sau',
+        and: 'și',
+        all: 'Toate',
+        none: 'Niciuna',
+    },
+};

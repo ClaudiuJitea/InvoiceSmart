@@ -1,0 +1,557 @@
+// Invoice Form Page (Create/Edit)
+import { t } from '../i18n/index.js';
+import { icons } from '../components/icons.js';
+import { invoiceService } from '../db/services/invoiceService.js';
+import { clientService } from '../db/services/clientService.js';
+import { settingsService } from '../db/services/settingsService.js';
+import { bnrService } from '../services/bnrService.js';
+import { toast } from '../components/common/Toast.js';
+import { CustomSelect } from '../components/common/CustomSelect.js';
+import { router } from '../router.js';
+
+let invoiceItems = [];
+
+export function renderInvoiceForm(params = {}) {
+  const isEdit = params.id && params.id !== 'new';
+  const invoice = isEdit ? invoiceService.getById(parseInt(params.id)) : null;
+  const clients = clientService.getAll();
+  const settings = settingsService.get();
+
+  // Initialize items
+  if (invoice && invoice.items) {
+    invoiceItems = invoice.items.map(item => ({ ...item }));
+  } else if (!isEdit) {
+    invoiceItems = [{ description: '', unit: 'hrs', quantity: 1, unit_price: 0, tax_rate: settings?.default_tax_rate || 0, total: 0 }];
+  }
+
+  const title = isEdit ? t('invoices.editInvoice') : t('invoices.newInvoice');
+
+  // Generate next invoice number if new
+  const nextNumber = isEdit ? null : invoiceService.getNextInvoiceNumber();
+  const invoiceNumber = invoice?.invoice_number || nextNumber?.formatted || '';
+  const series = invoice?.series || nextNumber?.series || 'INV';
+
+  // Default dates
+  const today = new Date().toISOString().split('T')[0];
+  const defaultTerms = settings?.default_payment_terms || 30;
+  // If invoice exists, use its due_date. If new, use today + defaultTerms.
+  const initialIssueDate = invoice?.issue_date || today;
+  let initialDueDate = invoice?.due_date;
+
+  if (!initialDueDate) {
+    const dateObj = new Date(initialIssueDate);
+    dateObj.setDate(dateObj.getDate() + defaultTerms);
+    initialDueDate = dateObj.toISOString().split('T')[0];
+  }
+
+  // Calculate selected term
+  let selectedTerm = 'custom';
+  if (initialIssueDate && initialDueDate) {
+    const issue = new Date(initialIssueDate);
+    const due = new Date(initialDueDate);
+    const diffTime = due - issue;
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    if ([7, 14, 15, 30, 45, 60, 90].includes(diffDays)) {
+      selectedTerm = diffDays.toString();
+    } else if (diffDays === 0) {
+      // treating same day as custom or maybe 0 if we had it, but keeping custom for now
+      selectedTerm = 'custom';
+    }
+  }
+
+  return `
+    <div class="page-container">
+      <div class="page-header-row">
+        <div class="page-header-left">
+          <a href="#/invoices" class="btn btn-text" style="margin-left: -12px; margin-bottom: var(--space-2);">
+            ${icons.arrowLeft} ${t('actions.back')}
+          </a>
+          <h1 class="page-title">${title}</h1>
+        </div>
+        <div class="page-header-actions">
+          ${isEdit ? `
+            <a href="#/invoices/${params.id}/preview" class="btn btn-tonal">
+              ${icons.eye}
+              ${t('invoices.preview')}
+            </a>
+          ` : ''}
+        </div>
+      </div>
+
+      <form id="invoiceForm" class="card card-elevated">
+        <!-- Header Info -->
+        <div class="form-section">
+          <div class="form-row" style="grid-template-columns: 1fr 2fr;">
+            <div>
+              <h3 class="form-section-title">${t('invoices.invoiceNumber')}</h3>
+              <div class="form-row" style="grid-template-columns: 100px 1fr;">
+                <div class="input-group">
+                  <label class="input-label">${t('invoices.series')}</label>
+                  <input type="text" class="input" name="series" value="${series}" required>
+                </div>
+                <div class="input-group">
+                  <label class="input-label">${t('invoices.number')}</label>
+                  <input type="text" class="input" name="invoice_number" value="${invoiceNumber}" required>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h3 class="form-section-title">${t('invoices.client')} *</h3>
+              <div class="input-group">
+                <label class="input-label">${t('invoices.selectClient')}</label>
+                <select class="input select" name="client_id" required>
+                  <option value="">${t('invoices.selectClient')}</option>
+                  ${clients.map(c => `
+                    <option value="${c.id}" ${invoice?.client_id === c.id ? 'selected' : ''}>
+                      ${c.name}${c.cif ? ` (${c.cif})` : ''}
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dates & Currency -->
+        <div class="form-section">
+          <!-- Changed grid to 6 columns to fit Payment Terms -->
+          <div class="form-row" style="grid-template-columns: repeat(6, 1fr);">
+            <div class="input-group">
+              <label class="input-label">${t('invoices.issueDate')}</label>
+              <input type="date" class="input" name="issue_date" id="issueDateInput" value="${initialIssueDate}" required>
+            </div>
+            
+            <div class="input-group">
+              <label class="input-label">${t('invoices.paymentTerms')}</label>
+              <select class="input select" id="paymentTermsSelect">
+                <option value="custom" ${selectedTerm === 'custom' ? 'selected' : ''}>Custom</option>
+                <option value="7" ${selectedTerm === '7' ? 'selected' : ''}>7 ${t('invoices.days')}</option>
+                <option value="14" ${selectedTerm === '14' ? 'selected' : ''}>14 ${t('invoices.days')}</option>
+                <option value="15" ${selectedTerm === '15' ? 'selected' : ''}>15 ${t('invoices.days')}</option>
+                <option value="30" ${selectedTerm === '30' ? 'selected' : ''}>30 ${t('invoices.days')}</option>
+                <option value="45" ${selectedTerm === '45' ? 'selected' : ''}>45 ${t('invoices.days')}</option>
+                <option value="60" ${selectedTerm === '60' ? 'selected' : ''}>60 ${t('invoices.days')}</option>
+                <option value="90" ${selectedTerm === '90' ? 'selected' : ''}>90 ${t('invoices.days')}</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label">${t('invoices.dueDate')}</label>
+              <input type="date" class="input" name="due_date" id="dueDateInput" value="${initialDueDate}" required>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label">${t('invoices.currency')}</label>
+              <select class="input select" name="currency">
+                <option value="EUR" ${(invoice?.currency || settings?.default_currency) === 'EUR' ? 'selected' : ''}>EUR</option>
+                <option value="RON" ${(invoice?.currency || settings?.default_currency) === 'RON' ? 'selected' : ''}>RON</option>
+                <option value="USD" ${invoice?.currency === 'USD' ? 'selected' : ''}>USD</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label class="input-label">${t('invoices.exchangeRate')} (RON)</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="number" step="0.0001" class="input" name="exchange_rate" id="exchangeRateInput" value="${invoice?.exchange_rate || 5.0}" min="0">
+                <button type="button" class="btn btn-tonal" id="fetchBnrBtn" title="Fetch from BNR" style="padding: 0 10px;">BSN</button>
+              </div>
+            </div>
+            <div class="input-group">
+              <label class="input-label">${t('invoices.taxRate')} (Default %)</label>
+              <input type="number" step="0.1" class="input" name="tax_rate" value="${invoice?.tax_rate || 0}" min="0">
+            </div>
+          </div>
+        </div>
+
+        <!-- Invoice Items -->
+        <div class="form-section">
+          <h3 class="form-section-title">${t('invoices.items')}</h3>
+          <div class="table-wrapper">
+            <table class="invoice-items-table" id="itemsTable">
+              <thead>
+                <tr>
+                  <th style="width: 50%">${t('invoices.itemDescription')}</th>
+                  <th style="width: 80px">${t('invoices.itemUnit')}</th>
+                  <th style="width: 100px" class="text-right">${t('invoices.itemQuantity')}</th>
+                  <th style="width: 120px" class="text-right">${t('invoices.itemPrice')}</th>
+                  <th style="width: 80px" class="text-right">VAT %</th>
+                  <th style="width: 120px" class="text-right">${t('invoices.itemTotal')}</th>
+                  <th style="width: 50px"></th>
+                </tr>
+              </thead>
+              <tbody id="itemsBody">
+                ${invoiceItems.map((item, index) => renderItemRow(item, index)).join('')}
+              </tbody>
+            </table>
+          </div>
+          <button type="button" class="btn btn-tonal" id="addItemBtn" style="margin-top: var(--space-4);">
+            ${icons.plus}
+            ${t('invoices.addItem')}
+          </button>
+        </div>
+
+        <!-- Totals -->
+        <div class="invoice-totals">
+          <table class="invoice-totals-table">
+            <tr>
+              <td class="label">${t('invoices.subtotal')}</td>
+              <td class="value" id="subtotalDisplay">0.00 EUR</td>
+            </tr>
+            <tr>
+              <td class="label">${t('invoices.tax')}</td>
+              <td class="value" id="taxDisplay">0.00 EUR</td>
+            </tr>
+            <tr>
+              <td class="label"><strong>${t('invoices.total')}</strong></td>
+              <td class="value" id="totalDisplay" style="font-weight: 700; font-size: var(--text-title-lg);">0.00 EUR</td>
+            </tr>
+            <tr>
+              <td class="label">${t('invoices.total')} (RON)</td>
+              <td class="value" id="totalSecondaryDisplay">0.00 RON</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Status & Template -->
+        <div class="form-section">
+          <div class="form-row" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="input-group">
+              <label class="input-label">${t('invoices.status')}</label>
+              <select class="input select" name="status">
+                <option value="draft" ${invoice?.status === 'draft' ? 'selected' : ''}>${t('invoices.statusDraft')}</option>
+                <option value="sent" ${invoice?.status === 'sent' ? 'selected' : ''}>${t('invoices.statusSent')}</option>
+                <option value="paid" ${invoice?.status === 'paid' ? 'selected' : ''}>${t('invoices.statusPaid')}</option>
+                <option value="overdue" ${invoice?.status === 'overdue' ? 'selected' : ''}>${t('invoices.statusOverdue')}</option>
+                <option value="cancelled" ${invoice?.status === 'cancelled' ? 'selected' : ''}>${t('invoices.statusCancelled')}</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label class="input-label">${t('invoices.template')}</label>
+              <select class="input select" name="template">
+                <option value="modern" ${invoice?.template === 'modern' ? 'selected' : ''}>${t('templates.modern')}</option>
+                <option value="classic" ${invoice?.template === 'classic' ? 'selected' : ''}>${t('templates.classic')}</option>
+                <option value="classicBlue" ${invoice?.template === 'classicBlue' ? 'selected' : ''}>${t('templates.classicBlue')}</option>
+                <option value="creative" ${invoice?.template === 'creative' ? 'selected' : ''}>${t('templates.creative')}</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label class="input-label">${t('invoices.paymentMethod')}</label>
+              <input type="text" class="input" name="payment_method" value="${invoice?.payment_method || ''}">
+            </div>
+          </div>
+        </div>
+
+        <!-- Language Settings -->
+        <div class="form-section">
+          <h3 class="form-section-title">${t('settings.language')}</h3>
+          <div class="form-row" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="input-group">
+              <label class="input-label">Mode</label>
+              <select class="input select" name="language_mode" id="languageMode">
+                <option value="single" ${invoice?.language_mode === 'single' ? 'selected' : ''}>Single Language</option>
+                <option value="dual" ${invoice?.language_mode === 'dual' ? 'selected' : ''}>Dual Language</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Primary Language</label>
+              <select class="input select" name="language">
+                <option value="en" ${(invoice?.language || 'en') === 'en' ? 'selected' : ''}>English</option>
+                <option value="ro" ${(invoice?.language || 'en') === 'ro' ? 'selected' : ''}>Română</option>
+              </select>
+            </div>
+            <div class="input-group" id="secondaryLanguageGroup" style="display: ${invoice?.language_mode === 'dual' ? 'block' : 'none'};">
+              <label class="input-label">Secondary Language</label>
+              <select class="input select" name="secondary_language">
+                <option value="en" ${(invoice?.secondary_language || 'ro') === 'en' ? 'selected' : ''}>English</option>
+                <option value="ro" ${(invoice?.secondary_language || 'ro') === 'ro' ? 'selected' : ''}>Română</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-section">
+          <div class="input-group">
+            <label class="input-label">${t('invoices.notes')}</label>
+            <textarea class="input textarea" name="notes" rows="3">${invoice?.notes || ''}</textarea>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <a href="#/invoices" class="btn btn-text">${t('actions.cancel')}</a>
+          <button type="submit" class="btn btn-filled">${t('actions.save')}</button>
+        </div>
+      </form>
+    </div>
+  `;
+}
+
+function renderItemRow(item, index) {
+  return `
+    <tr data-index="${index}">
+      <td>
+        <input type="text" class="input item-description" value="${item.description || ''}" placeholder="${t('invoices.itemDescription')}">
+      </td>
+      <td>
+        <select class="input item-unit">
+          <option value="hrs" ${item.unit === 'hrs' ? 'selected' : ''}>${t('invoices.unitHours')}</option>
+          <option value="pcs" ${item.unit === 'pcs' ? 'selected' : ''}>${t('invoices.unitPiece')}</option>
+          <option value="srv" ${item.unit === 'srv' ? 'selected' : ''}>${t('invoices.unitService')}</option>
+          <option value="day" ${item.unit === 'day' ? 'selected' : ''}>${t('invoices.unitDay')}</option>
+        </select>
+      </td>
+      <td>
+        <input type="number" class="input input-number item-quantity" value="${item.quantity || 1}" min="0" step="0.01">
+      </td>
+      <td>
+        <input type="number" class="input input-number item-price" value="${item.unit_price || 0}" min="0" step="0.01">
+      </td>
+      <td>
+        <input type="number" class="input input-number item-tax" value="${item.tax_rate || 0}" min="0" step="0.1">
+      </td>
+      <td>
+        <input type="text" class="input input-number item-total" value="${(item.total || 0).toFixed(2)}" readonly>
+      </td>
+      <td>
+        <button type="button" class="btn btn-icon item-delete-btn" ${invoiceItems.length <= 1 ? 'disabled' : ''}>
+          ${icons.trash}
+        </button>
+      </td>
+    </tr>
+  `;
+}
+
+export function initInvoiceForm(params = {}) {
+  const form = document.getElementById('invoiceForm');
+  const itemsBody = document.getElementById('itemsBody');
+  const addItemBtn = document.getElementById('addItemBtn');
+  const isEdit = params.id && params.id !== 'new';
+  const issueDateInput = document.getElementById('issueDateInput');
+  const dueDateInput = document.getElementById('dueDateInput');
+  const paymentTermsSelect = document.getElementById('paymentTermsSelect');
+
+  function calculateTotals() {
+    let subtotal = 0;
+    let totalTax = 0;
+
+    invoiceItems.forEach((item, index) => {
+      const quantity = item.quantity || 0;
+      const price = item.unit_price || 0;
+      const taxRate = item.tax_rate || 0;
+
+      item.total = quantity * price;
+
+      subtotal += item.total;
+      totalTax += item.total * (taxRate / 100);
+
+      const row = itemsBody.querySelector(`tr[data-index="${index}"]`);
+      if (row) {
+        row.querySelector('.item-total').value = item.total.toFixed(2);
+      }
+    });
+
+    const currency = form.querySelector('[name="currency"]').value;
+    const exchangeRate = parseFloat(form.querySelector('[name="exchange_rate"]').value) || 1;
+    // Note: Invoice global tax rate input is now just a default for new items, 
+    // it doesn't affect the calculation directly anymore.
+
+    const total = subtotal + totalTax;
+    const totalSecondary = total * exchangeRate;
+
+    document.getElementById('subtotalDisplay').textContent = `${subtotal.toFixed(2)} ${currency}`;
+    document.getElementById('taxDisplay').textContent = `${totalTax.toFixed(2)} ${currency}`;
+    document.getElementById('totalDisplay').textContent = `${total.toFixed(2)} ${currency}`;
+    document.getElementById('totalSecondaryDisplay').textContent = `${totalSecondary.toFixed(2)} RON`;
+  }
+
+  function updateItemFromRow(index, row) {
+    invoiceItems[index] = {
+      description: row.querySelector('.item-description').value,
+      unit: row.querySelector('.item-unit').value,
+      quantity: parseFloat(row.querySelector('.item-quantity').value) || 0,
+      unit_price: parseFloat(row.querySelector('.item-price').value) || 0,
+      tax_rate: parseFloat(row.querySelector('.item-tax').value) || 0,
+      total: 0,
+    };
+    calculateTotals();
+  }
+
+  function rebuildItemsTable() {
+    itemsBody.innerHTML = invoiceItems.map((item, index) => renderItemRow(item, index)).join('');
+    attachItemListeners();
+    calculateTotals();
+  }
+
+  function attachItemListeners() {
+    itemsBody.querySelectorAll('tr').forEach((row, index) => {
+      row.querySelectorAll('.item-description, .item-unit, .item-quantity, .item-price, .item-tax').forEach(input => {
+        input.addEventListener('input', () => updateItemFromRow(index, row));
+        input.addEventListener('change', () => updateItemFromRow(index, row));
+      });
+
+      row.querySelector('.item-delete-btn').addEventListener('click', () => {
+        if (invoiceItems.length > 1) {
+          invoiceItems.splice(index, 1);
+          rebuildItemsTable();
+        }
+      });
+    });
+  }
+
+  // Date Logic
+  function updateDueDate() {
+    const days = parseInt(paymentTermsSelect.value);
+    if (isNaN(days)) return; // custom
+
+    const issueDate = new Date(issueDateInput.value);
+    if (isNaN(issueDate.getTime())) return;
+
+    const dueDate = new Date(issueDate);
+    dueDate.setDate(dueDate.getDate() + days);
+
+    dueDateInput.value = dueDate.toISOString().split('T')[0];
+  }
+
+  function checkPaymentTerms() {
+    const issueDate = new Date(issueDateInput.value);
+    const dueDate = new Date(dueDateInput.value);
+
+    if (isNaN(issueDate.getTime()) || isNaN(dueDate.getTime())) return;
+
+    const diffTime = dueDate - issueDate;
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    const options = Array.from(paymentTermsSelect.options).map(o => o.value);
+    if (options.includes(diffDays.toString())) {
+      paymentTermsSelect.value = diffDays.toString();
+    } else {
+      paymentTermsSelect.value = 'custom';
+    }
+  }
+
+  if (issueDateInput && paymentTermsSelect && dueDateInput) {
+    issueDateInput.addEventListener('change', () => {
+      if (paymentTermsSelect.value !== 'custom') {
+        updateDueDate();
+      } else {
+        // If custom, do we keep the date or shift it? Usually shift it by previous diff? 
+        // Simplest is to just do nothing if custom.
+        // actually, we might want to preserve the 'days' diff if it was effectively custom days.
+        // But let's stick to simple: if specific term selected, calc due date. If custom, leave due date alone.
+      }
+    });
+
+    paymentTermsSelect.addEventListener('change', updateDueDate);
+
+    dueDateInput.addEventListener('change', checkPaymentTerms);
+  }
+
+  // BNR Fetch
+  const fetchBnrBtn = document.getElementById('fetchBnrBtn');
+  const exchangeRateInput = document.getElementById('exchangeRateInput');
+
+  if (fetchBnrBtn && exchangeRateInput) {
+    fetchBnrBtn.addEventListener('click', async () => {
+      try {
+        const currency = form.querySelector('[name="currency"]').value;
+        if (currency === 'RON') {
+          toast.info('Base currency is already RON');
+          return;
+        }
+
+        const originalText = fetchBnrBtn.textContent;
+        fetchBnrBtn.textContent = '...';
+        fetchBnrBtn.disabled = true;
+
+        const date = issueDateInput ? issueDateInput.value : null;
+        const rate = await bnrService.getExchangeRate(currency, date);
+
+        exchangeRateInput.value = rate;
+        calculateTotals();
+        toast.success(`Updated rate for ${currency}: ${rate}`);
+      } catch (error) {
+        toast.error('Failed to fetch BNR rate: ' + error.message);
+      } finally {
+        fetchBnrBtn.textContent = 'BSN';
+        fetchBnrBtn.disabled = false;
+      }
+    });
+  }
+
+
+  // Add item button
+  addItemBtn.addEventListener('click', () => {
+    // Get default tax rate from the specific input
+    const defaultTaxRate = parseFloat(form.querySelector('[name="tax_rate"]').value) || 0;
+    invoiceItems.push({ description: '', unit: 'hrs', quantity: 1, unit_price: 0, tax_rate: defaultTaxRate, total: 0 });
+    rebuildItemsTable();
+  });
+
+  // Recalculate on currency/rate change
+  form.querySelector('[name="currency"]').addEventListener('change', calculateTotals);
+  form.querySelector('[name="exchange_rate"]').addEventListener('input', calculateTotals);
+  // Changing default tax rate updates calculations (good for initial check) but DOES NOT update existing items tax rates automatically to avoid overwriting user edits.
+  form.querySelector('[name="tax_rate"]').addEventListener('input', calculateTotals);
+
+  // Language mode toggle
+  const languageMode = document.getElementById('languageMode');
+  const secondaryGroup = document.getElementById('secondaryLanguageGroup');
+  if (languageMode && secondaryGroup) {
+    languageMode.addEventListener('change', (e) => {
+      secondaryGroup.style.display = e.target.value === 'dual' ? 'block' : 'none';
+    });
+  }
+
+  // Initial setup
+  attachItemListeners();
+  calculateTotals();
+
+  // Initialize Custom Selects for main form fields
+  // This must be done AFTER any event listeners on the original selects are attached, 
+  // because CustomSelect triggers 'change' event on the original select.
+  // Exception: paymentTermsSelect logic is already attached above.
+
+  // We target standard selects, excluding any inside the items table if they accidentally had that class (they don't currently)
+  document.querySelectorAll('.form-section .select').forEach(el => {
+    new CustomSelect(el);
+  });
+
+  // Form submit
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    const data = {
+      invoice_number: formData.get('invoice_number'),
+      series: formData.get('series'),
+      client_id: parseInt(formData.get('client_id')),
+      issue_date: formData.get('issue_date'),
+      due_date: formData.get('due_date'),
+      currency: formData.get('currency'),
+      exchange_rate: parseFloat(formData.get('exchange_rate')) || 1,
+      tax_rate: parseFloat(formData.get('tax_rate')) || 0,
+      payment_method: formData.get('payment_method'),
+      notes: formData.get('notes'),
+      status: formData.get('status'),
+      template: formData.get('template'),
+      template: formData.get('template'),
+      language: formData.get('language'),
+      secondary_language: formData.get('secondary_language'),
+      language_mode: formData.get('language_mode'),
+      secondary_currency: 'RON',
+    };
+
+    if (isEdit) {
+      invoiceService.update(parseInt(params.id), data, invoiceItems);
+    } else {
+      invoiceService.create(data, invoiceItems);
+      // Increment invoice number for next time
+      settingsService.incrementInvoiceNumber();
+    }
+
+    toast.success(t('invoices.saveSuccess'));
+    router.navigate('/invoices');
+  });
+}
+

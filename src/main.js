@@ -1,0 +1,251 @@
+// Main Application Entry Point
+import './styles/tokens.css';
+import './styles/base.css';
+import './styles/components.css';
+import './styles/custom-select.css';
+import './styles/app.css';
+
+import { db } from './db/database.js';
+import { router } from './router.js';
+import { i18n } from './i18n/index.js';
+import { settingsService } from './db/services/settingsService.js';
+
+// Components
+import { renderSidebar, initSidebar } from './components/Sidebar.js';
+
+// Pages
+import { renderDashboard, initDashboard } from './pages/Dashboard.js';
+import { renderClients, initClients } from './pages/Clients.js';
+import { renderClientForm, initClientForm } from './pages/ClientForm.js';
+import { renderInvoices, initInvoices } from './pages/Invoices.js';
+import { renderInvoiceForm, initInvoiceForm } from './pages/InvoiceForm.js';
+import { renderInvoicePreview, initInvoicePreview } from './pages/InvoicePreview.js';
+import { renderSettings, initSettings } from './pages/Settings.js';
+import { renderReports, initReports } from './pages/Reports.js';
+
+// App state
+let currentPage = null;
+let currentParams = {};
+
+// Render the entire app
+function renderApp() {
+  const app = document.getElementById('app');
+
+  app.innerHTML = `
+    <div class="app-sidebar" id="sidebar">
+      ${renderSidebar()}
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <main class="app-main">
+      <div class="app-content" id="content">
+        ${renderPage()}
+      </div>
+    </main>
+  `;
+
+  // Initialize sidebar
+  initSidebar();
+
+  // Initialize current page
+  initPage();
+
+  // Mobile menu handling
+  setupMobileMenu();
+}
+
+// Render current page based on route
+function renderPage() {
+  switch (currentPage) {
+    case 'dashboard':
+      return renderDashboard();
+    case 'clients':
+      return renderClients();
+    case 'clientForm':
+      return renderClientForm(currentParams);
+    case 'invoices':
+      return renderInvoices();
+    case 'invoiceForm':
+      return renderInvoiceForm(currentParams);
+    case 'invoicePreview':
+      return renderInvoicePreview(currentParams);
+    case 'settings':
+      return renderSettings();
+    case 'reports':
+      return renderReports();
+    default:
+      return renderDashboard();
+  }
+}
+
+// Initialize current page handlers
+function initPage() {
+  switch (currentPage) {
+    case 'dashboard':
+      initDashboard();
+      break;
+    case 'clients':
+      initClients();
+      break;
+    case 'clientForm':
+      initClientForm(currentParams);
+      break;
+    case 'invoices':
+      initInvoices();
+      break;
+    case 'invoiceForm':
+      initInvoiceForm(currentParams);
+      break;
+    case 'invoicePreview':
+      initInvoicePreview(currentParams);
+      break;
+    case 'settings':
+      initSettings();
+      break;
+    case 'reports':
+      initReports();
+      break;
+  }
+}
+
+// Setup mobile menu
+function setupMobileMenu() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+
+  // Create mobile menu button if not exists
+  let menuBtn = document.querySelector('.mobile-menu-btn');
+  if (!menuBtn) {
+    menuBtn = document.createElement('button');
+    menuBtn.className = 'btn btn-fab mobile-menu-btn';
+    menuBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`;
+    document.body.appendChild(menuBtn);
+  }
+
+  menuBtn.addEventListener('click', () => {
+    sidebar.classList.add('open');
+    overlay.classList.add('open');
+  });
+
+  overlay.addEventListener('click', () => {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+  });
+
+  // Close sidebar on navigation (mobile)
+  sidebar.querySelectorAll('.sidebar-nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('open');
+    });
+  });
+}
+
+// Setup routes
+function setupRoutes() {
+  router
+    .on('/', () => {
+      currentPage = 'dashboard';
+      currentParams = {};
+      renderApp();
+    })
+    .on('/clients', () => {
+      currentPage = 'clients';
+      currentParams = {};
+      renderApp();
+    })
+    .on('/clients/new', () => {
+      currentPage = 'clientForm';
+      currentParams = { id: 'new' };
+      renderApp();
+    })
+    .on('/clients/:id', (params) => {
+      currentPage = 'clientForm';
+      currentParams = params;
+      renderApp();
+    })
+    .on('/invoices', () => {
+      currentPage = 'invoices';
+      currentParams = {};
+      renderApp();
+    })
+    .on('/invoices/new', () => {
+      currentPage = 'invoiceForm';
+      currentParams = { id: 'new' };
+      renderApp();
+    })
+    .on('/invoices/:id', (params) => {
+      currentPage = 'invoiceForm';
+      currentParams = params;
+      renderApp();
+    })
+    .on('/invoices/:id/preview', (params) => {
+      currentPage = 'invoicePreview';
+      currentParams = params;
+      renderApp();
+    })
+    .on('/settings', () => {
+      currentPage = 'settings';
+      currentParams = {};
+      renderApp();
+    })
+    .on('/reports', () => {
+      currentPage = 'reports';
+      currentParams = {};
+      renderApp();
+    });
+}
+
+// App refresh handler (for language changes, etc.)
+window.addEventListener('app:refresh', () => {
+  renderApp();
+});
+
+// Initialize app
+async function init() {
+  try {
+    // Show loading state
+    document.getElementById('app').innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: Roboto, sans-serif;">
+        <div style="text-align: center;">
+          <div style="width: 48px; height: 48px; border: 3px solid #E7E0EC; border-top-color: #6750A4; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+          <p style="color: #49454F;">Loading...</p>
+        </div>
+      </div>
+      <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+      </style>
+    `;
+
+    // Initialize database
+    await db.init();
+
+    // Load language from settings
+    const settings = settingsService.get();
+    if (settings && settings.language) {
+      i18n.locale = settings.language;
+    }
+
+    // Setup routes
+    setupRoutes();
+
+    // Initial render based on current hash
+    router.handleRoute();
+
+  } catch (error) {
+    console.error('Failed to initialize app:', error);
+    document.getElementById('app').innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: Roboto, sans-serif;">
+        <div style="text-align: center; padding: 20px;">
+          <h2 style="color: #B3261E; margin-bottom: 16px;">Failed to load application</h2>
+          <p style="color: #49454F; margin-bottom: 16px;">${error.message}</p>
+          <button onclick="location.reload()" style="padding: 12px 24px; background: #6750A4; color: white; border: none; border-radius: 9999px; cursor: pointer; font-family: inherit;">
+            Retry
+          </button>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Start the app
+init();

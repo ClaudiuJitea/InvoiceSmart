@@ -1,0 +1,143 @@
+// Client Form Page (Create/Edit)
+import { t } from '../i18n/index.js';
+import { icons } from '../components/icons.js';
+import { clientService } from '../db/services/clientService.js';
+import { toast } from '../components/common/Toast.js';
+import { router } from '../router.js';
+
+export function renderClientForm(params = {}) {
+  const isEdit = params.id && params.id !== 'new';
+  const client = isEdit ? clientService.getById(parseInt(params.id)) : null;
+
+  const title = isEdit ? t('clients.editClient') : t('clients.newClient');
+
+  return `
+    <div class="page-container" style="max-width: 800px;">
+      <div class="page-header-row">
+        <div class="page-header-left">
+          <a href="#/clients" class="btn btn-text" style="margin-left: -12px; margin-bottom: var(--space-2);">
+            ${icons.arrowLeft} ${t('actions.back')}
+          </a>
+          <h1 class="page-title">${title}</h1>
+        </div>
+      </div>
+
+      <form id="clientForm" class="card card-elevated">
+        <div class="form-section">
+          <h3 class="form-section-title">${t('clients.companyName')}</h3>
+          <div class="form-row">
+            <div class="input-group">
+              <label class="input-label">${t('clients.name')} *</label>
+              <input type="text" class="input" name="name" value="${client?.name || ''}" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="input-group">
+              <label class="input-label">${t('clients.cif')}</label>
+              <input type="text" class="input" name="cif" value="${client?.cif || ''}" placeholder="e.g., RO12345678">
+            </div>
+            <div class="input-group">
+              <label class="input-label">${t('clients.regNo')}</label>
+              <input type="text" class="input" name="reg_no" value="${client?.reg_no || ''}" placeholder="e.g., J40/123/2020">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 class="form-section-title">${t('clients.address')}</h3>
+          <div class="form-row">
+            <div class="input-group">
+              <label class="input-label">${t('clients.address')}</label>
+              <textarea class="input textarea" name="address" rows="3">${client?.address || ''}</textarea>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="input-group">
+              <label class="input-label">${t('clients.city')}</label>
+              <input type="text" class="input" name="city" value="${client?.city || ''}">
+            </div>
+            <div class="input-group">
+              <label class="input-label">${t('clients.country')}</label>
+              <input type="text" class="input" name="country" value="${client?.country || ''}">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 class="form-section-title">${t('clients.email')} / ${t('clients.phone')}</h3>
+          <div class="form-row">
+            <div class="input-group">
+              <label class="input-label">${t('clients.email')}</label>
+              <input type="email" class="input" name="email" value="${client?.email || ''}">
+            </div>
+            <div class="input-group">
+              <label class="input-label">${t('clients.phone')}</label>
+              <input type="tel" class="input" name="phone" value="${client?.phone || ''}">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 class="form-section-title">${t('settings.bankDetails')}</h3>
+          <div class="form-row">
+            <div class="input-group">
+              <label class="input-label">${t('settings.bankAccount')}</label>
+              <input type="text" class="input" name="bank_account" value="${client?.bank_account || ''}" placeholder="IBAN">
+            </div>
+            <div class="input-group">
+              <label class="input-label">${t('settings.bankName')}</label>
+              <input type="text" class="input" name="bank_name" value="${client?.bank_name || ''}">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 class="form-section-title">${t('clients.notes')}</h3>
+          <div class="input-group">
+            <textarea class="input textarea" name="notes" rows="4" placeholder="${t('clients.notes')}...">${client?.notes || ''}</textarea>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <a href="#/clients" class="btn btn-text">${t('actions.cancel')}</a>
+          <button type="submit" class="btn btn-filled">${t('actions.save')}</button>
+        </div>
+      </form>
+    </div>
+  `;
+}
+
+export function initClientForm(params = {}) {
+  const form = document.getElementById('clientForm');
+  const isEdit = params.id && params.id !== 'new';
+
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const data = {
+        name: formData.get('name'),
+        cif: formData.get('cif'),
+        reg_no: formData.get('reg_no'),
+        address: formData.get('address'),
+        city: formData.get('city'),
+        country: formData.get('country'),
+        email: formData.get('email'),
+        phone: formData.get('phone'),
+        bank_account: formData.get('bank_account'),
+        bank_name: formData.get('bank_name'),
+        notes: formData.get('notes'),
+      };
+
+      if (isEdit) {
+        clientService.update(parseInt(params.id), data);
+      } else {
+        clientService.create(data);
+      }
+
+      toast.success(t('clients.saveSuccess'));
+      router.navigate('/clients');
+    });
+  }
+}
