@@ -7,6 +7,7 @@ const BNR_YEAR_URL = (year) => `https://www.bnr.ro/files/xml/years/nbrfxrates${y
 
 export const bnrService = {
     async getExchangeRate(currency = 'EUR', dateStr = null) {
+        if (currency === 'RON') return 1;
         try {
             let url = BNR_CURRENT_URL;
             let targetDate = null;

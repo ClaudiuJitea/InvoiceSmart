@@ -1,5 +1,5 @@
 /* Base Reset & Global Styles */
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
 
 *,
 *::before,
@@ -31,33 +31,44 @@ h3,
 h4,
 h5,
 h6 {
-    font-weight: 500;
+    font-family: var(--font-display);
+    font-weight: 600;
     line-height: var(--leading-tight);
     color: var(--md-on-surface);
+    letter-spacing: -0.01em;
 }
 
 h1 {
     font-size: var(--text-headline-lg);
+    font-weight: 700;
 }
 
 h2 {
     font-size: var(--text-headline-md);
+    font-weight: 600;
 }
 
 h3 {
     font-size: var(--text-headline-sm);
+    font-weight: 600;
 }
 
 h4 {
+    font-family: var(--font-family);
     font-size: var(--text-title-lg);
+    font-weight: var(--font-weight-semibold);
 }
 
 h5 {
+    font-family: var(--font-family);
     font-size: var(--text-title-md);
+    font-weight: var(--font-weight-medium);
 }
 
 h6 {
+    font-family: var(--font-family);
     font-size: var(--text-title-sm);
+    font-weight: var(--font-weight-medium);
 }
 
 p {
@@ -141,31 +152,35 @@ a:hover {
 
 .app-content {
     flex: 1;
-    padding: var(--space-6);
-    background: var(--md-surface);
+    padding: var(--space-8);
+    background: linear-gradient(180deg, var(--md-surface) 0%, var(--md-surface-container-low) 100%);
 }
 
 /* Page Container */
 .page-container {
     max-width: 1400px;
     margin: 0 auto;
+    animation: fadeIn 0.4s ease-out;
 }
 
 /* Page Header */
 .page-header {
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-8);
 }
 
 .page-title {
-    font-size: var(--text-headline-md);
-    font-weight: 500;
-    color: var(--md-on-surface);
+    font-family: var(--font-display);
+    font-size: var(--text-headline-lg);
+    font-weight: 600;
+    color: var(--md-primary);
     margin-bottom: var(--space-2);
+    letter-spacing: -0.02em;
 }
 
 .page-subtitle {
     font-size: var(--text-body-md);
     color: var(--md-on-surface-variant);
+    font-weight: 400;
 }
 
 /* Responsive */
@@ -207,4 +222,40 @@ a:hover {
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+}
+
+/* Smooth page transitions */
+.fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Subtle gradient borders */
+.gradient-border {
+    position: relative;
+}
+
+.gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, var(--md-primary) 0%, var(--md-tertiary) 100%);
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity var(--transition-standard);
+}
+
+.gradient-border:hover::before {
+    opacity: 1;
 }

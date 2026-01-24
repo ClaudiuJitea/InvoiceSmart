@@ -5,42 +5,60 @@ import { settingsService } from '../db/services/settingsService.js';
 export function renderClassicTemplate(invoice) {
   const settings = settingsService.get() || {};
 
+  // Classic color palette
+  const colors = {
+    primary: '#1A1D21',
+    primaryDark: '#000000',
+    secondary: '#5A6169',
+    accent: '#333333',
+    text: '#1A1D21',
+    border: '#E2E8F0',
+    bgLight: '#F8FAFC'
+  };
+
   return `
     <div class="invoice-template invoice-classic">
       <style>
         .invoice-classic {
-          font-family: 'Roboto', serif;
-          color: #333;
+          font-family: 'Georgia', 'Times New Roman', serif;
+          color: ${colors.text};
           font-size: 10pt;
-          line-height: 1.4;
+          line-height: 1.5;
         }
         .invoice-classic .header {
           display: flex;
           justify-content: space-between;
-          border-bottom: 3px double #333;
-          padding-bottom: 20px;
-          margin-bottom: 30px;
+          border-bottom: 3px solid ${colors.primary};
+          padding-bottom: 24px;
+          margin-bottom: 36px;
         }
         .invoice-classic .company-info {
           max-width: 55%;
         }
         .invoice-classic .company-name {
-          font-size: 18pt;
-          font-weight: 700;
-          margin-bottom: 10px;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 20pt;
+          font-weight: 600;
+          color: ${colors.primary};
+          margin-bottom: 12px;
+          letter-spacing: -0.01em;
         }
         .invoice-classic .company-details {
           font-size: 9pt;
-          line-height: 1.6;
+          line-height: 1.7;
+          color: ${colors.secondary};
         }
         .invoice-classic .invoice-info {
           text-align: right;
         }
         .invoice-classic .invoice-title {
-          font-size: 24pt;
-          font-weight: 700;
-          letter-spacing: 2px;
-          margin-bottom: 15px;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 28pt;
+          font-weight: 600;
+          color: ${colors.primary};
+          letter-spacing: 3px;
+          margin-bottom: 18px;
+          text-transform: uppercase;
         }
         .invoice-classic .info-row {
           display: flex;
@@ -49,35 +67,44 @@ export function renderClassicTemplate(invoice) {
           font-size: 10pt;
         }
         .invoice-classic .info-label {
-          font-weight: 500;
-          margin-right: 10px;
+          font-weight: 600;
+          color: ${colors.secondary};
+          margin-right: 12px;
+          text-transform: uppercase;
+          font-size: 8pt;
+          letter-spacing: 0.5px;
         }
         .invoice-classic .parties {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 40px;
-          margin-bottom: 30px;
+          margin-bottom: 36px;
         }
         .invoice-classic .party-box {
-          border: 1px solid #ddd;
-          padding: 15px;
+          border: 1px solid ${colors.border};
+          padding: 18px;
+          background: ${colors.bgLight};
+          border-radius: 4px;
         }
         .invoice-classic .party-label {
           font-size: 8pt;
           font-weight: 700;
           text-transform: uppercase;
-          letter-spacing: 1px;
-          margin-bottom: 10px;
-          color: #666;
+          letter-spacing: 1.5px;
+          margin-bottom: 12px;
+          color: ${colors.primary};
         }
         .invoice-classic .party-name {
-          font-size: 12pt;
-          font-weight: 500;
-          margin-bottom: 8px;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 13pt;
+          font-weight: 600;
+          color: ${colors.primary};
+          margin-bottom: 10px;
         }
         .invoice-classic .party-details {
           font-size: 9pt;
-          line-height: 1.5;
+          line-height: 1.6;
+          color: ${colors.secondary};
         }
         .invoice-classic .items-table {
           width: 100%;
@@ -86,15 +113,16 @@ export function renderClassicTemplate(invoice) {
         }
         .invoice-classic .items-table th,
         .invoice-classic .items-table td {
-          border: 1px solid #ddd;
-          padding: 10px;
+          border: 1px solid ${colors.border};
+          padding: 12px;
         }
         .invoice-classic .items-table th {
-          background: #f5f5f5;
-          font-weight: 500;
+          background: linear-gradient(180deg, ${colors.primary} 0%, ${colors.primaryDark} 100%);
+          color: white;
+          font-weight: 600;
           text-transform: uppercase;
           font-size: 8pt;
-          letter-spacing: 0.5px;
+          letter-spacing: 0.75px;
         }
         .invoice-classic .items-table th:last-child,
         .invoice-classic .items-table td:last-child {
@@ -109,12 +137,12 @@ export function renderClassicTemplate(invoice) {
           margin-bottom: 40px;
         }
         .invoice-classic .totals-table {
-          border: 1px solid #ddd;
-          min-width: 280px;
+          border: 1px solid ${colors.border};
+          min-width: 300px;
         }
         .invoice-classic .totals-table tr td {
-          padding: 8px 12px;
-          border-bottom: 1px solid #ddd;
+          padding: 10px 16px;
+          border-bottom: 1px solid ${colors.border};
         }
         .invoice-classic .totals-table tr:last-child td {
           border-bottom: none;
@@ -122,49 +150,62 @@ export function renderClassicTemplate(invoice) {
         .invoice-classic .totals-table .label {
           text-transform: uppercase;
           font-size: 9pt;
+          color: ${colors.secondary};
         }
         .invoice-classic .totals-table .value {
           text-align: right;
-          font-weight: 500;
+          font-weight: 600;
+          color: ${colors.primary};
         }
         .invoice-classic .totals-table .total-row {
-          background: #333;
+          background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%);
           color: white;
         }
         .invoice-classic .totals-table .total-row td {
-          padding: 12px;
-          font-size: 12pt;
+          padding: 14px 16px;
+          font-size: 13pt;
           border: none;
+          color: white;
+        }
+        .invoice-classic .totals-table .total-row .value,
+        .invoice-classic .totals-table .total-row .label {
+          color: white;
         }
         .invoice-classic .footer {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 40px;
-          margin-top: 50px;
-          padding-top: 20px;
-          border-top: 1px solid #ddd;
+          margin-top: 60px;
+          padding-top: 24px;
+          border-top: 2px solid ${colors.border};
         }
         .invoice-classic .footer-section h4 {
-          font-size: 9pt;
-          font-weight: 700;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 10pt;
+          font-weight: 600;
           text-transform: uppercase;
-          margin-bottom: 10px;
-          color: #666;
+          letter-spacing: 1px;
+          margin-bottom: 12px;
+          color: ${colors.primary};
         }
         .invoice-classic .footer-section p {
           font-size: 9pt;
           margin: 0;
-          line-height: 1.5;
+          line-height: 1.6;
+          color: ${colors.secondary};
         }
         .invoice-classic .signature-box {
           text-align: center;
-          padding-top: 40px;
+          padding-top: 50px;
         }
         .invoice-classic .signature-line {
-          border-top: 1px solid #333;
-          margin-top: 50px;
-          padding-top: 5px;
-          font-size: 8pt;
+          border-top: 2px solid ${colors.accent};
+          margin-top: 60px;
+          padding-top: 8px;
+          font-size: 9pt;
+          color: ${colors.secondary};
+          text-transform: uppercase;
+          letter-spacing: 1px;
         }
       </style>
 

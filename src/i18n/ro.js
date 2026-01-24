@@ -10,6 +10,7 @@ export default {
         invoices: 'Facturi',
         clients: 'Clienți',
         settings: 'Setări',
+        admin: 'Admin',
     },
 
     // Common actions
@@ -67,6 +68,7 @@ export default {
         allClients: 'Toți Clienții',
         startDate: 'De la',
         endDate: 'Până la',
+        noCurrencyData: 'Nu există facturi cu această monedă',
     },
 
     // Invoices
@@ -204,7 +206,7 @@ export default {
     templates: {
         modern: 'Modern',
         modernDesc: 'Design curat și minimalist',
-        classic: 'Clasic Negru',
+        classic: 'Executiv',
         classicDesc: 'Stil de afaceri tradițional',
         classicBlue: 'Clasic Albastru',
         classicBlueDesc: 'Stil profesional albastru',

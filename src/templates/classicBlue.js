@@ -4,16 +4,20 @@ import { settingsService } from '../db/services/settingsService.js';
 
 export function renderClassicBlueTemplate(invoice) {
     const settings = settingsService.get() || {};
-    const primaryColor = '#21618C'; // Strong Blue
-    const secondaryColor = '#3498DB'; // Lighter Blue
-    const tableBorderColor = '#21618C';
+    // Classic Blue color palette
+    const colors = {
+        primary: '#21618C',
+        secondary: '#3498DB',
+        border: '#21618C',
+        bgLight: '#f0f8ff'
+    };
 
     return `
     <div class="invoice-template invoice-classic-blue">
       <style>
         .invoice-classic-blue {
           font-family: 'Arial', 'Helvetica', sans-serif;
-          color: ${primaryColor};
+          color: ${colors.primary};
           font-size: 9pt;
           line-height: 1.3;
         }
@@ -42,7 +46,7 @@ export function renderClassicBlueTemplate(invoice) {
             font-size: 24pt;
             font-weight: bold;
             text-transform: uppercase;
-            color: ${primaryColor};
+            color: ${colors.primary};
             margin-bottom: 5px;
             margin-top: 0;
             line-height: 1;
@@ -66,11 +70,11 @@ export function renderClassicBlueTemplate(invoice) {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
-            border: 2px solid ${tableBorderColor};
+            border: 2px solid ${colors.border};
         }
         .invoice-classic-blue .items-table th, 
         .invoice-classic-blue .items-table td {
-            border: 1px solid ${tableBorderColor};
+            border: 1px solid ${colors.border};
             padding: 5px 8px;
             vertical-align: top;
         }
@@ -99,13 +103,13 @@ export function renderClassicBlueTemplate(invoice) {
         }
         .invoice-classic-blue .totals-section {
             display: flex;
-            border: 2px solid ${tableBorderColor};
+            border: 2px solid ${colors.border};
             border-top: none;
         }
         .invoice-classic-blue .footer-left {
             flex: 1;
             padding: 10px;
-            border-right: 1px solid ${tableBorderColor};
+            border-right: 1px solid ${colors.border};
         }
         .invoice-classic-blue .footer-totals {
             width: 160px; /* Adjust to match last 2 columns approx */
@@ -114,7 +118,7 @@ export function renderClassicBlueTemplate(invoice) {
         }
         .invoice-classic-blue .footer-total-row {
             display: flex;
-            border-bottom: 1px solid ${tableBorderColor};
+            border-bottom: 1px solid ${colors.border};
         }
         .invoice-classic-blue .footer-total-row:last-child {
             border-bottom: none;
@@ -131,7 +135,7 @@ export function renderClassicBlueTemplate(invoice) {
         .invoice-classic-blue .footer-total-val {
             padding: 5px;
             text-align: right;
-            border-left: 1px solid ${tableBorderColor};
+            border-left: 1px solid ${colors.border};
             width: 80px; /* match vat col */
         }
         .invoice-classic-blue .grand-total {
@@ -191,7 +195,7 @@ export function renderClassicBlueTemplate(invoice) {
             <th class="col-val">Valoare<br>-${invoice.currency}-</th>
             <th class="col-vat">Valoare TVA<br>-${invoice.currency}-</th>
           </tr>
-          <tr style="font-size: 8pt; background-color: #f0f8ff;">
+          <tr style="font-size: 8pt; background-color: ${colors.bgLight};">
             <th class="col-idx">0</th>
             <th class="col-desc">1</th>
             <th class="col-unit">2</th>
@@ -232,7 +236,7 @@ export function renderClassicBlueTemplate(invoice) {
         <div class="footer-left">
             <div class="signature-area">
                 <div>Semnatura de primire:</div>
-                <div style="margin-top: 30px; border-bottom: 1px dashed ${primaryColor}; width: 200px;"></div>
+                <div style="margin-top: 30px; border-bottom: 1px dashed ${colors.primary}; width: 200px;"></div>
             </div>
              <div class="signature-area" style="margin-top: 20px;">
                 <!-- Delegate info if we had it -->
@@ -243,7 +247,7 @@ export function renderClassicBlueTemplate(invoice) {
         </div>
         <div class="footer-totals">
             <div class="footer-total-row">
-                <div style="width: 80px; padding: 5px; text-align: right; border-right: 1px solid ${tableBorderColor};">
+                <div style="width: 80px; padding: 5px; text-align: right; border-right: 1px solid ${colors.border};">
                     ${invoice.subtotal.toFixed(2)}
                 </div>
                 <div style="width: 80px; padding: 5px; text-align: right;">
@@ -251,7 +255,7 @@ export function renderClassicBlueTemplate(invoice) {
                 </div>
             </div>
             <div class="footer-total-row" style="flex: 1;">
-                 <div class="footer-total-label" style="border-right: 1px solid ${tableBorderColor}; font-size: 14pt;">
+                 <div class="footer-total-label" style="border-right: 1px solid ${colors.border}; font-size: 14pt;">
                     Total
                  </div>
                  <div class="footer-total-val" style="display: flex; align-items: center; justify-content: flex-end; font-size: 12pt; font-weight: bold; border-left: none;">

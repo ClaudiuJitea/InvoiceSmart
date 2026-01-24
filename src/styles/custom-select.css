@@ -9,43 +9,45 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    height: 56px;
+    height: 52px;
     padding: 0 var(--space-4);
-    background-color: var(--md-surface-container-low);
-    border: none;
-    border-bottom: 2px solid var(--md-outline);
-    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    background-color: var(--md-surface);
+    border: 2px solid var(--md-outline-variant);
+    border-radius: var(--radius-md);
     color: var(--md-on-surface);
-    font-size: var(--text-body-lg);
+    font-size: var(--text-body-md);
     cursor: pointer;
     transition: all var(--transition-fast);
     user-select: none;
 }
 
 .custom-select-trigger:hover {
-    background-color: var(--md-surface-container);
+    border-color: var(--md-outline);
+    background-color: var(--md-surface-container-low);
 }
 
 .custom-select-trigger.open {
-    border-bottom-color: var(--md-primary);
-    background-color: var(--md-surface-container);
+    border-color: var(--md-primary);
+    background-color: var(--md-surface);
+    box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.08);
 }
 
 .custom-select-options {
     position: absolute;
-    top: calc(100% + 4px);
+    top: calc(100% + 8px);
     left: 0;
     width: 100%;
-    background: var(--md-surface-container);
+    background: var(--md-surface);
+    border: 2px solid var(--md-outline-variant);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-xl);
     z-index: 100;
     opacity: 0;
     visibility: hidden;
     transform: translateY(-10px);
     transition: all var(--transition-standard);
     overflow: hidden;
-    padding: var(--space-1);
+    padding: var(--space-2);
 }
 
 .custom-select-container.open .custom-select-options {
@@ -57,17 +59,19 @@
 .custom-option {
     padding: var(--space-3) var(--space-4);
     cursor: pointer;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     color: var(--md-on-surface);
-    transition: background var(--transition-fast);
+    transition: all var(--transition-fast);
+    font-size: var(--text-body-md);
 }
 
 .custom-option:hover {
-    background: var(--md-surface-container-highest);
+    background: linear-gradient(135deg, var(--md-primary-container) 0%, var(--md-secondary-container) 100%);
+    color: var(--md-on-primary-container);
 }
 
 .custom-option.selected {
-    background: var(--md-secondary-container);
-    color: var(--md-on-secondary-container);
-    font-weight: 500;
+    background: linear-gradient(135deg, var(--md-primary) 0%, var(--md-primary-hover) 100%);
+    color: var(--md-on-primary);
+    font-weight: 600;
 }

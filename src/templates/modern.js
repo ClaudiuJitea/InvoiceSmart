@@ -15,82 +15,108 @@ export function renderModernTemplate(invoice) {
     return i18n.get(key, lang);
   };
 
+  // Modern color palette
+  const colors = {
+    primary: '#1E3A5F',
+    secondary: '#5A6169',
+    accent: '#1E3A5F',
+    text: '#1A1D21',
+    border: '#E8ECF0',
+    bgLight: '#F4F6F8',
+    bgDark: '#EEF1F4'
+  };
+
   return `
     <div class="invoice-template invoice-modern">
       <style>
         .invoice-modern {
-          font-family: 'Roboto', sans-serif;
-          color: #1C1B1F;
+          font-family: 'Inter', sans-serif;
+          color: ${colors.text};
           font-size: 10pt;
           line-height: 1.5;
         }
         .invoice-modern .header {
           display: flex;
           justify-content: space-between;
-          margin-bottom: 40px;
+          margin-bottom: 48px;
           align-items: flex-start;
         }
         .invoice-modern .company-info {
           max-width: 60%;
         }
         .invoice-modern .company-name {
-          font-size: 16pt;
-          font-weight: 500;
-          color: #6750A4;
-          margin-bottom: 8px;
-          line-height: 1;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 18pt;
+          font-weight: 600;
+          color: ${colors.primary};
+          margin-bottom: 10px;
+          line-height: 1.2;
           margin-top: 0;
+          letter-spacing: -0.01em;
         }
         .invoice-modern .company-details {
           font-size: 9pt;
-          color: #49454F;
+          color: ${colors.secondary};
           line-height: 1.6;
         }
         .invoice-modern .invoice-badge {
           text-align: right;
         }
         .invoice-modern .invoice-title {
-          font-size: 28pt;
-          font-weight: 500;
-          color: #6750A4;
-          margin-bottom: 8px;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 32pt;
+          font-weight: 600;
+          color: ${colors.primary};
+          margin-bottom: 10px;
           line-height: 1;
           margin-top: 0;
+          letter-spacing: -0.02em;
         }
         .invoice-modern .invoice-number {
-          font-size: 11pt;
-          color: #49454F;
+          font-size: 12pt;
+          color: ${colors.accent};
+          font-weight: 600;
         }
         .invoice-modern .dates-client {
           display: flex;
           justify-content: space-between;
           margin-bottom: 40px;
-          padding: 20px;
-          background: #F3EDF7;
-          border-radius: 16px;
+          padding: 24px;
+          background: linear-gradient(135deg, ${colors.bgLight} 0%, ${colors.bgDark} 100%);
+          border-radius: 12px;
+          border: 1px solid ${colors.border};
         }
         .invoice-modern .dates {
           font-size: 9pt;
         }
         .invoice-modern .dates-label {
-          color: #49454F;
+          color: ${colors.secondary};
           margin-bottom: 4px;
+          text-transform: uppercase;
+          font-size: 8pt;
+          letter-spacing: 0.5px;
         }
         .invoice-modern .dates-value {
-          font-weight: 500;
+          font-weight: 600;
           font-size: 10pt;
+          color: ${colors.primary};
         }
         .invoice-modern .client-info {
           text-align: right;
         }
         .invoice-modern .client-label {
           font-size: 9pt;
-          color: #49454F;
+          color: ${colors.secondary};
           margin-bottom: 4px;
+          text-transform: uppercase;
+          font-size: 8pt;
+          letter-spacing: 0.5px;
         }
         .invoice-modern .client-name {
-          font-size: 12pt;
-          font-weight: 500;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 13pt;
+          font-weight: 600;
+          color: ${colors.primary};
         }
         .invoice-modern .items-table {
           width: 100%;
@@ -99,19 +125,21 @@ export function renderModernTemplate(invoice) {
         }
         .invoice-modern .items-table th {
           text-align: left;
-          padding: 12px 8px;
-          border-bottom: 2px solid #6750A4;
-          font-weight: 500;
+          padding: 14px 12px;
+          border-bottom: 3px solid ${colors.primary};
+          font-weight: 600;
           font-size: 9pt;
-          color: #49454F;
+          color: ${colors.primary};
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
         .invoice-modern .items-table th:last-child,
         .invoice-modern .items-table td:last-child {
           text-align: right;
         }
         .invoice-modern .items-table td {
-          padding: 12px 8px;
-          border-bottom: 1px solid #E7E0EC;
+          padding: 14px 12px;
+          border-bottom: 1px solid ${colors.border};
           vertical-align: top;
         }
         .invoice-modern .totals {
@@ -126,25 +154,26 @@ export function renderModernTemplate(invoice) {
           padding: 8px 0;
         }
         .invoice-modern .totals-table .label {
-          color: #49454F;
+          color: ${colors.secondary};
           padding-right: 20px;
         }
         .invoice-modern .totals-table .value {
           text-align: right;
-          font-weight: 500;
+          font-weight: 600;
+          color: ${colors.primary};
         }
         .invoice-modern .totals-table .total-row {
-          border-top: 2px solid #6750A4;
+          border-top: 3px solid ${colors.primary};
         }
         .invoice-modern .totals-table .total-row td {
-          padding-top: 12px;
-          font-size: 14pt;
-          color: #6750A4;
+          padding-top: 14px;
+          font-size: 16pt;
+          color: ${colors.primary};
         }
         .invoice-modern .footer {
-          margin-top: 40px;
-          padding-top: 20px;
-          border-top: 1px solid #E7E0EC;
+          margin-top: 48px;
+          padding-top: 24px;
+          border-top: 1px solid ${colors.border};
           display: flex;
           justify-content: space-between;
         }
@@ -152,17 +181,20 @@ export function renderModernTemplate(invoice) {
           font-size: 9pt;
         }
         .invoice-modern .bank-label {
-          color: #49454F;
+          color: ${colors.secondary};
           margin-bottom: 4px;
+          text-transform: uppercase;
+          font-size: 8pt;
+          letter-spacing: 0.5px;
         }
         .invoice-modern .signature {
           text-align: right;
           font-size: 9pt;
-          color: #49454F;
+          color: ${colors.secondary};
         }
         .invoice-modern .signature-line {
           width: 150px;
-          border-bottom: 1px solid #49454F;
+          border-bottom: 2px solid ${colors.accent};
           margin-top: 40px;
           margin-left: auto;
         }

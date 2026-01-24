@@ -3,6 +3,7 @@ import { t, i18n } from '../i18n/index.js';
 import { icons } from '../components/icons.js';
 import { settingsService } from '../db/services/settingsService.js';
 import { toast } from '../components/common/Toast.js';
+import { CustomSelect } from '../components/common/CustomSelect.js';
 
 export function renderSettings() {
   const settings = settingsService.get() || {};
@@ -152,6 +153,11 @@ export function initSettings() {
   const form = document.getElementById('settingsForm');
 
   if (form) {
+    // Initialize Custom Selects
+    form.querySelectorAll('.select').forEach(el => {
+      new CustomSelect(el);
+    });
+
     form.addEventListener('submit', (e) => {
       e.preventDefault();
 

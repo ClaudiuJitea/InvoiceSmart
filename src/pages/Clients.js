@@ -9,11 +9,7 @@ import { router } from '../router.js';
 let searchQuery = '';
 
 export function renderClients() {
-    const clients = searchQuery
-        ? clientService.search(searchQuery)
-        : clientService.getAll();
-
-    return `
+  return `
     <div class="page-container">
       <div class="page-header-row">
         <div class="page-header-left">
@@ -36,94 +32,140 @@ export function renderClients() {
         </div>
       </div>
 
-      ${clients.length > 0 ? `
-        <div class="table-container card-elevated">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>${t('clients.name')}</th>
-                <th>${t('clients.cif')}</th>
-                <th>${t('clients.address')}</th>
-                <th>${t('clients.email')}</th>
-                <th>${t('clients.phone')}</th>
-                <th class="text-right">${t('actions.edit')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${clients.map(client => `
-                <tr data-client-id="${client.id}">
-                  <td class="font-medium">${client.name}</td>
-                  <td>${client.cif || '-'}</td>
-                  <td>${client.address || '-'}</td>
-                  <td>${client.email || '-'}</td>
-                  <td>${client.phone || '-'}</td>
-                  <td>
-                    <div class="table-actions">
-                      <button class="btn btn-icon edit-client-btn" data-id="${client.id}" title="${t('actions.edit')}">
-                        ${icons.edit}
-                      </button>
-                      <button class="btn btn-icon delete-client-btn" data-id="${client.id}" title="${t('actions.delete')}">
-                        ${icons.trash}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
+      <div id="clientsListContainer">
+        <div class="card card-elevated" style="padding: 40px; text-align: center;">
+            <div class="loading-spinner"></div>
+            <p style="margin-top: 10px; color: var(--md-on-surface-variant);">Loading...</p>
         </div>
-      ` : `
-        <div class="card card-elevated">
-          <div class="empty-state">
-            <div class="empty-state-icon">${icons.emptyClients}</div>
-            <h3 class="empty-state-title">${t('clients.emptyTitle')}</h3>
-            <p class="empty-state-description">${t('clients.emptyDescription')}</p>
-            <a href="#/clients/new" class="btn btn-filled">
-              ${icons.plus}
-              ${t('clients.newClient')}
-            </a>
-          </div>
-        </div>
-      `}
+      </div>
     </div>
   `;
 }
 
-export function initClients() {
-    // Search functionality
-    const searchInput = document.getElementById('clientSearch');
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            searchQuery = e.target.value;
-            // Debounce search
-            clearTimeout(window.clientSearchTimeout);
-            window.clientSearchTimeout = setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('app:refresh'));
-            }, 300);
-        });
+export async function initClients() {
+  const container = document.getElementById('clientsListContainer');
+  const searchInput = document.getElementById('clientSearch');
+
+  async function loadClients() {
+    if (!container) return;
+
+    try {
+      const clients = searchQuery
+        ? await clientService.search(searchQuery)
+        : await clientService.getAll();
+
+      renderClientsList(clients);
+    } catch (error) {
+      console.error('Failed to load clients:', error);
+      container.innerHTML = `<div class="p-4 text-center text-error">Failed to load clients</div>`;
+    }
+  }
+
+  function renderClientsList(clients) {
+    if (clients.length > 0) {
+      container.innerHTML = `
+            <div class="table-container card-elevated">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>${t('clients.name')}</th>
+                    <th>${t('clients.cif')}</th>
+                    <th>${t('clients.address')}</th>
+                    <th>${t('clients.email')}</th>
+                    <th>${t('clients.phone')}</th>
+                    <th class="text-right">${t('actions.edit')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${clients.map(client => `
+                    <tr data-client-id="${client.id}">
+                      <td class="font-medium">${client.name}</td>
+                      <td>${client.cif || '-'}</td>
+                      <td>${client.address || '-'}</td>
+                      <td>${client.email || '-'}</td>
+                      <td>${client.phone || '-'}</td>
+                      <td>
+                        <div class="table-actions">
+                          <button class="btn btn-icon edit-client-btn" data-id="${client.id}" title="${t('actions.edit')}">
+                            ${icons.edit}
+                          </button>
+                          <button class="btn btn-icon delete-client-btn" data-id="${client.id}" title="${t('actions.delete')}">
+                            ${icons.trash}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+            `;
+    } else {
+      container.innerHTML = `
+            <div class="card card-elevated">
+              <div class="empty-state">
+                <div class="empty-state-icon">${icons.emptyClients}</div>
+                <h3 class="empty-state-title">${t('clients.emptyTitle')}</h3>
+                <p class="empty-state-description">${t('clients.emptyDescription')}</p>
+                <a href="#/clients/new" class="btn btn-filled">
+                  ${icons.plus}
+                  ${t('clients.newClient')}
+                </a>
+              </div>
+            </div>
+            `;
     }
 
+    attachEventListeners();
+  }
+
+  function attachEventListeners() {
     // Edit buttons
-    document.querySelectorAll('.edit-client-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            router.navigate(`/clients/${btn.dataset.id}`);
-        });
+    container.querySelectorAll('.edit-client-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        router.navigate(`/clients/${btn.dataset.id}`);
+      });
     });
 
     // Delete buttons
-    document.querySelectorAll('.delete-client-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            confirm({
-                title: t('actions.delete'),
-                message: t('clients.deleteConfirm'),
-                confirmText: t('actions.delete'),
-                cancelText: t('actions.cancel'),
-                onConfirm: () => {
-                    clientService.delete(parseInt(btn.dataset.id));
-                    toast.success(t('clients.deleteSuccess'));
-                    window.dispatchEvent(new CustomEvent('app:refresh'));
-                },
-            });
+    container.querySelectorAll('.delete-client-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        confirm({
+          title: t('actions.delete'),
+          message: t('clients.deleteConfirm'),
+          confirmText: t('actions.delete'),
+          cancelText: t('actions.cancel'),
+          onConfirm: async () => {
+            try {
+              await clientService.delete(parseInt(btn.dataset.id));
+              toast.success(t('clients.deleteSuccess'));
+              loadClients(); // Reload list instead of full app refresh
+            } catch (error) {
+              toast.error('Failed to delete client');
+            }
+          },
         });
+      });
     });
+  }
+
+  // Search functionality
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      // Debounce search
+      clearTimeout(window.clientSearchTimeout);
+      window.clientSearchTimeout = setTimeout(() => {
+        loadClients();
+      }, 300);
+    });
+
+    // Focus search input if query exists to maintain state between re-renders
+    if (searchQuery) {
+      searchInput.focus();
+    }
+  }
+
+  // Initial load
+  await loadClients();
 }

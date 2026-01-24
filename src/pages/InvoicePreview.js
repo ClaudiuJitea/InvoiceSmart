@@ -10,25 +10,38 @@ import { router } from '../router.js';
 let currentTemplate = null;
 
 export function renderInvoicePreview(params = {}) {
-  const invoice = invoiceService.getById(parseInt(params.id));
+  return `
+    <div class="page-container" id="previewContainer">
+      <div class="card card-elevated" style="padding: 40px; text-align: center;">
+        <div class="loading-spinner"></div>
+        <p style="margin-top: 10px; color: var(--md-on-surface-variant);">Loading preview...</p>
+      </div>
+    </div>
+  `;
+}
 
-  if (!invoice) {
-    return `
-      <div class="page-container">
+export async function initInvoicePreview(params = {}) {
+  const container = document.getElementById('previewContainer');
+  if (!container) return;
+
+  try {
+    const invoice = await invoiceService.getById(parseInt(params.id));
+
+    if (!invoice) {
+      container.innerHTML = `
         <div class="empty-state">
           <h3>${t('general.error')}</h3>
           <p>Invoice not found</p>
           <a href="#/invoices" class="btn btn-filled">${t('actions.back')}</a>
         </div>
-      </div>
-    `;
-  }
+      `;
+      return;
+    }
 
-  currentTemplate = invoice.template || 'modern';
-  const templateHtml = renderTemplate(currentTemplate, invoice);
+    currentTemplate = invoice.template || 'modern';
+    const templateHtml = renderTemplate(currentTemplate, invoice);
 
-  return `
-    <div class="page-container">
+    container.innerHTML = `
       <div class="page-header-row">
         <div class="page-header-left">
           <a href="#/invoices" class="btn btn-text" style="margin-left: -12px; margin-bottom: var(--space-2);">
@@ -78,14 +91,17 @@ export function renderInvoicePreview(params = {}) {
           </div>
         </div>
       </div>
-    </div>
-  `;
+    `;
+
+    attachpreviewListeners(invoice);
+
+  } catch (error) {
+    console.error('Failed to load invoice preview:', error);
+    container.innerHTML = `<div class="p-4 text-center text-error">Failed to load preview</div>`;
+  }
 }
 
-export function initInvoicePreview(params = {}) {
-  const invoice = invoiceService.getById(parseInt(params.id));
-  if (!invoice) return;
-
+function attachpreviewListeners(invoice) {
   const invoiceDocument = document.getElementById('invoiceDocument');
   const printBtn = document.getElementById('printBtn');
   const exportPdfBtn = document.getElementById('exportPdfBtn');
@@ -114,7 +130,7 @@ export function initInvoicePreview(params = {}) {
 
     // Handle selection
     options.forEach(option => {
-      option.addEventListener('click', () => {
+      option.addEventListener('click', async () => {
         const value = option.dataset.value;
         const text = option.textContent;
 
@@ -134,13 +150,17 @@ export function initInvoicePreview(params = {}) {
         invoiceDocument.innerHTML = renderTemplate(currentTemplate, invoice);
 
         // Save preference
-        invoiceService.update(invoice.id, {
-          ...invoice,
-          template: currentTemplate,
-          language: invoice.language,
-          secondary_language: invoice.secondary_language,
-          language_mode: invoice.language_mode
-        }, invoice.items);
+        try {
+          await invoiceService.update(invoice.id, {
+            ...invoice,
+            template: currentTemplate,
+            language: invoice.language,
+            secondary_language: invoice.secondary_language,
+            language_mode: invoice.language_mode
+          }, invoice.items);
+        } catch (err) {
+          console.error('Failed to save template pref:', err);
+        }
       });
     });
   }
@@ -149,23 +169,27 @@ export function initInvoicePreview(params = {}) {
   if (printBtn) {
     printBtn.addEventListener('click', () => {
       const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast.error('Pop-up blocked. Please allow pop-ups.');
+        return;
+      }
       printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>${invoice.invoice_number}</title>
-          <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-          <style>
-            @page { size: A4; margin: 0; }
-            body { margin: 0; padding: 20mm; font-family: 'Roboto', sans-serif; }
-            @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-          </style>
-        </head>
-        <body>
-          ${invoiceDocument.innerHTML}
-        </body>
-        </html>
-      `);
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>${invoice.invoice_number}</title>
+              <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+              <style>
+                @page { size: A4; margin: 0; }
+                body { margin: 0; padding: 20mm; font-family: 'Roboto', sans-serif; }
+                @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+              </style>
+            </head>
+            <body>
+              ${invoiceDocument.innerHTML}
+            </body>
+            </html>
+          `);
       printWindow.document.close();
       printWindow.focus();
       setTimeout(() => {

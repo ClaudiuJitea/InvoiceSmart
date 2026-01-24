@@ -1,57 +1,68 @@
-/* Material You (MD3) Design Tokens - Purple Seed */
+/* Premium Corporate Design System - Navy & Gold */
 :root {
-  /* Primary colors */
-  --md-primary: #6750A4;
+  /* Primary colors - Deep Navy */
+  --md-primary: #1E3A5F;
   --md-on-primary: #FFFFFF;
-  --md-primary-container: #EADDFF;
-  --md-on-primary-container: #21005D;
+  --md-primary-container: #E8EDF3;
+  --md-on-primary-container: #0A1626;
 
-  /* Secondary colors */
-  --md-secondary: #625B71;
+  /* Primary hover states */
+  --md-primary-hover: #2A4F7C;
+  --md-primary-pressed: #152640;
+
+  /* Secondary colors - Slate Gray */
+  --md-secondary: #5A6C7D;
   --md-on-secondary: #FFFFFF;
-  --md-secondary-container: #E8DEF8;
-  --md-on-secondary-container: #1D192B;
+  --md-secondary-container: #DEE5EB;
+  --md-on-secondary-container: #1A232B;
 
-  /* Tertiary colors */
-  --md-tertiary: #7D5260;
+  /* Tertiary colors - Gold/Amber for accents */
+  --md-tertiary: #C5A059;
   --md-on-tertiary: #FFFFFF;
-  --md-tertiary-container: #FFD8E4;
-  --md-on-tertiary-container: #31111D;
+  --md-tertiary-container: #F5EDE1;
+  --md-on-tertiary-container: #4A3618;
 
-  /* Error colors */
-  --md-error: #B3261E;
+  /* Error colors - Refined Red */
+  --md-error: #D32F2F;
   --md-on-error: #FFFFFF;
-  --md-error-container: #F9DEDC;
-  --md-on-error-container: #410E0B;
+  --md-error-container: #FFEBEE;
+  --md-on-error-container: #5C1A1A;
 
-  /* Success colors */
-  --md-success: #1B873B;
+  /* Success colors - Professional Green */
+  --md-success: #2E7D32;
   --md-on-success: #FFFFFF;
-  --md-success-container: #D4EDDA;
+  --md-success-container: #E8F5E9;
+  --md-on-success-container: #0D3A10;
 
-  /* Surface colors */
-  --md-surface: #FFFBFE;
-  --md-surface-dim: #DED8E1;
-  --md-surface-bright: #FFFBFE;
+  /* Warning colors */
+  --md-warning: #ED6C02;
+  --md-on-warning: #FFFFFF;
+  --md-warning-container: #FFF8E6;
+  --md-on-warning-container: #4A2C00;
+
+  /* Surface colors - Clean palette */
+  --md-surface: #FFFFFF;
+  --md-surface-dim: #D9DDE3;
+  --md-surface-bright: #FFFFFF;
   --md-surface-container-lowest: #FFFFFF;
-  --md-surface-container-low: #F7F2FA;
-  --md-surface-container: #F3EDF7;
-  --md-surface-container-high: #ECE6F0;
-  --md-surface-container-highest: #E6E0E9;
-  --md-on-surface: #1C1B1F;
-  --md-on-surface-variant: #49454F;
+  --md-surface-container-low: #F4F6F8;
+  --md-surface-container: #EEF1F4;
+  --md-surface-container-high: #E8ECF0;
+  --md-surface-container-highest: #E2E6EB;
+  --md-on-surface: #1A1D21;
+  --md-on-surface-variant: #5A6169;
 
   /* Outline */
-  --md-outline: #79747E;
-  --md-outline-variant: #CAC4D0;
+  --md-outline: #8C96A1;
+  --md-outline-variant: #D9DDE3;
 
-  /* Inverse colors */
-  --md-inverse-surface: #313033;
-  --md-inverse-on-surface: #F4EFF4;
-  --md-inverse-primary: #D0BCFF;
+  /* Inverse colors - Dark mode base */
+  --md-inverse-surface: #2A2F35;
+  --md-inverse-on-surface: #F1F4F7;
+  --md-inverse-primary: #A8C4DC;
 
   /* Shadow color */
-  --md-shadow: rgba(0, 0, 0, 0.15);
+  --md-shadow: rgba(26, 29, 33, 0.12);
 
   /* Border Radii */
   --radius-xs: 4px;
@@ -64,20 +75,30 @@
   --radius-4xl: 48px;
   --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-xs: 0 1px 2px var(--md-shadow);
-  --shadow-sm: 0 1px 3px var(--md-shadow), 0 1px 2px -1px var(--md-shadow);
-  --shadow-md: 0 4px 6px -1px var(--md-shadow), 0 2px 4px -2px var(--md-shadow);
-  --shadow-lg: 0 10px 15px -3px var(--md-shadow), 0 4px 6px -4px var(--md-shadow);
-  --shadow-xl: 0 20px 25px -5px var(--md-shadow), 0 8px 10px -6px var(--md-shadow);
+  /* Shadows - Refined, subtle depth */
+  --shadow-xs: 0 1px 2px rgba(26, 29, 33, 0.06);
+  --shadow-sm: 0 2px 4px rgba(26, 29, 33, 0.08), 0 1px 2px rgba(26, 29, 33, 0.04);
+  --shadow-md: 0 4px 12px rgba(26, 29, 33, 0.1), 0 2px 4px rgba(26, 29, 33, 0.06);
+  --shadow-lg: 0 8px 24px rgba(26, 29, 33, 0.12), 0 4px 8px rgba(26, 29, 33, 0.08);
+  --shadow-xl: 0 16px 48px rgba(26, 29, 33, 0.14), 0 8px 16px rgba(26, 29, 33, 0.1);
+
+  /* Accent glow for emphasis */
+  --shadow-accent: 0 4px 20px rgba(197, 160, 89, 0.25);
 
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.2, 0, 0, 1);
   --transition-standard: 300ms cubic-bezier(0.2, 0, 0, 1);
   --transition-emphasized: 500ms cubic-bezier(0.2, 0, 0, 1);
 
-  /* Typography */
-  --font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Typography - Professional pairing */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+
+  /* Font weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
 
   /* Type Scale */
   --text-display-lg: 3.5rem;

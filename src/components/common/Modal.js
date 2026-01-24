@@ -2,19 +2,19 @@
 import { icons } from '../icons.js';
 
 class ModalManager {
-    constructor() {
-        this.overlay = null;
-        this.modal = null;
-    }
+  constructor() {
+    this.overlay = null;
+    this.modal = null;
+  }
 
-    show({ title, content, size = 'default', onClose = null }) {
-        // Create overlay
-        this.overlay = document.createElement('div');
-        this.overlay.className = 'modal-overlay';
+  show({ title, content, size = 'default', onClose = null }) {
+    // Create overlay
+    this.overlay = document.createElement('div');
+    this.overlay.className = 'modal-overlay';
 
-        const sizeClass = size === 'lg' ? 'modal-lg' : size === 'xl' ? 'modal-xl' : '';
+    const sizeClass = size === 'lg' ? 'modal-lg' : size === 'xl' ? 'modal-xl' : '';
 
-        this.overlay.innerHTML = `
+    this.overlay.innerHTML = `
       <div class="modal ${sizeClass}">
         <div class="modal-header">
           <h2 class="modal-title">${title}</h2>
@@ -28,58 +28,58 @@ class ModalManager {
       </div>
     `;
 
-        // If content is an element, append it
-        if (typeof content !== 'string') {
-            this.overlay.querySelector('.modal-content').appendChild(content);
-        }
-
-        // Close handlers
-        const closeBtn = this.overlay.querySelector('.modal-close');
-        closeBtn.addEventListener('click', () => this.close());
-
-        this.overlay.addEventListener('click', (e) => {
-            if (e.target === this.overlay) {
-                this.close();
-            }
-        });
-
-        // ESC key to close
-        this.escHandler = (e) => {
-            if (e.key === 'Escape') this.close();
-        };
-        document.addEventListener('keydown', this.escHandler);
-
-        this.onClose = onClose;
-
-        document.body.appendChild(this.overlay);
-
-        // Trigger animation
-        requestAnimationFrame(() => {
-            this.overlay.classList.add('open');
-        });
-
-        return this;
+    // If content is an element, append it
+    if (typeof content !== 'string') {
+      this.overlay.querySelector('.modal-content').appendChild(content);
     }
 
-    close() {
-        if (!this.overlay) return;
+    // Close handlers
+    const closeBtn = this.overlay.querySelector('.modal-close');
+    closeBtn.addEventListener('click', () => this.close());
 
-        this.overlay.classList.remove('open');
-        document.removeEventListener('keydown', this.escHandler);
+    this.overlay.addEventListener('click', (e) => {
+      if (e.target === this.overlay) {
+        this.close();
+      }
+    });
 
-        setTimeout(() => {
-            this.overlay.remove();
-            this.overlay = null;
-            if (this.onClose) this.onClose();
-        }, 300);
-    }
+    // ESC key to close
+    this.escHandler = (e) => {
+      if (e.key === 'Escape') this.close();
+    };
+    document.addEventListener('keydown', this.escHandler);
 
-    // Static method for confirm dialogs
-    static confirm({ title, message, confirmText = 'Confirm', cancelText = 'Cancel', onConfirm, onCancel }) {
-        const modal = new ModalManager();
+    this.onClose = onClose;
 
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = `
+    document.body.appendChild(this.overlay);
+
+    // Trigger animation
+    requestAnimationFrame(() => {
+      this.overlay.classList.add('open');
+    });
+
+    return this;
+  }
+
+  close() {
+    if (!this.overlay) return;
+
+    this.overlay.classList.remove('open');
+    document.removeEventListener('keydown', this.escHandler);
+
+    setTimeout(() => {
+      this.overlay.remove();
+      this.overlay = null;
+      if (this.onClose) this.onClose();
+    }, 300);
+  }
+
+  // Static method for confirm dialogs
+  static confirm({ title, message, confirmText = 'Confirm', cancelText = 'Cancel', onConfirm, onCancel }) {
+    const modal = new ModalManager();
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = `
       <p style="margin-bottom: var(--space-6)">${message}</p>
       <div class="modal-actions">
         <button class="btn btn-text cancel-btn">${cancelText}</button>
@@ -87,19 +87,19 @@ class ModalManager {
       </div>
     `;
 
-        wrapper.querySelector('.cancel-btn').addEventListener('click', () => {
-            modal.close();
-            if (onCancel) onCancel();
-        });
+    wrapper.querySelector('.cancel-btn').addEventListener('click', () => {
+      modal.close();
+      if (onCancel) onCancel();
+    });
 
-        wrapper.querySelector('.confirm-btn').addEventListener('click', () => {
-            modal.close();
-            if (onConfirm) onConfirm();
-        });
+    wrapper.querySelector('.confirm-btn').addEventListener('click', () => {
+      modal.close();
+      if (onConfirm) onConfirm();
+    });
 
-        modal.show({ title, content: wrapper });
-        return modal;
-    }
+    modal.show({ title, content: wrapper });
+    return modal;
+  }
 }
 
 export const modal = new ModalManager();

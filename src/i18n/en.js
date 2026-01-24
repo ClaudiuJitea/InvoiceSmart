@@ -10,6 +10,7 @@ export default {
         invoices: 'Invoices',
         clients: 'Clients',
         settings: 'Settings',
+        admin: 'Admin',
     },
 
     // Common actions
@@ -67,6 +68,7 @@ export default {
         allClients: 'All Clients',
         startDate: 'Start Date',
         endDate: 'End Date',
+        noCurrencyData: 'No invoices found with this currency',
     },
 
     // Invoices
@@ -204,7 +206,7 @@ export default {
     templates: {
         modern: 'Modern',
         modernDesc: 'Clean and minimal design',
-        classic: 'Classic Black',
+        classic: 'Executive',
         classicDesc: 'Traditional business style',
         classicBlue: 'Classic Blue',
         classicBlueDesc: 'Blue professional style',

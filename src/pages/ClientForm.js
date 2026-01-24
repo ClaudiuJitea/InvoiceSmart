@@ -6,13 +6,31 @@ import { toast } from '../components/common/Toast.js';
 import { router } from '../router.js';
 
 export function renderClientForm(params = {}) {
-  const isEdit = params.id && params.id !== 'new';
-  const client = isEdit ? clientService.getById(parseInt(params.id)) : null;
-
-  const title = isEdit ? t('clients.editClient') : t('clients.newClient');
-
   return `
-    <div class="page-container" style="max-width: 800px;">
+    <div class="page-container" style="max-width: 800px;" id="clientFormContainer">
+      <div class="card card-elevated" style="padding: 40px; text-align: center;">
+        <div class="loading-spinner"></div>
+        <p style="margin-top: 10px; color: var(--md-on-surface-variant);">Loading...</p>
+      </div>
+    </div>
+  `;
+}
+
+export async function initClientForm(params = {}) {
+  const container = document.getElementById('clientFormContainer');
+  if (!container) return;
+
+  const isEdit = params.id && params.id !== 'new';
+  let client = null;
+
+  try {
+    if (isEdit) {
+      client = await clientService.getById(parseInt(params.id));
+    }
+
+    const title = isEdit ? t('clients.editClient') : t('clients.newClient');
+
+    container.innerHTML = `
       <div class="page-header-row">
         <div class="page-header-left">
           <a href="#/clients" class="btn btn-text" style="margin-left: -12px; margin-bottom: var(--space-2);">
@@ -103,41 +121,47 @@ export function renderClientForm(params = {}) {
           <button type="submit" class="btn btn-filled">${t('actions.save')}</button>
         </div>
       </form>
-    </div>
-  `;
-}
+    `;
 
-export function initClientForm(params = {}) {
-  const form = document.getElementById('clientForm');
-  const isEdit = params.id && params.id !== 'new';
+    const form = document.getElementById('clientForm');
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-  if (form) {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
+        try {
+          const formData = new FormData(form);
+          const data = {
+            name: formData.get('name'),
+            cif: formData.get('cif'),
+            reg_no: formData.get('reg_no'),
+            address: formData.get('address'),
+            city: formData.get('city'),
+            country: formData.get('country'),
+            email: formData.get('email'),
+            phone: formData.get('phone'),
+            bank_account: formData.get('bank_account'),
+            bank_name: formData.get('bank_name'),
+            notes: formData.get('notes'),
+          };
 
-      const formData = new FormData(form);
-      const data = {
-        name: formData.get('name'),
-        cif: formData.get('cif'),
-        reg_no: formData.get('reg_no'),
-        address: formData.get('address'),
-        city: formData.get('city'),
-        country: formData.get('country'),
-        email: formData.get('email'),
-        phone: formData.get('phone'),
-        bank_account: formData.get('bank_account'),
-        bank_name: formData.get('bank_name'),
-        notes: formData.get('notes'),
-      };
+          if (isEdit) {
+            await clientService.update(parseInt(params.id), data);
+          } else {
+            await clientService.create(data);
+          }
 
-      if (isEdit) {
-        clientService.update(parseInt(params.id), data);
-      } else {
-        clientService.create(data);
-      }
+          toast.success(t('clients.saveSuccess'));
+          router.navigate('/clients');
+        } catch (error) {
+          console.error('Failed to save client:', error);
+          toast.error(error.message || 'Failed to save client');
+        }
+      });
+    }
 
-      toast.success(t('clients.saveSuccess'));
-      router.navigate('/clients');
-    });
+  } catch (error) {
+    console.error('Error loading client form:', error);
+    toast.error('Failed to load client data');
+    router.navigate('/clients');
   }
 }

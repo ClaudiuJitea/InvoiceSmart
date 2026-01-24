@@ -4,11 +4,12 @@ import './styles/base.css';
 import './styles/components.css';
 import './styles/custom-select.css';
 import './styles/app.css';
+import './styles/auth.css';
 
-import { db } from './db/database.js';
 import { router } from './router.js';
 import { i18n } from './i18n/index.js';
 import { settingsService } from './db/services/settingsService.js';
+import { authService } from './db/services/authService.js';
 
 // Components
 import { renderSidebar, initSidebar } from './components/Sidebar.js';
@@ -22,26 +23,48 @@ import { renderInvoiceForm, initInvoiceForm } from './pages/InvoiceForm.js';
 import { renderInvoicePreview, initInvoicePreview } from './pages/InvoicePreview.js';
 import { renderSettings, initSettings } from './pages/Settings.js';
 import { renderReports, initReports } from './pages/Reports.js';
+import { renderLogin, initLogin } from './pages/Login.js';
+import { renderRegister, initRegister } from './pages/Register.js';
+import { renderAdminDashboard, initAdminDashboard } from './pages/AdminDashboard.js';
 
 // App state
 let currentPage = null;
 let currentParams = {};
 
+// Auth pages (no sidebar)
+const authPages = ['login', 'register'];
+
+// Check if current page requires auth
+function isAuthPage() {
+  return authPages.includes(currentPage);
+}
+
 // Render the entire app
 function renderApp() {
   const app = document.getElementById('app');
 
+  // Auth pages have different layout (no sidebar)
+  if (isAuthPage()) {
+    app.innerHTML = `
+            <div class="auth-layout">
+                ${renderPage()}
+            </div>
+        `;
+    initPage();
+    return;
+  }
+
   app.innerHTML = `
-    <div class="app-sidebar" id="sidebar">
-      ${renderSidebar()}
-    </div>
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-    <main class="app-main">
-      <div class="app-content" id="content">
-        ${renderPage()}
-      </div>
-    </main>
-  `;
+        <div class="app-sidebar" id="sidebar">
+            ${renderSidebar()}
+        </div>
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <main class="app-main">
+            <div class="app-content" id="content">
+                ${renderPage()}
+            </div>
+        </main>
+    `;
 
   // Initialize sidebar
   initSidebar();
@@ -56,6 +79,10 @@ function renderApp() {
 // Render current page based on route
 function renderPage() {
   switch (currentPage) {
+    case 'login':
+      return renderLogin();
+    case 'register':
+      return renderRegister();
     case 'dashboard':
       return renderDashboard();
     case 'clients':
@@ -72,6 +99,8 @@ function renderPage() {
       return renderSettings();
     case 'reports':
       return renderReports();
+    case 'admin':
+      return renderAdminDashboard();
     default:
       return renderDashboard();
   }
@@ -80,6 +109,12 @@ function renderPage() {
 // Initialize current page handlers
 function initPage() {
   switch (currentPage) {
+    case 'login':
+      initLogin();
+      break;
+    case 'register':
+      initRegister();
+      break;
     case 'dashboard':
       initDashboard();
       break;
@@ -104,6 +139,9 @@ function initPage() {
     case 'reports':
       initReports();
       break;
+    case 'admin':
+      initAdminDashboard();
+      break;
   }
 }
 
@@ -111,6 +149,8 @@ function initPage() {
 function setupMobileMenu() {
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('sidebarOverlay');
+
+  if (!sidebar || !overlay) return;
 
   // Create mobile menu button if not exists
   let menuBtn = document.querySelector('.mobile-menu-btn');
@@ -145,6 +185,26 @@ function setupRoutes() {
   router
     .on('/', () => {
       currentPage = 'dashboard';
+      currentParams = {};
+      renderApp();
+    })
+    .on('/login', () => {
+      // Redirect to dashboard if already logged in
+      if (authService.isLoggedIn()) {
+        router.navigate('/');
+        return;
+      }
+      currentPage = 'login';
+      currentParams = {};
+      renderApp();
+    })
+    .on('/register', () => {
+      // Redirect to dashboard if already logged in
+      if (authService.isLoggedIn()) {
+        router.navigate('/');
+        return;
+      }
+      currentPage = 'register';
       currentParams = {};
       renderApp();
     })
@@ -192,6 +252,21 @@ function setupRoutes() {
       currentPage = 'reports';
       currentParams = {};
       renderApp();
+    })
+    .on('/admin', () => {
+      // Redirect to login if not logged in
+      if (!authService.isLoggedIn()) {
+        router.navigate('/login');
+        return;
+      }
+      // Redirect to dashboard if not admin
+      if (!authService.isAdmin()) {
+        router.navigate('/');
+        return;
+      }
+      currentPage = 'admin';
+      currentParams = {};
+      renderApp();
     });
 }
 
@@ -200,29 +275,54 @@ window.addEventListener('app:refresh', () => {
   renderApp();
 });
 
+// Auth event handlers
+window.addEventListener('auth:login', () => {
+  renderApp();
+});
+
+window.addEventListener('auth:logout', () => {
+  renderApp();
+});
+
 // Initialize app
 async function init() {
   try {
     // Show loading state
     document.getElementById('app').innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: Roboto, sans-serif;">
-        <div style="text-align: center;">
-          <div style="width: 48px; height: 48px; border: 3px solid #E7E0EC; border-top-color: #6750A4; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
-          <p style="color: #49454F;">Loading...</p>
-        </div>
-      </div>
-      <style>
-        @keyframes spin { to { transform: rotate(360deg); } }
-      </style>
-    `;
+            <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: Inter, sans-serif;">
+                <div style="text-align: center;">
+                    <div style="width: 48px; height: 48px; border: 3px solid #E8ECF0; border-top-color: #1E3A5F; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+                    <p style="color: #5A6169; font-weight: 500;">Loading...</p>
+                </div>
+            </div>
+            <style>
+                @keyframes spin { to { transform: rotate(360deg); } }
+            </style>
+        `;
 
-    // Initialize database
-    await db.init();
+    // Validate token if exists
+    if (authService.isLoggedIn()) {
+      try {
+        await authService.validateToken();
+      } catch (error) {
+        console.log('Token validation failed, user logged out');
+      }
+    }
 
     // Load language from settings
-    const settings = settingsService.get();
-    if (settings && settings.language) {
-      i18n.locale = settings.language;
+    try {
+      const settings = await settingsService.get();
+      if (settings && settings.language) {
+        i18n.locale = settings.language;
+      }
+    } catch (error) {
+      console.log('Could not load settings, using default language');
+    }
+
+    // Initialize sidebar state
+    const isSidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (isSidebarCollapsed) {
+      document.body.classList.add('sidebar-collapsed');
     }
 
     // Setup routes
@@ -234,16 +334,16 @@ async function init() {
   } catch (error) {
     console.error('Failed to initialize app:', error);
     document.getElementById('app').innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: Roboto, sans-serif;">
-        <div style="text-align: center; padding: 20px;">
-          <h2 style="color: #B3261E; margin-bottom: 16px;">Failed to load application</h2>
-          <p style="color: #49454F; margin-bottom: 16px;">${error.message}</p>
-          <button onclick="location.reload()" style="padding: 12px 24px; background: #6750A4; color: white; border: none; border-radius: 9999px; cursor: pointer; font-family: inherit;">
-            Retry
-          </button>
-        </div>
-      </div>
-    `;
+            <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: Inter, sans-serif;">
+                <div style="text-align: center; padding: 20px;">
+                    <h2 style="color: #D32F2F; margin-bottom: 16px; font-family: Playfair Display, Georgia, serif;">Failed to load application</h2>
+                    <p style="color: #5A6169; margin-bottom: 16px;">${error.message}</p>
+                    <button onclick="location.reload()" style="padding: 12px 24px; background: linear-gradient(135deg, #1E3A5F 0%, #2A4F7C 100%); color: white; border: none; border-radius: 9999px; cursor: pointer; font-family: Inter, sans-serif; font-weight: 500; box-shadow: 0 2px 8px rgba(30, 58, 95, 0.2);">
+                        Retry
+                    </button>
+                </div>
+            </div>
+        `;
   }
 }
 

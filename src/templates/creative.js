@@ -44,22 +44,24 @@ export function renderCreativeTemplate(invoice) {
     }
   };
 
-  // Color palette from image
+  // Professional green color palette
   const colors = {
-    lightGreen: '#B9E4C9', // approximate match for table header and invoice box
-    darkGreen: '#357E61',  // approximate match for the dark strip
-    textDark: '#000000',
-    textGrey: '#333333'
+    lightGreenBg: '#F1F8E9', // table header
+    darkGreen: '#2E7D32',    // main green accent
+    lightGreen: '#E8F5E9',   // invoice box header / backgrounds
+    textDark: '#1A1D21',
+    textGrey: '#5A6169',
+    borderGreen: '#2E7D32'
   };
 
   return `
     <div class="invoice-template invoice-creative">
       <style>
         .invoice-creative {
-          font-family: 'Roboto', sans-serif;
+          font-family: 'Inter', sans-serif;
           color: ${colors.textDark};
           font-size: 9pt;
-          line-height: 1.3;
+          line-height: 1.4;
           background: white;
           padding: 0;
         }
@@ -83,10 +85,11 @@ export function renderCreativeTemplate(invoice) {
         }
 
         .invoice-creative .company-name {
-          font-size: 11pt;
-          font-weight: 700;
-          margin-bottom: 5px;
-          text-transform: uppercase;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 13pt;
+          font-weight: 600;
+          margin-bottom: 6px;
+          color: ${colors.darkGreen};
         }
 
         .invoice-creative .company-details {
@@ -164,15 +167,15 @@ export function renderCreativeTemplate(invoice) {
         }
 
         .invoice-creative .items-table th {
-            background-color: ${colors.lightGreen};
-            padding: 8px 5px;
+            background-color: ${colors.lightGreenBg};
+            padding: 10px 6px;
             text-align: left;
-            font-weight: normal;
-            font-size: 9pt;
+            font-weight: 600;
+            font-size: 8.5pt;
             vertical-align: top;
             white-space: pre-line;
-            color: #555;
-            border-bottom: 1px solid #ccc;
+            color: ${colors.darkGreen};
+            border-bottom: 2px solid ${colors.borderGreen};
         }
         
         .invoice-creative .items-table th.text-right {
@@ -215,13 +218,14 @@ export function renderCreativeTemplate(invoice) {
         }
 
         .invoice-creative .totals-table .total-row {
-            background-color: ${colors.lightGreen};
-            font-weight: bold;
+            background-color: ${colors.lightGreenBg};
+            font-weight: 700;
+            color: ${colors.darkGreen};
         }
 
         .invoice-creative .totals-table .total-row td {
-            padding: 10px;
-            border-top: 1px solid ${colors.darkGreen};
+            padding: 12px;
+            border-top: 2px solid ${colors.borderGreen};
         }
 
         /* Footer / Signatures */

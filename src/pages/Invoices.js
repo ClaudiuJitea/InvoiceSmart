@@ -7,19 +7,6 @@ import { confirm } from '../components/common/Modal.js';
 import { router } from '../router.js';
 
 export function renderInvoices() {
-  const invoices = invoiceService.getAll();
-
-  const getStatusChip = (status) => {
-    const statusMap = {
-      draft: { class: 'chip', text: t('invoices.statusDraft') },
-      sent: { class: 'chip chip-primary', text: t('invoices.statusSent') },
-      paid: { class: 'chip chip-success', text: t('invoices.statusPaid') },
-      overdue: { class: 'chip chip-error', text: t('invoices.statusOverdue') },
-      cancelled: { class: 'chip chip-warning', text: t('invoices.statusCancelled') },
-    };
-    return statusMap[status] || statusMap.draft;
-  };
-
   return `
     <div class="page-container">
       <div class="page-header-row">
@@ -35,7 +22,34 @@ export function renderInvoices() {
         </div>
       </div>
 
-      ${invoices.length > 0 ? `
+      <div id="invoicesListContainer">
+        <div class="card card-elevated" style="padding: 40px; text-align: center;">
+            <div class="loading-spinner"></div>
+            <p style="margin-top: 10px; color: var(--md-on-surface-variant);">Loading...</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+export async function initInvoices() {
+  const container = document.getElementById('invoicesListContainer');
+
+  async function loadInvoices() {
+    if (!container) return;
+
+    try {
+      const invoices = await invoiceService.getAll();
+      renderInvoicesList(invoices);
+    } catch (error) {
+      console.error('Failed to load invoices:', error);
+      container.innerHTML = `<div class="p-4 text-center text-error">Failed to load invoices</div>`;
+    }
+  }
+
+  function renderInvoicesList(invoices) {
+    if (invoices.length > 0) {
+      container.innerHTML = `
         <div class="table-container card-elevated">
           <table class="table">
             <thead>
@@ -50,8 +64,8 @@ export function renderInvoices() {
             </thead>
             <tbody>
               ${invoices.map(invoice => {
-    const status = getStatusChip(invoice.status);
-    return `
+        const status = getStatusChip(invoice.status);
+        return `
                   <tr data-invoice-id="${invoice.id}">
                     <td>${new Date(invoice.issue_date).toLocaleDateString()}</td>
                     <td>
@@ -62,8 +76,8 @@ export function renderInvoices() {
                     <td>${invoice.client_name || '-'}</td>
                     <td><span class="${status.class}">${status.text}</span></td>
                     <td class="text-right">
-                      <span class="font-medium">${invoice.total.toFixed(2)} ${invoice.currency}</span>
-                      ${invoice.total_secondary ? `<br><span class="text-sm text-muted">${invoice.total_secondary.toFixed(2)} ${invoice.secondary_currency}</span>` : ''}
+                      <span class="font-medium">${Number(invoice.total).toFixed(2)} ${invoice.currency}</span>
+                      ${invoice.total_secondary ? `<br><span class="text-sm text-muted">${Number(invoice.total_secondary).toFixed(2)} ${invoice.secondary_currency}</span>` : ''}
                     </td>
                     <td>
                       <div class="table-actions">
@@ -88,11 +102,13 @@ export function renderInvoices() {
                     </td>
                   </tr>
                 `;
-  }).join('')}
+      }).join('')}
             </tbody>
           </table>
         </div>
-      ` : `
+      `;
+    } else {
+      container.innerHTML = `
         <div class="card card-elevated">
           <div class="empty-state">
             <div class="empty-state-icon">${icons.emptyInvoice}</div>
@@ -104,60 +120,88 @@ export function renderInvoices() {
             </a>
           </div>
         </div>
-      `}
-    </div>
-  `;
-}
+      `;
+    }
 
-export function initInvoices() {
-  // Preview buttons
-  document.querySelectorAll('.preview-invoice-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      router.navigate(`/invoices/${btn.dataset.id}/preview`);
-    });
-  });
+    attachEventListeners();
+  }
 
-  // Mark Paid buttons
-  document.querySelectorAll('.mark-paid-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      invoiceService.updateStatus(parseInt(btn.dataset.id), 'paid');
-      toast.success(t('invoices.saveSuccess'));
-      window.dispatchEvent(new CustomEvent('app:refresh'));
-    });
-  });
+  function getStatusChip(status) {
+    const statusMap = {
+      draft: { class: 'chip', text: t('invoices.statusDraft') },
+      sent: { class: 'chip chip-primary', text: t('invoices.statusSent') },
+      paid: { class: 'chip chip-success', text: t('invoices.statusPaid') },
+      overdue: { class: 'chip chip-error', text: t('invoices.statusOverdue') },
+      cancelled: { class: 'chip chip-warning', text: t('invoices.statusCancelled') },
+    };
+    return statusMap[status] || statusMap.draft;
+  }
 
-  // Edit buttons
-  document.querySelectorAll('.edit-invoice-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      router.navigate(`/invoices/${btn.dataset.id}`);
-    });
-  });
-
-  // Duplicate buttons
-  document.querySelectorAll('.duplicate-invoice-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const newId = invoiceService.duplicate(parseInt(btn.dataset.id));
-      if (newId) {
-        toast.success(t('invoices.saveSuccess'));
-        window.dispatchEvent(new CustomEvent('app:refresh'));
-      }
-    });
-  });
-
-  // Delete buttons
-  document.querySelectorAll('.delete-invoice-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      confirm({
-        title: t('actions.delete'),
-        message: t('invoices.deleteConfirm'),
-        confirmText: t('actions.delete'),
-        cancelText: t('actions.cancel'),
-        onConfirm: () => {
-          invoiceService.delete(parseInt(btn.dataset.id));
-          toast.success(t('invoices.deleteSuccess'));
-          window.dispatchEvent(new CustomEvent('app:refresh'));
-        },
+  function attachEventListeners() {
+    // Preview buttons
+    container.querySelectorAll('.preview-invoice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        router.navigate(`/invoices/${btn.dataset.id}/preview`);
       });
     });
-  });
+
+    // Mark Paid buttons
+    container.querySelectorAll('.mark-paid-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          await invoiceService.updateStatus(parseInt(btn.dataset.id), 'paid');
+          toast.success(t('invoices.saveSuccess'));
+          loadInvoices(); // Refresh list
+        } catch (error) {
+          toast.error('Failed to update status');
+        }
+      });
+    });
+
+    // Edit buttons
+    container.querySelectorAll('.edit-invoice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        router.navigate(`/invoices/${btn.dataset.id}`);
+      });
+    });
+
+    // Duplicate buttons
+    container.querySelectorAll('.duplicate-invoice-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          const newId = await invoiceService.duplicate(parseInt(btn.dataset.id));
+          if (newId) {
+            toast.success(t('invoices.saveSuccess'));
+            loadInvoices(); // Refresh list
+          }
+        } catch (error) {
+          toast.error('Failed to duplicate invoice');
+        }
+      });
+    });
+
+    // Delete buttons
+    container.querySelectorAll('.delete-invoice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        confirm({
+          title: t('actions.delete'),
+          message: t('invoices.deleteConfirm'),
+          confirmText: t('actions.delete'),
+          cancelText: t('actions.cancel'),
+          onConfirm: async () => {
+            try {
+              await invoiceService.delete(parseInt(btn.dataset.id));
+              toast.success(t('invoices.deleteSuccess'));
+              loadInvoices(); // Refresh list
+            } catch (error) {
+              toast.error('Failed to delete invoice');
+            }
+          },
+        });
+      });
+    });
+  }
+
+  // Initial load
+  await loadInvoices();
 }
