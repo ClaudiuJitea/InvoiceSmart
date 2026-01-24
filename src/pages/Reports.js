@@ -7,6 +7,7 @@ import { clientService } from '../db/services/clientService.js';
 import { CustomSelect } from '../components/common/CustomSelect.js';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Load Chart.js from CDN
 async function loadChartJs() {
@@ -33,6 +34,9 @@ async function loadSheetJs() {
         document.head.appendChild(script);
     });
 }
+
+// Load jsPDF AutoTable from CDN
+// Load jsPDF AutoTable from CDN - REMOVED (using npm package)
 
 // State
 let charts = {};
@@ -531,54 +535,113 @@ async function exportExcel() {
 
         if (!invoices || invoices.length === 0) {
             alert(t('general.noResults'));
-            btn.disabled = false;
-            btn.innerHTML = `${icons.download} ${t('actions.exportExcel')}`;
             return;
         }
 
-        // Simple export logic for brevity
+        // --- Styles ---
+        const styles = {
+            title: {
+                font: { bold: true, sz: 16, color: { rgb: "1E3A5F" } },
+                alignment: { horizontal: "left" }
+            },
+            header: {
+                font: { bold: true, color: { rgb: "MAXWHITE" } },
+                fill: { fgColor: { rgb: "1E3A5F" } },
+                alignment: { horizontal: "center", vertical: "center" },
+                border: {
+                    top: { style: "thin", color: { rgb: "000000" } },
+                    bottom: { style: "thin", color: { rgb: "000000" } },
+                    left: { style: "thin", color: { rgb: "000000" } },
+                    right: { style: "thin", color: { rgb: "000000" } }
+                }
+            },
+            cell: {
+                alignment: { horizontal: "left" },
+                border: {
+                    top: { style: "thin", color: { rgb: "CCCCCC" } },
+                    bottom: { style: "thin", color: { rgb: "CCCCCC" } },
+                    left: { style: "thin", color: { rgb: "CCCCCC" } },
+                    right: { style: "thin", color: { rgb: "CCCCCC" } }
+                }
+            },
+            currency: {
+                numFmt: `#,##0.00 "${currentFilters.currency}"`,
+                alignment: { horizontal: "right" },
+                border: {
+                    top: { style: "thin", color: { rgb: "CCCCCC" } },
+                    bottom: { style: "thin", color: { rgb: "CCCCCC" } },
+                    left: { style: "thin", color: { rgb: "CCCCCC" } },
+                    right: { style: "thin", color: { rgb: "CCCCCC" } }
+                }
+            }
+        };
+
         const wb = XLSX.utils.book_new();
 
-        // Summary sheet data
+        // --- Summary Sheet ---
         const summaryData = [
-            ['Business Report'],
-            ['Generated', new Date().toLocaleString()],
-            ['Currency', currentFilters.currency],
-            [''],
-            ['Metric', 'Value'],
-            ['Revenue', latestData.overview.totalRevenue],
-            ['Outstanding', latestData.overview.outstanding],
-            ['Overdue', latestData.overview.overdue]
+            [{ v: settings.company_name, s: styles.title }],
+            [{ v: "Financial Report", s: { font: { bold: true, sz: 14 } } }],
+            [],
+            [{ v: "Period:", s: { font: { bold: true } } }, `${currentFilters.startDate || 'Beginning'} to ${currentFilters.endDate || 'Present'}`],
+            [{ v: "Generated:", s: { font: { bold: true } } }, new Date().toLocaleString()],
+            [{ v: "Currency:", s: { font: { bold: true } } }, currentFilters.currency],
+            [],
+            [{ v: "Metric", s: styles.header }, { v: "Value", s: styles.header }],
+            [{ v: "Total Revenue", s: styles.cell }, { v: latestData.overview.totalRevenue, s: styles.currency }],
+            [{ v: "Outstanding", s: styles.cell }, { v: latestData.overview.outstanding, s: styles.currency }],
+            [{ v: "Overdue", s: styles.cell }, { v: latestData.overview.overdue, s: styles.currency }]
         ];
-        const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+
+        const summaryWs = XLSX.utils.aoa_to_sheet([]);
+        XLSX.utils.sheet_add_aoa(summaryWs, summaryData, { origin: "A1" });
+        summaryWs['!cols'] = [{ wch: 20 }, { wch: 25 }];
         XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
 
-        // Invoices sheet
-        const invData = invoices.map(i => ({
-            Number: i.invoice_number,
-            Date: i.issue_date,
-            Client: i.client_name,
-            Status: i.status,
-            Total: i.total,
-            Currency: i.currency
-        }));
-        const invWs = XLSX.utils.json_to_sheet(invData);
-        XLSX.utils.book_append_sheet(wb, invWs, "Details");
+        // --- Details Sheet ---
+        const headers = ["Invoice #", "Date", "Client", "Status", "Amount", "Currency"];
+        const rows = invoices.map(inv => [
+            { v: inv.invoice_number, s: styles.cell },
+            { v: inv.issue_date, s: styles.cell },
+            { v: inv.client_name, s: styles.cell },
+            { v: inv.status.toUpperCase(), s: styles.cell },
+            { v: inv.total, s: styles.currency },
+            { v: inv.currency, s: styles.cell }
+        ]);
 
-        XLSX.writeFile(wb, `Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        const detailData = [
+            headers.map(h => ({ v: h, s: styles.header })),
+            ...rows
+        ];
+
+        const detailWs = XLSX.utils.aoa_to_sheet([]);
+        XLSX.utils.sheet_add_aoa(detailWs, detailData, { origin: "A1" });
+        detailWs['!cols'] = [
+            { wch: 15 }, // ID
+            { wch: 15 }, // Date
+            { wch: 30 }, // Client
+            { wch: 15 }, // Status
+            { wch: 20 }, // Total
+            { wch: 10 }  // Currency
+        ];
+
+        XLSX.utils.book_append_sheet(wb, detailWs, "Detailed Data");
+
+        XLSX.writeFile(wb, `InvoiceSmart_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
 
     } catch (e) {
         console.error("Excel Export failed", e);
-        alert("Failed to create Excel file");
+        alert("Failed to create Excel file: " + e.message);
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = `${icons.download} ${t('actions.exportExcel')}`;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `${icons.download} ${t('actions.exportExcel')}`;
+        }
     }
 }
 
 async function exportPdf() {
     const btn = document.getElementById('exportPdfBtn');
-    const template = document.getElementById('pdfExportTemplate');
     const settings = await settingsService.get();
     const rawData = await statsService.getForExport(currentFilters);
 
@@ -589,38 +652,211 @@ async function exportPdf() {
 
     try {
         btn.disabled = true;
-        btn.innerHTML = `Generating...`;
+        btn.innerHTML = `Preparing...`;
 
-        template.style.width = '800px';
-        template.style.padding = '40px';
-        template.style.background = 'white';
-        template.innerHTML = `
-            <h1>Report: ${settings.company_name}</h1>
-            <p>Date: ${new Date().toLocaleDateString()}</p>
-            <h2>Summary</h2>
-            <p>Revenue: ${latestData.overview.totalRevenue}</p>
-            <h2>Details</h2>
-            <table style="width: 100%; border-collapse: collapse;">
-                <tr style="border-bottom: 1px solid #ccc; font-weight: bold;"><td>Num</td><td>Date</td><td>Client</td><td>Total</td></tr>
-                ${rawData.map(r => `<tr><td>${r.invoice_number}</td><td>${r.issue_date}</td><td>${r.client_name}</td><td>${r.total}</td></tr>`).join('')}
-            </table>
-        `;
+        // await loadAutoTable(); // Not needed with npm import
 
-        await new Promise(r => setTimeout(r, 100)); // wait for render
+        // 1. Capture Charts
+        const revenueCanvas = document.getElementById('revenueChart');
+        const statusCanvas = document.getElementById('statusChart');
 
-        const canvas = await html2canvas(template, { scale: 2 });
-        const imgData = canvas.toDataURL('image/jpeg', 0.9);
+        let revenueImg = null, revenueRatio = 0.5;
+        if (revenueCanvas) {
+            revenueImg = revenueCanvas.toDataURL('image/png', 1.0);
+            revenueRatio = revenueCanvas.height / revenueCanvas.width;
+        }
+
+        let statusImg = null, statusRatio = 1.0;
+        if (statusCanvas) {
+            statusImg = statusCanvas.toDataURL('image/png', 1.0);
+            statusRatio = statusCanvas.height / statusCanvas.width;
+        }
+
+        // 2. Prepare PDF
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgWidth = 210;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const margin = 15;
+        let yPos = margin;
 
-        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
-        pdf.save(`Report.pdf`);
+        // --- Header ---
+        const logoUrl = './icon.png';
+        try {
+            // Try to load icon if available, otherwise skip
+            // Note: In a real app we might need to fetch this or use a base64 string
+        } catch (e) { }
+
+        // Title
+        pdf.setFontSize(22);
+        pdf.setTextColor(30, 58, 95); // #1E3A5F
+        pdf.text("Executive Report", margin, yPos + 8);
+
+        pdf.setFontSize(10);
+        pdf.setTextColor(100);
+        pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth - margin, yPos + 8, { align: 'right' });
+
+        yPos += 20;
+
+        // Company Details
+        pdf.setFontSize(12);
+        pdf.setTextColor(0);
+        pdf.text(settings.company_name || 'My Company', margin, yPos);
+        pdf.setFontSize(10);
+        pdf.setTextColor(100);
+        pdf.text([
+            settings.company_address || '',
+            settings.company_email || ''
+        ].filter(Boolean), margin, yPos + 6);
+
+        yPos += 25;
+
+        // --- Summary Stats Section ---
+        const stats = [
+            { label: "Total Revenue", value: latestData.overview.totalRevenue, color: [30, 58, 95] },
+            { label: "Outstanding", value: latestData.overview.outstanding, color: [255, 152, 0] },
+            { label: "Overdue", value: latestData.overview.overdue, color: [211, 47, 47] }
+        ];
+
+        const cardWidth = (pageWidth - (margin * 2) - 10) / 3;
+        stats.forEach((stat, i) => {
+            const x = margin + (i * (cardWidth + 5));
+
+            // Card BG
+            pdf.setFillColor(248, 250, 252);
+            pdf.setDrawColor(226, 232, 240);
+            pdf.roundedRect(x, yPos, cardWidth, 25, 3, 3, 'FD');
+
+            // Label
+            pdf.setFontSize(8);
+            pdf.setTextColor(100);
+            pdf.text(stat.label.toUpperCase(), x + 5, yPos + 8);
+
+            // Value
+            pdf.setFontSize(14);
+            pdf.setTextColor(...stat.color);
+            pdf.setFont("helvetica", "bold");
+            pdf.text(`${stat.value} ${currentFilters.currency}`, x + 5, yPos + 18);
+        });
+
+        yPos += 35;
+
+        // --- Charts Section ---
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(12);
+        pdf.setTextColor(30, 58, 95);
+        pdf.text("Revenue Analytics", margin, yPos);
+        yPos += 7;
+
+        // Calculate Revenue Dimensions (Full Width, maintain aspect ratio)
+        const revChartWidth = pageWidth - (margin * 2);
+        const revChartHeight = revChartWidth * revenueRatio;
+
+        if (revenueImg) {
+            pdf.addImage(revenueImg, 'PNG', margin, yPos, revChartWidth, revChartHeight);
+            yPos += revChartHeight + 10;
+        }
+
+        // Check if we need a new page for the next chart
+        // Estimate next chart height (approx 80-100mm)
+        if (yPos + 100 > pageHeight) {
+            pdf.addPage();
+            yPos = margin;
+        }
+
+        if (statusImg) {
+            pdf.setFont("helvetica", "bold");
+            pdf.setFontSize(12);
+            pdf.setTextColor(30, 58, 95);
+            pdf.text("Status Distribution", margin, yPos);
+            yPos += 7;
+
+            // Calculate Status Dimensions (Target Height ~80mm, maintain aspect ratio)
+            // We want it to be a reasonable size, not massive.
+            const targetHeight = 80;
+            const statusChartWidth = targetHeight / statusRatio;
+
+            // Ensure it doesn't exceed page width
+            const finalStatusWidth = Math.min(statusChartWidth, pageWidth - (margin * 2));
+            const finalStatusHeight = finalStatusWidth * statusRatio;
+
+            const xOffset = (pageWidth - finalStatusWidth) / 2;
+
+            pdf.addImage(statusImg, 'PNG', xOffset, yPos, finalStatusWidth, finalStatusHeight);
+            yPos += finalStatusHeight + 15;
+        }
+
+        // --- Detailed Table ---
+        // Force a new page for the table details to ensure clean start
+        pdf.addPage();
+        yPos = margin;
+
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(12);
+        pdf.setTextColor(30, 58, 95);
+        pdf.text("Invoice Details", margin, yPos);
+        yPos += 5;
+
+        const columns = [
+            { header: '#', dataKey: 'invoice_number' },
+            { header: 'Date', dataKey: 'issue_date' },
+            { header: 'Client', dataKey: 'client_name' },
+            { header: 'Status', dataKey: 'status' },
+            { header: 'Total', dataKey: 'total' },
+        ];
+
+        // Format data for table
+        const tableData = rawData.map(row => ({
+            ...row,
+            status: row.status.charAt(0).toUpperCase() + row.status.slice(1),
+            total: `${Number(row.total).toLocaleString(undefined, { minimumFractionDigits: 2 })} ${row.currency}`
+        }));
+
+        autoTable(pdf, {
+            startY: yPos,
+            head: [columns.map(c => c.header)],
+            body: tableData.map(r => columns.map(c => r[c.dataKey])),
+            theme: 'grid',
+            headStyles: {
+                fillColor: [30, 58, 95],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold'
+            },
+            styles: {
+                fontSize: 9,
+                cellPadding: 3
+            },
+            alternateRowStyles: {
+                fillColor: [248, 250, 252]
+            },
+            columnStyles: {
+                0: { cellWidth: 30 }, // Number
+                1: { cellWidth: 30 }, // Date
+                2: { cellWidth: 'auto' }, // Client
+                3: { cellWidth: 25 }, // Status
+                4: { cellWidth: 35, halign: 'right' } // Total
+            },
+            didDrawPage: function (data) {
+                // Footer
+                pdf.setFontSize(8);
+                pdf.setTextColor(150);
+                pdf.text(
+                    `Page ${pdf.internal.getNumberOfPages()}`,
+                    pageWidth - margin,
+                    pageHeight - 10,
+                    { align: 'right' }
+                );
+            }
+        });
+
+        pdf.save(`InvoiceSmart_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
 
     } catch (e) {
         console.error("PDF Export failed", e);
+        alert("PDF Generation failed: " + e.message);
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = `${icons.download} ${t('actions.export')} PDF`;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `${icons.download} ${t('actions.export')} PDF`;
+        }
     }
 }
