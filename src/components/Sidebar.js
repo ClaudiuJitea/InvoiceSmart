@@ -14,6 +14,7 @@ export function renderSidebar() {
     { path: '/', icon: icons.dashboard, label: 'nav.dashboard' },
     { path: '/reports', icon: icons.chart, label: 'nav.reports' },
     { path: '/invoices', icon: icons.invoice, label: 'nav.invoices' },
+    { path: '/receipts', icon: icons.receipt, label: 'nav.receipts' },
     { path: '/clients', icon: icons.clients, label: 'nav.clients' },
     { path: '/settings', icon: icons.settings, label: 'nav.settings' },
   ];

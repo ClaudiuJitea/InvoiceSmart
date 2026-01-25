@@ -8,6 +8,7 @@ export default {
         dashboard: 'Panou Principal',
         reports: 'Rapoarte',
         invoices: 'Facturi',
+        receipts: 'Chitanțe',
         clients: 'Clienți',
         settings: 'Setări',
         admin: 'Admin',
@@ -135,6 +136,21 @@ export default {
         deleteConfirm: 'Ești sigur că vrei să ștergi această factură?',
         deleteSuccess: 'Factura a fost ștearsă cu succes',
         saveSuccess: 'Factura a fost salvată cu succes',
+    },
+
+    // Receipts
+    receipts: {
+        title: 'Chitanțe',
+        subtitle: 'Gestionează chitanțele de plată',
+        receiptNumber: 'Număr Chitanță',
+        invoiceNumber: 'Număr Factură',
+        client: 'Client',
+        issueDate: 'Data Emiterii',
+        amount: 'Sumă',
+        viewReceipt: 'Vezi Chitanța',
+        generateReceipt: 'Generează Chitanță',
+        emptyTitle: 'Nu există chitanțe',
+        emptyDescription: 'Chitanțele sunt generate când facturile sunt marcate ca plătite',
     },
 
     // Clients

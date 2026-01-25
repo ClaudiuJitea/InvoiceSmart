@@ -188,15 +188,16 @@ export function renderModernTemplate(invoice) {
           letter-spacing: 0.5px;
         }
         .invoice-modern .signature {
-          text-align: right;
+          text-align: center;
+          min-width: 160px;
           font-size: 9pt;
           color: ${colors.secondary};
+          margin-left: auto;
         }
         .invoice-modern .signature-line {
-          width: 150px;
+          width: 100%;
           border-bottom: 2px solid ${colors.accent};
-          margin-top: 40px;
-          margin-left: auto;
+          margin-top: 45px;
         }
       </style>
 

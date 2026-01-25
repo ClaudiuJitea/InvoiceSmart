@@ -915,3 +915,74 @@
 .font-bold {
     font-weight: 700;
 }
+
+/* ========================================
+   Data Table (Receipts, etc.)
+   ======================================== */
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-body-md);
+}
+
+.data-table th,
+.data-table td {
+    padding: var(--space-4);
+    text-align: left;
+    border-bottom: 1px solid var(--md-outline-variant);
+}
+
+.data-table th {
+    font-weight: 600;
+    color: var(--md-on-surface);
+    background: linear-gradient(180deg, var(--md-surface-container-low) 0%, var(--md-surface-container) 100%);
+    white-space: nowrap;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+.data-table tbody tr {
+    transition: all var(--transition-fast);
+}
+
+.data-table tbody tr:hover {
+    background-color: rgba(30, 58, 95, 0.03);
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Receipt Number Badge */
+.receipt-number-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-1) var(--space-3);
+    background: linear-gradient(135deg, var(--md-primary-container) 0%, rgba(30, 58, 95, 0.15) 100%);
+    color: var(--md-primary);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: var(--text-label-md);
+    border: 1px solid rgba(30, 58, 95, 0.2);
+}
+
+/* Amount styling */
+.data-table .amount {
+    font-weight: 600;
+    color: var(--md-primary);
+}
+
+/* Link styling in tables */
+.data-table .link {
+    color: var(--md-primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color var(--transition-fast);
+}
+
+.data-table .link:hover {
+    text-decoration: underline;
+    color: var(--md-primary-hover);
+}

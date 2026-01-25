@@ -23,6 +23,7 @@ import { renderInvoiceForm, initInvoiceForm } from './pages/InvoiceForm.js';
 import { renderInvoicePreview, initInvoicePreview } from './pages/InvoicePreview.js';
 import { renderSettings, initSettings } from './pages/Settings.js';
 import { renderReports, initReports } from './pages/Reports.js';
+import { renderReceipts, initReceipts } from './pages/Receipts.js';
 import { renderLogin, initLogin } from './pages/Login.js';
 import { renderRegister, initRegister } from './pages/Register.js';
 import { renderAdminDashboard, initAdminDashboard } from './pages/AdminDashboard.js';
@@ -99,6 +100,8 @@ function renderPage() {
       return renderSettings();
     case 'reports':
       return renderReports();
+    case 'receipts':
+      return renderReceipts();
     case 'admin':
       return renderAdminDashboard();
     default:
@@ -138,6 +141,9 @@ function initPage() {
       break;
     case 'reports':
       initReports();
+      break;
+    case 'receipts':
+      initReceipts();
       break;
     case 'admin':
       initAdminDashboard();
@@ -250,6 +256,11 @@ function setupRoutes() {
     })
     .on('/reports', () => {
       currentPage = 'reports';
+      currentParams = {};
+      renderApp();
+    })
+    .on('/receipts', () => {
+      currentPage = 'receipts';
       currentParams = {};
       renderApp();
     })

@@ -7,6 +7,7 @@ import invoicesRoutes from './routes/invoices.js';
 import statsRoutes from './routes/stats.js';
 import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
+import receiptsRoutes from './routes/receipts.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +21,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/clients', clientsRoutes);
 app.use('/api/invoices', invoicesRoutes);
+app.use('/api/receipts', receiptsRoutes);
 app.use('/api/stats', statsRoutes);
 
 // Initialize DB

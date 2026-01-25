@@ -8,6 +8,7 @@ export default {
         dashboard: 'Dashboard',
         reports: 'Reports',
         invoices: 'Invoices',
+        receipts: 'Receipts',
         clients: 'Clients',
         settings: 'Settings',
         admin: 'Admin',
@@ -135,6 +136,21 @@ export default {
         deleteConfirm: 'Are you sure you want to delete this invoice?',
         deleteSuccess: 'Invoice deleted successfully',
         saveSuccess: 'Invoice saved successfully',
+    },
+
+    // Receipts
+    receipts: {
+        title: 'Receipts',
+        subtitle: 'Manage your payment receipts',
+        receiptNumber: 'Receipt Number',
+        invoiceNumber: 'Invoice Number',
+        client: 'Client',
+        issueDate: 'Issue Date',
+        amount: 'Amount',
+        viewReceipt: 'View Receipt',
+        generateReceipt: 'Generate Receipt',
+        emptyTitle: 'No receipts yet',
+        emptyDescription: 'Receipts are generated when invoices are marked as paid',
     },
 
     // Clients

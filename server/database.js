@@ -146,10 +146,35 @@ async function initDb(db) {
   const existingSettings = await db.get('SELECT id FROM settings WHERE id = 1');
   if (!existingSettings) {
     await db.run(`
-      INSERT INTO settings (id, company_name, invoice_series) 
-      VALUES (1, '', 'INV')
+      INSERT INTO settings (id, company_name, invoice_series, receipt_series) 
+      VALUES (1, '', 'INV', 'RC')
     `);
   }
+
+  // Receipts
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS receipts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      invoice_id INTEGER NOT NULL,
+      receipt_number TEXT NOT NULL UNIQUE,
+      series TEXT NOT NULL,
+      number INTEGER NOT NULL,
+      issue_date DATE NOT NULL,
+      amount REAL NOT NULL,
+      currency TEXT DEFAULT 'RON',
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+    );
+  `);
+
+  // Add columns to settings if they don't exist (migration)
+  try {
+    await db.exec("ALTER TABLE settings ADD COLUMN receipt_series TEXT DEFAULT 'RC'");
+  } catch (e) { }
+  try {
+    await db.exec("ALTER TABLE settings ADD COLUMN next_receipt_number INTEGER DEFAULT 1");
+  } catch (e) { }
 
   // Default Admin User (password: admin123)
   const existingAdmin = await db.get('SELECT id FROM users WHERE username = ?', ['admin']);
