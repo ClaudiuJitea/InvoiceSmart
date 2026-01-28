@@ -1,7 +1,7 @@
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
+import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 import bcrypt from 'bcryptjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -9,17 +9,50 @@ const __dirname = path.dirname(__filename);
 
 let dbInstance = null;
 
+// Wrapper class to provide async-like API for compatibility with existing code
+class DbWrapper {
+  constructor(db) {
+    this.db = db;
+  }
+
+  async run(sql, params = []) {
+    const stmt = this.db.prepare(sql);
+    const result = stmt.run(...(Array.isArray(params) ? params : [params]));
+    return { lastID: result.lastInsertRowid, changes: result.changes };
+  }
+
+  async get(sql, params = []) {
+    const stmt = this.db.prepare(sql);
+    return stmt.get(...(Array.isArray(params) ? params : [params]));
+  }
+
+  async all(sql, params = []) {
+    const stmt = this.db.prepare(sql);
+    return stmt.all(...(Array.isArray(params) ? params : [params]));
+  }
+
+  async exec(sql) {
+    this.db.exec(sql);
+  }
+}
+
 export async function getDb() {
   if (dbInstance) {
     return dbInstance;
   }
 
-  const dbPath = path.join(__dirname, 'data', 'invoices.db');
+  const dataDir = path.join(__dirname, 'data');
+  const dbPath = path.join(dataDir, 'invoices.db');
 
-  dbInstance = await open({
-    filename: dbPath,
-    driver: sqlite3.Database
-  });
+  // Ensure data directory exists
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+
+  const db = new Database(dbPath);
+  db.pragma('journal_mode = WAL');
+
+  dbInstance = new DbWrapper(db);
 
   await initDb(dbInstance);
 
@@ -142,15 +175,6 @@ async function initDb(db) {
     CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
   `);
 
-  // Default Settings
-  const existingSettings = await db.get('SELECT id FROM settings WHERE id = 1');
-  if (!existingSettings) {
-    await db.run(`
-      INSERT INTO settings (id, company_name, invoice_series, receipt_series) 
-      VALUES (1, '', 'INV', 'RC')
-    `);
-  }
-
   // Receipts
   await db.exec(`
     CREATE TABLE IF NOT EXISTS receipts (
@@ -175,6 +199,15 @@ async function initDb(db) {
   try {
     await db.exec("ALTER TABLE settings ADD COLUMN next_receipt_number INTEGER DEFAULT 1");
   } catch (e) { }
+
+  // Default Settings (after migrations so receipt_series column exists)
+  const existingSettings = await db.get('SELECT id FROM settings WHERE id = 1');
+  if (!existingSettings) {
+    await db.run(`
+      INSERT INTO settings (id, company_name, invoice_series, receipt_series) 
+      VALUES (1, '', 'INV', 'RC')
+    `);
+  }
 
   // Default Admin User (password: admin123)
   const existingAdmin = await db.get('SELECT id FROM users WHERE username = ?', ['admin']);
