@@ -674,23 +674,23 @@
 }
 
 .stat-icon-primary {
-    background: var(--md-primary-container);
-    color: var(--md-primary);
+    background: linear-gradient(135deg, var(--md-surface-container) 0%, var(--md-surface-container-high) 100%);
+    color: var(--md-on-surface-variant);
 }
 
 .stat-icon-success {
-    background: var(--md-success-container);
-    color: var(--md-success);
+    background: linear-gradient(135deg, var(--md-surface-container) 0%, var(--md-surface-container-high) 100%);
+    color: var(--md-on-surface-variant);
 }
 
 .stat-icon-warning {
-    background: var(--md-warning-container);
-    color: var(--md-warning);
+    background: linear-gradient(135deg, var(--md-surface-container) 0%, var(--md-surface-container-high) 100%);
+    color: var(--md-on-surface-variant);
 }
 
 .stat-icon-danger {
-    background: var(--md-error-container);
-    color: var(--md-error);
+    background: linear-gradient(135deg, var(--md-surface-container) 0%, var(--md-surface-container-high) 100%);
+    color: var(--md-on-surface-variant);
 }
 
 .stat-card-content {
