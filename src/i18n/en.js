@@ -305,6 +305,29 @@ export default {
         maxLength: 'Maximum {max} characters allowed',
     },
 
+    // Login
+    login: {
+        welcome: 'Welcome back',
+        subtitle: 'Sign in to continue to your dashboard',
+        usernameLabel: 'Username or Email',
+        usernamePlaceholder: 'Enter your username or email',
+        passwordLabel: 'Password',
+        passwordPlaceholder: 'Enter your password',
+        rememberMe: 'Remember me',
+        signIn: 'Sign In',
+        signingIn: 'Signing in...',
+        noAccount: "Don't have an account?",
+        createAccount: 'Create account',
+        brandTitle: 'Manage your invoices with ease',
+        brandSubtitle: 'Professional invoice management for modern businesses. Create, track, and organize all your invoices in one place.',
+        feature1Title: 'Create Beautiful Invoices',
+        feature1Desc: 'Professional templates ready to use',
+        feature2Title: 'Manage Clients',
+        feature2Desc: 'Keep track of all your clients',
+        feature3Title: 'Detailed Reports',
+        feature3Desc: 'Insights into your business',
+    },
+
     // General
     general: {
         loading: 'Loading...',

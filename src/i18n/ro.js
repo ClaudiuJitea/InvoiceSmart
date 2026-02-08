@@ -305,6 +305,29 @@ export default {
         maxLength: 'Maxim {max} caractere permise',
     },
 
+    // Autentificare
+    login: {
+        welcome: 'Bine ai revenit',
+        subtitle: 'Autentifică-te pentru a accesa panoul principal',
+        usernameLabel: 'Nume utilizator sau Email',
+        usernamePlaceholder: 'Introdu utilizatorul sau email-ul',
+        passwordLabel: 'Parolă',
+        passwordPlaceholder: 'Introdu parola ta',
+        rememberMe: 'Ține-mă minte',
+        signIn: 'Autentificare',
+        signingIn: 'Se autentifică...',
+        noAccount: "Nu ai cont?",
+        createAccount: 'Creează cont',
+        brandTitle: 'Gestionează facturile cu ușurință',
+        brandSubtitle: 'Management profesional de facturi pentru afaceri moderne. Creează, urmărește și organizează toate facturile într-un singur loc.',
+        feature1Title: 'Creează Facturi Frumoase',
+        feature1Desc: 'Șabloane profesionale gata de utilizare',
+        feature2Title: 'Gestionează Clienți',
+        feature2Desc: 'Ține evidența tuturor clienților tăi',
+        feature3Title: 'Rapoarte Detaliate',
+        feature3Desc: 'Informații valoroase despre afacerea ta',
+    },
+
     // General
     general: {
         loading: 'Se încarcă...',

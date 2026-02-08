@@ -75,9 +75,11 @@ export function renderSidebar() {
                 `}
 
                 <div class="language-switcher">
-                    <button class="language-switcher-btn" id="languageSwitcherBtn">
+                    <button class="language-switcher-btn" id="languageSwitcherBtn" aria-expanded="false">
                         ${icons.globe}
-                        <span>${locales.find(l => l.code === currentLocale)?.flag}</span>
+                        <span class="language-text">${locales.find(l => l.code === currentLocale)?.name}</span>
+                        <span class="language-flag">${locales.find(l => l.code === currentLocale)?.flag}</span>
+                        <span class="language-chevron">${icons.chevronDown}</span>
                     </button>
                     <div class="language-dropdown" id="languageDropdown">
                         ${locales.map(locale => `
@@ -114,12 +116,14 @@ export function initSidebar() {
     switcherBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       dropdown.classList.toggle('open');
+      switcherBtn.setAttribute('aria-expanded', dropdown.classList.contains('open'));
     });
 
     dropdown.querySelectorAll('.language-option').forEach(btn => {
       btn.addEventListener('click', () => {
         i18n.locale = btn.dataset.locale;
         dropdown.classList.remove('open');
+        switcherBtn.setAttribute('aria-expanded', 'false');
         window.dispatchEvent(new CustomEvent('app:refresh'));
       });
     });
@@ -137,6 +141,7 @@ export function initSidebar() {
   // Close dropdowns when clicking outside
   document.addEventListener('click', () => {
     dropdown?.classList.remove('open');
+    switcherBtn?.setAttribute('aria-expanded', 'false');
   });
 }
 

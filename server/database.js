@@ -209,14 +209,18 @@ async function initDb(db) {
     `);
   }
 
-  // Default Admin User (password: admin123)
-  const existingAdmin = await db.get('SELECT id FROM users WHERE username = ?', ['admin']);
+  // Default Admin User
+  const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+
+  const existingAdmin = await db.get('SELECT id FROM users WHERE username = ?', [adminUsername]);
   if (!existingAdmin) {
-    const defaultPasswordHash = await bcrypt.hash('admin123', 10);
+    const defaultPasswordHash = await bcrypt.hash(adminPassword, 10);
     await db.run(`
       INSERT INTO users (username, email, password_hash, full_name, role) 
-      VALUES ('admin', 'admin@example.com', ?, 'Administrator', 'admin')
-    `, [defaultPasswordHash]);
-    console.log('Default admin user created (username: admin, password: admin123)');
+      VALUES (?, ?, ?, 'Administrator', 'admin')
+    `, [adminUsername, adminEmail, defaultPasswordHash]);
+    console.log(`Default admin user created (username: ${adminUsername})`);
   }
 }

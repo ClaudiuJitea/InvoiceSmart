@@ -245,6 +245,36 @@
     flex-shrink: 0;
 }
 
+.language-text {
+    flex: 1;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.language-flag {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.language-chevron {
+    display: flex;
+    align-items: center;
+    color: var(--md-on-surface-variant);
+}
+
+.language-chevron svg {
+    width: 16px;
+    height: 16px;
+    transition: transform var(--transition-fast);
+}
+
+.language-dropdown.open+.language-switcher-btn .language-chevron svg,
+.language-switcher-btn[aria-expanded="true"] .language-chevron svg {
+    transform: rotate(180deg);
+}
+
 .language-dropdown {
     position: absolute;
     bottom: 100%;
@@ -329,8 +359,8 @@
 
 .search-input {
     width: 100%;
-    height: 44px;
-    padding: var(--space-2) var(--space-4) var(--space-2) var(--space-10);
+    height: 52px;
+    padding: var(--space-3) var(--space-4) var(--space-3) var(--space-10);
     font-family: var(--font-family);
     font-size: var(--text-body-md);
     color: var(--md-on-surface);

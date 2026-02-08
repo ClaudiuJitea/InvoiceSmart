@@ -560,7 +560,7 @@
     max-width: 560px;
     width: calc(100% - var(--space-8));
     max-height: calc(100vh - var(--space-8));
-    overflow-y: auto;
+    overflow: visible;
     transform: scale(0.95);
     transition: transform var(--transition-standard);
     box-shadow: var(--shadow-xl);
@@ -1115,4 +1115,95 @@
 .data-table .link:hover {
     text-decoration: underline;
     color: var(--md-primary-hover);
+}
+
+/* ========================================
+   Enhanced Modal Form Styles
+   ======================================== */
+
+.modal-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+}
+
+@media (max-width: 640px) {
+    .modal-form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.modal-form-grid .form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-form-full {
+    grid-column: 1 / -1;
+}
+
+/* Toggle Switch Style Checkbox */
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    cursor: pointer;
+    user-select: none;
+    padding: var(--space-2) 0;
+}
+
+.toggle-switch input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 44px;
+    height: 24px;
+    background: var(--md-surface-container-highest);
+    border-radius: 99px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    border: 1px solid var(--md-outline-variant);
+}
+
+.toggle-switch input[type="checkbox"]::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.toggle-switch input[type="checkbox"]:checked {
+    background: var(--md-primary);
+    border-color: var(--md-primary);
+}
+
+.toggle-switch input[type="checkbox"]:checked::after {
+    transform: translateX(20px);
+}
+
+.toggle-label {
+    font-size: var(--text-body-md);
+    font-weight: 500;
+    color: var(--md-on-surface);
+}
+
+/* Modal Footer Actions */
+.modal-actions {
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--md-outline-variant);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-3);
+}
+
+.required-mark {
+    color: var(--md-error);
+    margin-left: 2px;
 }

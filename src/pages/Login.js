@@ -1,5 +1,5 @@
 // Login Page Component
-import { t } from '../i18n/index.js';
+import { t, i18n } from '../i18n/index.js';
 import { icons } from '../components/icons.js';
 import { authService } from '../db/services/authService.js';
 import { router } from '../router.js';
@@ -15,29 +15,29 @@ export function renderLogin() {
                         ${icons.logo}
                         <span class="auth-brand-name">InvoiceSmart</span>
                     </div>
-                    <h1 class="auth-brand-title">Manage your invoices with ease</h1>
-                    <p class="auth-brand-subtitle">Professional invoice management for modern businesses. Create, track, and organize all your invoices in one place.</p>
+                    <h1 class="auth-brand-title">${t('login.brandTitle')}</h1>
+                    <p class="auth-brand-subtitle">${t('login.brandSubtitle')}</p>
                     
                     <div class="auth-features">
                         <div class="auth-feature">
                             <div class="auth-feature-icon">${icons.invoice}</div>
                             <div class="auth-feature-text">
-                                <strong>Create Beautiful Invoices</strong>
-                                <span>Professional templates ready to use</span>
+                                <strong>${t('login.feature1Title')}</strong>
+                                <span>${t('login.feature1Desc')}</span>
                             </div>
                         </div>
                         <div class="auth-feature">
                             <div class="auth-feature-icon">${icons.clients}</div>
                             <div class="auth-feature-text">
-                                <strong>Manage Clients</strong>
-                                <span>Keep track of all your clients</span>
+                                <strong>${t('login.feature2Title')}</strong>
+                                <span>${t('login.feature2Desc')}</span>
                             </div>
                         </div>
                         <div class="auth-feature">
                             <div class="auth-feature-icon">${icons.chart}</div>
                             <div class="auth-feature-text">
-                                <strong>Detailed Reports</strong>
-                                <span>Insights into your business</span>
+                                <strong>${t('login.feature3Title')}</strong>
+                                <span>${t('login.feature3Desc')}</span>
                             </div>
                         </div>
                     </div>
@@ -51,10 +51,15 @@ export function renderLogin() {
 
             <!-- Right side - Login Form -->
             <div class="auth-form-container">
+                <div class="auth-language-switch" style="position: absolute; top: 20px; right: 20px; display: flex; gap: 8px;">
+                     <button class="lang-btn" data-lang="en" style="background: none; border: 1px solid #e5e7eb; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; opacity: ${i18n.locale === 'en' ? '1' : '0.5'}; font-weight: ${i18n.locale === 'en' ? 'bold' : 'normal'}">🇬🇧 EN</button>
+                    <button class="lang-btn" data-lang="ro" style="background: none; border: 1px solid #e5e7eb; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; opacity: ${i18n.locale === 'ro' ? '1' : '0.5'}; font-weight: ${i18n.locale === 'ro' ? 'bold' : 'normal'}">🇷🇴 RO</button>
+                </div>
+
                 <div class="auth-form-wrapper">
                     <div class="auth-form-header">
-                        <h2 class="auth-form-title">Welcome back</h2>
-                        <p class="auth-form-subtitle">Sign in to continue to your dashboard</p>
+                        <h2 class="auth-form-title">${t('login.welcome')}</h2>
+                        <p class="auth-form-subtitle">${t('login.subtitle')}</p>
                     </div>
 
                     <form id="loginForm" class="auth-form">
@@ -64,7 +69,7 @@ export function renderLogin() {
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" for="username">Username or Email</label>
+                            <label class="form-label" for="username">${t('login.usernameLabel')}</label>
                             <div class="input-with-icon">
                                 <span class="input-icon">${icons.user}</span>
                                 <input 
@@ -72,7 +77,7 @@ export function renderLogin() {
                                     id="username" 
                                     name="username" 
                                     class="input input-icon-left" 
-                                    placeholder="Enter your username or email"
+                                    placeholder="${t('login.usernamePlaceholder')}"
                                     autocomplete="username"
                                     required
                                 >
@@ -80,7 +85,7 @@ export function renderLogin() {
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" for="password">Password</label>
+                            <label class="form-label" for="password">${t('login.passwordLabel')}</label>
                             <div class="input-with-icon">
                                 <span class="input-icon">${icons.lock}</span>
                                 <input 
@@ -88,7 +93,7 @@ export function renderLogin() {
                                     id="password" 
                                     name="password" 
                                     class="input input-icon-left" 
-                                    placeholder="Enter your password"
+                                    placeholder="${t('login.passwordPlaceholder')}"
                                     autocomplete="current-password"
                                     required
                                 >
@@ -102,29 +107,24 @@ export function renderLogin() {
                             <label class="checkbox-label">
                                 <input type="checkbox" id="rememberMe" name="rememberMe">
                                 <span class="checkbox-custom"></span>
-                                <span>Remember me</span>
+                                <span>${t('login.rememberMe')}</span>
                             </label>
                         </div>
 
                         <button type="submit" class="btn btn-primary" id="loginBtn">
-                            <span class="btn-text">Sign In</span>
+                            <span class="btn-text">${t('login.signIn')}</span>
                             <span class="btn-loading" style="display: none;">
                                 <span class="spinner"></span>
-                                Signing in...
+                                ${t('login.signingIn')}
                             </span>
                         </button>
                     </form>
 
-                    <div class="auth-form-footer">
+    <div class="auth-form-footer" style="display: flex; justify-content: center; gap: 8px;">
                         <p class="auth-footer-text">
-                            Don't have an account? 
-                            <a href="#/register" class="auth-link">Create account</a>
+                            ${t('login.noAccount')} 
+                            <a href="#/register" class="auth-link">${t('login.createAccount')}</a>
                         </p>
-                    </div>
-
-                    <div class="auth-demo-credentials">
-                        <p>Demo Login</p>
-                        <code>Username: admin | Password: admin123</code>
                     </div>
                 </div>
             </div>
@@ -135,6 +135,23 @@ export function renderLogin() {
 
 export function initLogin() {
     const form = document.getElementById('loginForm');
+
+    // Language switcher logic
+    const langBtns = document.querySelectorAll('.lang-btn');
+    langBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const lang = e.target.closest('.lang-btn').dataset.lang;
+            if (lang && lang !== i18n.locale) {
+                i18n.locale = lang;
+                renderLogin(); // Re-render the login page with new language
+                initLogin();   // Re-initialize listeners
+
+                // Force app refresh to update other components if needed
+                window.dispatchEvent(new CustomEvent('app:refresh'));
+            }
+        });
+    });
+
     const errorDiv = document.getElementById('loginError');
     const errorMessage = document.getElementById('loginErrorMessage');
     const loginBtn = document.getElementById('loginBtn');

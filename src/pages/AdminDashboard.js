@@ -19,7 +19,7 @@ export function renderAdminDashboard() {
                 <p class="page-subtitle">Manage system users and permissions</p>
             </div>
             <div class="page-header-actions">
-                <button class="btn btn-primary" id="addUserBtn">
+                <button class="btn btn-filled" id="addUserBtn">
                     ${icons.plus}
                     <span>Add User</span>
                 </button>
@@ -29,6 +29,7 @@ export function renderAdminDashboard() {
         <!-- Stats Cards -->
         <div class="admin-stats-grid" id="adminStats">
             <div class="stat-card admin-stat-card">
+                <div class="stat-card-glow"></div>
                 <div class="stat-card-icon stat-icon-primary">
                     ${icons.clients}
                 </div>
@@ -38,6 +39,7 @@ export function renderAdminDashboard() {
                 </div>
             </div>
             <div class="stat-card admin-stat-card">
+                <div class="stat-card-glow"></div>
                 <div class="stat-card-icon stat-icon-success">
                     ${icons.check}
                 </div>
@@ -47,6 +49,7 @@ export function renderAdminDashboard() {
                 </div>
             </div>
             <div class="stat-card admin-stat-card">
+                <div class="stat-card-glow"></div>
                 <div class="stat-card-icon stat-icon-warning">
                     ${icons.settings}
                 </div>
@@ -56,6 +59,7 @@ export function renderAdminDashboard() {
                 </div>
             </div>
             <div class="stat-card admin-stat-card">
+                <div class="stat-card-glow"></div>
                 <div class="stat-card-icon stat-icon-danger">
                     ${icons.close}
                 </div>
@@ -119,57 +123,53 @@ export function renderAdminDashboard() {
         </div>
 
         <!-- User Modal -->
-        <div class="modal" id="userModal">
-            <div class="modal-overlay" data-close-modal></div>
-            <div class="modal-container">
+        <div class="modal-overlay" id="userModal">
+            <div class="modal">
                 <div class="modal-header">
                     <h3 class="modal-title" id="modalTitle">Add User</h3>
                     <button class="modal-close" data-close-modal>${icons.close}</button>
                 </div>
-                <form id="userForm" class="modal-body">
+                <form id="userForm" class="modal-content">
                     <input type="hidden" id="userId" value="">
                     
-                    <div class="form-row">
+                    <div class="modal-form-grid">
                         <div class="form-group">
-                            <label class="form-label" for="userUsername">Username*</label>
-                            <input type="text" id="userUsername" class="input" required>
+                            <label class="input-label" for="userUsername">Username <span class="required-mark">*</span></label>
+                            <input type="text" id="userUsername" class="input" placeholder="e.g. jdoe" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="userFullName">Full Name</label>
-                            <input type="text" id="userFullName" class="input">
+                            <label class="input-label" for="userFullName">Full Name</label>
+                            <input type="text" id="userFullName" class="input" placeholder="e.g. John Doe">
                         </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="userEmail">Email*</label>
-                        <input type="email" id="userEmail" class="input" required>
-                    </div>
-                    
-                    <div class="form-row" id="passwordFields">
+                        
+                        <div class="form-group modal-form-full">
+                            <label class="input-label" for="userEmail">Email <span class="required-mark">*</span></label>
+                            <input type="email" id="userEmail" class="input" placeholder="name@company.com" required>
+                        </div>
+                        
                         <div class="form-group">
-                            <label class="form-label" for="userPassword">Password*</label>
-                            <input type="password" id="userPassword" class="input" minlength="6">
+                            <label class="input-label" for="userPassword">Password <span class="required-mark">*</span></label>
+                            <input type="password" id="userPassword" class="input" placeholder="At least 6 chars" minlength="6" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="userRole">Role*</label>
-                            <select id="userRole" class="input" required>
+                            <label class="input-label" for="userRole">Role <span class="required-mark">*</span></label>
+                            <select id="userRole" class="input select" required>
                                 <option value="user">User</option>
                                 <option value="admin">Admin</option>
                             </select>
                         </div>
-                    </div>
-                    
-                    <div class="form-group" id="isActiveField" style="display: none;">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="userIsActive" checked>
-                            <span class="checkbox-custom"></span>
-                            <span>Account Active</span>
-                        </label>
+                        
+                        <div class="form-group modal-form-full" id="isActiveField" style="display: none;">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="userIsActive" checked>
+                                <span class="toggle-label">Active Account</span>
+                            </label>
+                        </div>
                     </div>
                 </form>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline" data-close-modal>Cancel</button>
-                    <button type="submit" form="userForm" class="btn btn-primary" id="saveUserBtn">
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outlined" data-close-modal>Cancel</button>
+                    <button type="submit" form="userForm" class="btn btn-filled" id="saveUserBtn">
                         Save User
                     </button>
                 </div>
@@ -177,26 +177,25 @@ export function renderAdminDashboard() {
         </div>
 
         <!-- Reset Password Modal -->
-        <div class="modal" id="resetPasswordModal">
-            <div class="modal-overlay" data-close-modal></div>
-            <div class="modal-container modal-sm">
+        <div class="modal-overlay" id="resetPasswordModal">
+            <div class="modal" style="max-width: 400px;">
                 <div class="modal-header">
                     <h3 class="modal-title">Reset Password</h3>
                     <button class="modal-close" data-close-modal>${icons.close}</button>
                 </div>
-                <form id="resetPasswordForm" class="modal-body">
+                <form id="resetPasswordForm" class="modal-content">
                     <input type="hidden" id="resetPasswordUserId" value="">
-                    <p class="modal-text" id="resetPasswordUsername"></p>
+                    <p class="mb-4 text-muted" id="resetPasswordUsername"></p>
                     
                     <div class="form-group">
-                        <label class="form-label" for="newPassword">New Password*</label>
-                        <input type="password" id="newPassword" class="input" minlength="6" required>
-                        <span class="form-hint">Minimum 6 characters</span>
+                        <label class="input-label" for="newPassword">New Password <span class="required-mark">*</span></label>
+                        <input type="password" id="newPassword" class="input" minlength="6" required placeholder="Enter new password">
+                        <span class="text-sm text-muted mt-4">Minimum 6 characters</span>
                     </div>
                 </form>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline" data-close-modal>Cancel</button>
-                    <button type="submit" form="resetPasswordForm" class="btn btn-primary">
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outlined" data-close-modal>Cancel</button>
+                    <button type="submit" form="resetPasswordForm" class="btn btn-filled">
                         Reset Password
                     </button>
                 </div>
@@ -204,20 +203,19 @@ export function renderAdminDashboard() {
         </div>
 
         <!-- Delete Confirmation Modal -->
-        <div class="modal" id="deleteUserModal">
-            <div class="modal-overlay" data-close-modal></div>
-            <div class="modal-container modal-sm">
+        <div class="modal-overlay" id="deleteUserModal">
+            <div class="modal" style="max-width: 400px;">
                 <div class="modal-header">
                     <h3 class="modal-title">Delete User</h3>
                     <button class="modal-close" data-close-modal>${icons.close}</button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-content">
                     <input type="hidden" id="deleteUserId" value="">
-                    <p class="modal-text">Are you sure you want to delete <strong id="deleteUsername"></strong>?</p>
-                    <p class="modal-text modal-text-warning">This action cannot be undone.</p>
+                    <p class="mb-4">Are you sure you want to delete <strong id="deleteUsername"></strong>?</p>
+                    <p class="text-error text-sm">This action cannot be undone.</p>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline" data-close-modal>Cancel</button>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outlined" data-close-modal>Cancel</button>
                     <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
                         Delete User
                     </button>
@@ -316,7 +314,7 @@ async function loadUsers() {
                             ${icons.edit}
                         </button>
                         <button class="btn btn-icon btn-ghost" data-action="reset-password" data-id="${user.id}" title="Reset Password">
-                            ${icons.settings}
+                            ${icons.lock}
                         </button>
                         <button class="btn btn-icon btn-ghost btn-danger-ghost" data-action="delete" data-id="${user.id}" title="Delete">
                             ${icons.trash}
@@ -432,6 +430,16 @@ function setupEventListeners() {
     document.querySelectorAll('[data-close-modal]').forEach(el => {
         el.addEventListener('click', closeAllModals);
     });
+
+    // Close modal when clicking on overlay (outside the modal)
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+            // Only close if clicking directly on the overlay, not the modal content
+            if (e.target === overlay) {
+                closeAllModals();
+            }
+        });
+    });
 }
 
 function openUserModal(user = null) {
@@ -457,7 +465,7 @@ function openUserModal(user = null) {
         document.getElementById('userId').value = '';
         document.getElementById('userForm').reset();
         passwordInput.required = true;
-        passwordInput.placeholder = '';
+        passwordInput.placeholder = 'At least 6 chars';
         isActiveField.style.display = 'none';
     }
 
@@ -576,7 +584,7 @@ async function handleDeleteUser() {
 }
 
 function closeAllModals() {
-    document.querySelectorAll('.modal.open').forEach(modal => {
+    document.querySelectorAll('.modal-overlay.open').forEach(modal => {
         modal.classList.remove('open');
     });
 }

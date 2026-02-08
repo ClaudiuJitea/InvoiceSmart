@@ -190,6 +190,11 @@ function setupMobileMenu() {
 function setupRoutes() {
   router
     .on('/', () => {
+      // Check auth before showing dashboard
+      if (!authService.isLoggedIn()) {
+        router.navigate('/login');
+        return;
+      }
       currentPage = 'dashboard';
       currentParams = {};
       renderApp();
