@@ -7,9 +7,58 @@ import { renderTemplate } from '../templates/index.js';
 import { renderReceiptTemplate } from '../templates/receipt.js';
 import { exportToPdf } from '../services/pdfService.js';
 import { toast } from '../components/common/Toast.js';
+import modal from '../components/common/Modal.js';
 import { router } from '../router.js';
 
 let currentTemplate = null;
+
+function getReceiptButtonContent(mode = 'generate') {
+  if (mode === 'view') {
+    return `${icons.receipt} View Receipt`;
+  }
+  if (mode === 'loading') {
+    return `${icons.receipt} Generating...`;
+  }
+  return `${icons.receipt} Generate Receipt`;
+}
+
+function confirmReceiptGeneration() {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = `
+      <p style="margin-bottom: var(--space-6); color: var(--md-on-surface-variant);">
+        Create receipt and mark invoice as paid?
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-text cancel-btn">${t('actions.cancel')}</button>
+        <button class="btn btn-filled confirm-btn">Generate Receipt</button>
+      </div>
+    `;
+
+    const dialog = modal.show({
+      title: 'Generate Receipt',
+      content: wrapper,
+      onClose: () => finish(false),
+    });
+
+    wrapper.querySelector('.cancel-btn')?.addEventListener('click', () => {
+      finish(false);
+      dialog.close();
+    });
+
+    wrapper.querySelector('.confirm-btn')?.addEventListener('click', () => {
+      finish(true);
+      dialog.close();
+    });
+  });
+}
 
 export function renderInvoicePreview(params = {}) {
   return `
@@ -90,8 +139,7 @@ export async function initInvoicePreview(params = {}) {
           </div>
           <div class="invoice-preview-actions">
             <button class="btn btn-tonal" id="receiptBtn">
-                ${icons.file || '<span style="font-size: 18px;">📄</span>'}
-                ${latestReceipt ? 'View Receipt' : 'Generate Receipt'}
+                ${getReceiptButtonContent(latestReceipt ? 'view' : 'generate')}
             </button>
             <button class="btn btn-tonal" id="printBtn">
               ${icons.print}
@@ -131,10 +179,11 @@ function attachpreviewListeners(invoice, settings, existingReceipt) {
       let receipt = existingReceipt;
 
       if (!receipt) {
-        if (confirm('Create receipt and mark invoice as paid?')) {
+        const shouldCreate = await confirmReceiptGeneration();
+        if (shouldCreate) {
           try {
             receiptBtn.disabled = true;
-            receiptBtn.textContent = 'Generating...';
+            receiptBtn.innerHTML = getReceiptButtonContent('loading');
             const res = await fetch('/api/receipts', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -145,12 +194,12 @@ function attachpreviewListeners(invoice, settings, existingReceipt) {
             toast.success('Receipt created!');
             // Update button state (reload not strictly necessary if we just use the new receipt)
             existingReceipt = receipt;
-            receiptBtn.innerHTML = `📄 View Receipt`; // Reset icon text
+            receiptBtn.innerHTML = getReceiptButtonContent('view');
           } catch (e) {
             console.error(e);
             toast.error('Failed to create receipt');
             receiptBtn.disabled = false;
-            receiptBtn.innerHTML = `📄 Generate Receipt`;
+            receiptBtn.innerHTML = getReceiptButtonContent('generate');
             return;
           } finally {
             receiptBtn.disabled = false;
@@ -161,7 +210,7 @@ function attachpreviewListeners(invoice, settings, existingReceipt) {
       }
 
       // Render Receipt and Print
-      const receiptHtml = renderReceiptTemplate(receipt, invoice, settings);
+      const receiptHtml = renderReceiptTemplate(receipt, { ...invoice, template: currentTemplate || invoice.template }, settings);
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
         toast.error('Pop-up blocked. Please allow pop-ups.');
@@ -172,13 +221,13 @@ function attachpreviewListeners(invoice, settings, existingReceipt) {
             <html>
             <head>
               <title>Receipt ${receipt.receipt_number}</title>
-              <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+              <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
               <style>
-                @page { size: A5 landscape; margin: 0; }
-                body { margin: 0; padding: 0; font-family: 'Roboto', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #eee; }
+                @page { size: A6 landscape; margin: 4mm; }
+                body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #eee; }
                 .receipt-container { background: white;  }
                 @media print { 
-                    body { background: white; display: block; } 
+                    body { background: white; display: block; min-height: auto; } 
                     .receipt-container { break-inside: avoid; }
                     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 }
@@ -243,6 +292,7 @@ function attachpreviewListeners(invoice, settings, existingReceipt) {
 
         // Render new template
         invoiceDocument.innerHTML = renderTemplate(currentTemplate, invoice);
+        invoice.template = currentTemplate;
 
         // Save preference
         try {
@@ -275,7 +325,7 @@ function attachpreviewListeners(invoice, settings, existingReceipt) {
               <title>${invoice.invoice_number}</title>
               <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
               <style>
-                @page { size: A4; margin: 0; }
+                @page { size: A4 portrait; margin: 0; }
                 body { margin: 0; padding: 20mm; font-family: 'Roboto', sans-serif; }
                 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
               </style>

@@ -71,6 +71,13 @@ npm run dev
 ```
 *The application is available at `http://localhost:5173`*
 
+### 4. One-Command Local Development (Optional)
+```bash
+# From project root (after both installs above)
+npm run dev:full
+```
+*Starts both backend (`:3000`) and frontend (`:5173`) together.*
+
 ---
 
 ## Project Structure

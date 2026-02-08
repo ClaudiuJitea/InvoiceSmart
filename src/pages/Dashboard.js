@@ -305,9 +305,9 @@ function renderRecentInvoices(invoices, currency, settings) {
         </div>
         <h3 class="empty-title">${t('invoices.emptyTitle')}</h3>
         <p class="empty-description">${t('invoices.emptyDescription')}</p>
-        <a href="#/invoices/new" class="dashboard-action-btn dashboard-action-primary">
-          <span class="action-icon">${icons.plus}</span>
-          <span class="action-text">${t('invoices.newInvoice')}</span>
+        <a href="#/invoices/new" class="btn btn-filled btn-lg">
+          ${icons.plus}
+          ${t('invoices.newInvoice')}
         </a>
       </div>
     `;

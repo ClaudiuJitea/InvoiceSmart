@@ -1,6 +1,77 @@
 // Romanian Receipt (Chitanță) Template - Matching Official Format
 import { numberToWordsRo } from '../utils/numberToWordsRo.js';
 
+function getReceiptTheme(templateName = 'modern') {
+    const normalized = String(templateName || 'modern')
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_-]/g, '');
+
+    const template = normalized === 'executive' ? 'classic' : normalized;
+
+    if (template === 'creative') {
+        return {
+            primary: '#2E7D32',
+            headerBg: '#E8F5E9',
+            bodyBg: '#F1F8E9',
+            border: '#2E7D32',
+            text: '#1B4332',
+            labelBg: '#D9EFD8',
+            shellGradient: 'linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%)',
+            headerGradient: 'linear-gradient(135deg, #F7FCF7 0%, #E8F5E9 100%)',
+            footerGradient: 'linear-gradient(180deg, #F7FCF7 0%, #FFFFFF 100%)',
+            fontMain: "'Inter', sans-serif",
+            fontTitle: "'Playfair Display', Georgia, serif",
+        };
+    }
+
+    if (template === 'classicblue') {
+        return {
+            primary: '#21618C',
+            headerBg: '#E8F4FC',
+            bodyBg: '#F0F8FF',
+            border: '#21618C',
+            text: '#1C3D5A',
+            labelBg: '#DCECF9',
+            shellGradient: 'linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%)',
+            headerGradient: 'linear-gradient(135deg, #F8FCFF 0%, #E8F4FC 100%)',
+            footerGradient: 'linear-gradient(180deg, #F8FCFF 0%, #FFFFFF 100%)',
+            fontMain: "'Arial', 'Helvetica', sans-serif",
+            fontTitle: "'Arial', 'Helvetica', sans-serif",
+        };
+    }
+
+    if (template === 'classic') {
+        return {
+            primary: '#1A1D21',
+            headerBg: '#FFFFFF',
+            bodyBg: '#FFFFFF',
+            border: '#1A1D21',
+            text: '#1A1D21',
+            labelBg: '#F8FAFC',
+            shellGradient: 'linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%)',
+            headerGradient: 'linear-gradient(135deg, #FFFFFF 0%, #FFFFFF 100%)',
+            footerGradient: 'linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%)',
+            fontMain: "'Georgia', 'Times New Roman', serif",
+            fontTitle: "'Playfair Display', Georgia, serif",
+        };
+    }
+
+    return {
+        primary: '#1E3A5F',
+        headerBg: '#EEF1F4',
+        bodyBg: '#F4F6F8',
+        border: '#1E3A5F',
+        text: '#1A1D21',
+        labelBg: '#E5EEF7',
+        shellGradient: 'linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%)',
+        headerGradient: 'linear-gradient(135deg, #F8FAFC 0%, #EEF1F4 100%)',
+        footerGradient: 'linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%)',
+        fontMain: "'Inter', sans-serif",
+        fontTitle: "'Playfair Display', Georgia, serif",
+    };
+}
+
 export function renderReceiptTemplate(receipt, invoice, settings) {
     // Basic validation
     if (!receipt || !invoice || !settings) {
@@ -15,30 +86,23 @@ export function renderReceiptTemplate(receipt, invoice, settings) {
     };
 
     const amountText = numberToWordsRo(receipt.amount);
-
-    // Colors matching the reference image
-    const colors = {
-        primary: '#1a5a8c',      // Deep blue for text
-        headerBg: '#d4e5f7',     // Light blue header background
-        bodyBg: '#b8d4ed',       // Medium blue body background
-        border: '#1a5a8c',       // Blue border
-        text: '#1a5a8c',         // Blue text
-        labelBg: '#a8c8e0',      // Label background
-    };
+    const colors = getReceiptTheme(invoice.template);
 
     return `
     <div class="receipt-template" style="
-        width: 210mm; 
-        min-height: 148mm; 
-        padding: 15mm 20mm;
+        width: 100%;
+        max-width: 132mm;
+        padding: 3mm 4mm;
+        min-height: auto;
+        margin: 0 auto;
         box-sizing: border-box; 
-        background: linear-gradient(180deg, #e8f4fc 0%, #d0e8f5 100%);
-        font-family: 'Arial', sans-serif; 
+        background: ${colors.shellGradient};
+        font-family: ${colors.fontMain}; 
         color: ${colors.text};
     ">
         <!-- Main Container with Border -->
         <div style="
-            border: 2px solid ${colors.border}; 
+            border: 1px solid ${colors.border}; 
             background: white;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         ">
@@ -47,13 +111,13 @@ export function renderReceiptTemplate(receipt, invoice, settings) {
                 display: flex; 
                 justify-content: space-between; 
                 align-items: flex-start;
-                padding: 15px 20px;
-                background: linear-gradient(135deg, #f8fcff 0%, #e8f4fc 100%);
+                padding: 10px 12px;
+                background: ${colors.headerGradient};
                 border-bottom: 1px solid ${colors.border};
             ">
                 <!-- Company Info (Left) -->
-                <div style="font-size: 9pt; line-height: 1.5; max-width: 55%;">
-                    <div style="font-weight: bold; font-size: 13pt; color: ${colors.primary}; margin-bottom: 3px;">
+                <div style="font-size: 8pt; line-height: 1.35; max-width: 52%;">
+                    <div style="font-weight: bold; font-size: 9pt; color: ${colors.primary}; margin-bottom: 2px;">
                         ${settings.company_name || 'Nume Companie'}
                     </div>
                     <div style="color: ${colors.primary};">CIF: ${settings.company_cif || '-'}</div>
@@ -65,13 +129,14 @@ export function renderReceiptTemplate(receipt, invoice, settings) {
                 <!-- Receipt Title (Right) -->
                 <div style="text-align: right;">
                     <div style="
-                        font-size: 28pt; 
+                        font-size: 20pt; 
                         font-weight: bold; 
+                        font-family: ${colors.fontTitle};
                         color: ${colors.primary}; 
                         letter-spacing: 1px;
                         line-height: 1.1;
-                    ">CHITANȚĂ <span style="font-size: 16pt;">Nr. ${receipt.number}</span></div>
-                    <div style="font-size: 10pt; color: ${colors.primary}; margin-top: 5px;">
+                    ">CHITANȚĂ <span style="font-size: 11pt;">Nr. ${receipt.number}</span></div>
+                    <div style="font-size: 8pt; color: ${colors.primary}; margin-top: 3px;">
                         Data: ${formatDate(receipt.issue_date)} &nbsp; Seria: ${receipt.series}
                     </div>
                 </div>
@@ -80,13 +145,13 @@ export function renderReceiptTemplate(receipt, invoice, settings) {
             <!-- Body Section (Blue Background) -->
             <div style="
                 background: linear-gradient(180deg, ${colors.bodyBg} 0%, ${colors.headerBg} 100%);
-                padding: 20px;
+                padding: 10px 12px;
             ">
                 <!-- Client Name Row -->
                 <div style="
                     display: flex; 
                     align-items: center;
-                    margin-bottom: 12px;
+                    margin-bottom: 8px;
                     background: white;
                     border: 1px solid ${colors.border};
                     border-radius: 3px;
@@ -95,16 +160,16 @@ export function renderReceiptTemplate(receipt, invoice, settings) {
                     <span style="
                         background: linear-gradient(135deg, ${colors.labelBg} 0%, ${colors.headerBg} 100%);
                         color: ${colors.primary};
-                        padding: 10px 15px;
-                        min-width: 110px;
-                        font-size: 10pt;
+                        padding: 7px 9px;
+                        min-width: 88px;
+                        font-size: 8pt;
                         border-right: 1px solid ${colors.border};
                     ">Am primit de la:</span>
                     <span style="
                         flex: 1;
-                        padding: 10px 15px;
+                        padding: 7px 9px;
                         font-weight: bold;
-                        font-size: 11pt;
+                        font-size: 9pt;
                         text-align: center;
                         color: ${colors.primary};
                     ">${invoice.client_name || '-'}</span>
@@ -113,8 +178,8 @@ export function renderReceiptTemplate(receipt, invoice, settings) {
                 <!-- CIF / Reg Row -->
                 <div style="
                     display: flex;
-                    gap: 15px;
-                    margin-bottom: 12px;
+                    gap: 10px;
+                    margin-bottom: 8px;
                 ">
                     <div style="
                         flex: 1;
@@ -128,15 +193,15 @@ export function renderReceiptTemplate(receipt, invoice, settings) {
                         <span style="
                             background: linear-gradient(135deg, ${colors.labelBg} 0%, ${colors.headerBg} 100%);
                             color: ${colors.primary};
-                            padding: 10px 15px;
+                            padding: 7px 9px;
                             min-width: 50px;
-                            font-size: 10pt;
+                            font-size: 8pt;
                             border-right: 1px solid ${colors.border};
                         ">CIF:</span>
                         <span style="
                             flex: 1;
-                            padding: 10px 15px;
-                            font-size: 10pt;
+                            padding: 7px 9px;
+                            font-size: 8.5pt;
                             text-align: center;
                             color: ${colors.primary};
                         ">${invoice.client_cif || '-'}</span>
@@ -153,15 +218,15 @@ export function renderReceiptTemplate(receipt, invoice, settings) {
                         <span style="
                             background: linear-gradient(135deg, ${colors.labelBg} 0%, ${colors.headerBg} 100%);
                             color: ${colors.primary};
-                            padding: 10px 15px;
+                            padding: 7px 9px;
                             min-width: 80px;
-                            font-size: 10pt;
+                            font-size: 8pt;
                             border-right: 1px solid ${colors.border};
                         ">Reg. com.:</span>
                         <span style="
                             flex: 1;
-                            padding: 10px 15px;
-                            font-size: 10pt;
+                            padding: 7px 9px;
+                            font-size: 8.5pt;
                             text-align: center;
                             color: ${colors.primary};
                         ">${invoice.client_reg_no || '-'}</span>
@@ -172,7 +237,7 @@ export function renderReceiptTemplate(receipt, invoice, settings) {
                 <div style="
                     display: flex;
                     align-items: center;
-                    margin-bottom: 12px;
+                    margin-bottom: 8px;
                     background: white;
                     border: 1px solid ${colors.border};
                     border-radius: 3px;
@@ -181,15 +246,15 @@ export function renderReceiptTemplate(receipt, invoice, settings) {
                     <span style="
                         background: linear-gradient(135deg, ${colors.labelBg} 0%, ${colors.headerBg} 100%);
                         color: ${colors.primary};
-                        padding: 10px 15px;
+                        padding: 7px 9px;
                         min-width: 60px;
-                        font-size: 10pt;
+                        font-size: 8pt;
                         border-right: 1px solid ${colors.border};
                     ">Adresa:</span>
                     <span style="
                         flex: 1;
-                        padding: 10px 15px;
-                        font-size: 10pt;
+                        padding: 7px 9px;
+                        font-size: 8.5pt;
                         text-align: center;
                         color: ${colors.primary};
                     ">${invoice.client_address || '-'}</span>
@@ -207,30 +272,30 @@ export function renderReceiptTemplate(receipt, invoice, settings) {
                     <span style="
                         background: linear-gradient(135deg, ${colors.labelBg} 0%, ${colors.headerBg} 100%);
                         color: ${colors.primary};
-                        padding: 10px 15px;
+                        padding: 7px 9px;
                         min-width: 70px;
-                        font-size: 10pt;
+                        font-size: 8pt;
                         border-right: 1px solid ${colors.border};
                     ">Suma de:</span>
                     <span style="
-                        padding: 10px 20px;
+                        padding: 7px 10px;
                         font-weight: bold;
-                        font-size: 12pt;
+                        font-size: 9pt;
                         color: ${colors.primary};
                         border-right: 1px solid ${colors.border};
-                        min-width: 120px;
+                        min-width: 90px;
                         text-align: center;
                     ">${receipt.amount.toFixed(2)} ${receipt.currency}</span>
                     <span style="
-                        padding: 10px 15px;
-                        font-size: 10pt;
+                        padding: 7px 9px;
+                        font-size: 8pt;
                         color: ${colors.primary};
                         border-right: 1px solid ${colors.border};
                     ">adica</span>
                     <span style="
                         flex: 1;
-                        padding: 10px 15px;
-                        font-size: 10pt;
+                        padding: 7px 9px;
+                        font-size: 8pt;
                         font-style: italic;
                         color: ${colors.primary};
                     ">${amountText}</span>
@@ -239,15 +304,15 @@ export function renderReceiptTemplate(receipt, invoice, settings) {
 
             <!-- Footer (Signature) -->
             <div style="
-                padding: 15px 20px 25px;
-                background: linear-gradient(180deg, #f0f8ff 0%, #ffffff 100%);
+                padding: 10px 12px 12px;
+                background: ${colors.footerGradient};
                 border-top: 1px solid ${colors.border};
             ">
-                <div style="text-align: right; padding-right: 30px;">
-                    <div style="color: ${colors.primary}; font-size: 10pt; margin-bottom: 35px;">Semnatura:</div>
+                <div style="text-align: right; padding-right: 16px;">
+                    <div style="color: ${colors.primary}; font-size: 8pt; margin-bottom: 16px;">Semnatura:</div>
                     <div style="
                         display: inline-block;
-                        width: 150px;
+                        width: 90px;
                         border-bottom: 1px solid ${colors.primary};
                     "></div>
                 </div>

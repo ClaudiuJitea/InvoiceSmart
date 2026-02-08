@@ -104,4 +104,21 @@ router.post('/', async (req, res) => {
     }
 });
 
+// Delete receipt
+router.delete('/:id', async (req, res) => {
+    try {
+        const db = await getDb();
+        const result = await db.run('DELETE FROM receipts WHERE id = ?', [req.params.id]);
+
+        if (!result?.changes) {
+            return res.status(404).json({ error: 'Receipt not found' });
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting receipt:', error);
+        res.status(500).json({ error: 'Failed to delete receipt' });
+    }
+});
+
 export default router;

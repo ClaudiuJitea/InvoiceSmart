@@ -14,12 +14,7 @@ export function renderInvoices() {
           <h1 class="page-title">${t('invoices.title')}</h1>
           <p class="page-subtitle">${t('invoices.subtitle')}</p>
         </div>
-        <div class="page-header-actions">
-          <a href="#/invoices/new" class="btn btn-filled">
-            ${icons.plus}
-            ${t('invoices.newInvoice')}
-          </a>
-        </div>
+        <div class="page-header-actions" id="invoicesHeaderActions"></div>
       </div>
 
       <div id="invoicesListContainer">
@@ -34,6 +29,7 @@ export function renderInvoices() {
 
 export async function initInvoices() {
   const container = document.getElementById('invoicesListContainer');
+  const headerActions = document.getElementById('invoicesHeaderActions');
 
   async function loadInvoices() {
     if (!container) return;
@@ -48,6 +44,15 @@ export async function initInvoices() {
   }
 
   function renderInvoicesList(invoices) {
+    if (headerActions) {
+      headerActions.innerHTML = invoices.length > 0 ? `
+        <a href="#/invoices/new" class="btn btn-filled">
+          ${icons.plus}
+          ${t('invoices.newInvoice')}
+        </a>
+      ` : '';
+    }
+
     if (invoices.length > 0) {
       container.innerHTML = `
         <div class="table-container card-elevated">

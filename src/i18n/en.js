@@ -151,6 +151,8 @@ export default {
         generateReceipt: 'Generate Receipt',
         emptyTitle: 'No receipts yet',
         emptyDescription: 'Receipts are generated when invoices are marked as paid',
+        deleteConfirm: 'Are you sure you want to delete this receipt?',
+        deleteSuccess: 'Receipt deleted successfully',
     },
 
     // Clients

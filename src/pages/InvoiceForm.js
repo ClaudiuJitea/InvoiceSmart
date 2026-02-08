@@ -453,42 +453,54 @@ export async function initInvoiceForm(params = {}) {
     // BNR Fetch
     const fetchBnrBtn = document.getElementById('fetchBnrBtn');
     const exchangeRateInput = document.getElementById('exchangeRateInput');
+    const currencyInput = form.querySelector('[name="currency"]');
+    const secondaryCurrencyInput = form.querySelector('[name="secondary_currency"]');
+
+    const fetchAndApplyExchangeRate = async (showToast = false) => {
+      if (!fetchBnrBtn || !exchangeRateInput || !currencyInput || !secondaryCurrencyInput) return;
+
+      try {
+        const currency = currencyInput.value;
+        const secondaryCurrency = secondaryCurrencyInput.value;
+
+        if (currency === secondaryCurrency) {
+          exchangeRateInput.value = 1;
+          calculateTotals();
+          if (showToast) {
+            toast.info('Currencies are the same');
+          }
+          return;
+        }
+
+        fetchBnrBtn.textContent = '...';
+        fetchBnrBtn.disabled = true;
+
+        const date = issueDateInput ? issueDateInput.value : null;
+
+        // Get rates needed for cross calculation (both relative to RON)
+        const rateA = await bnrService.getExchangeRate(currency, date);
+        const rateB = await bnrService.getExchangeRate(secondaryCurrency, date);
+
+        // Cross rate = RateA / RateB
+        const rate = rateA / rateB;
+
+        exchangeRateInput.value = rate.toFixed(4);
+        calculateTotals();
+        if (showToast) {
+          toast.success(`Updated rate: 1 ${currency} = ${rate.toFixed(4)} ${secondaryCurrency}`);
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error('Failed to fetch BNR rate: ' + error.message);
+      } finally {
+        fetchBnrBtn.textContent = 'Fetch Rate';
+        fetchBnrBtn.disabled = false;
+      }
+    };
 
     if (fetchBnrBtn && exchangeRateInput) {
       fetchBnrBtn.addEventListener('click', async () => {
-        try {
-          const currency = form.querySelector('[name="currency"]').value;
-          const secondaryCurrency = form.querySelector('[name="secondary_currency"]').value;
-
-          if (currency === secondaryCurrency) {
-            exchangeRateInput.value = 1;
-            calculateTotals();
-            toast.info('Currencies are the same');
-            return;
-          }
-
-          fetchBnrBtn.textContent = '...';
-          fetchBnrBtn.disabled = true;
-
-          const date = issueDateInput ? issueDateInput.value : null;
-
-          // Get rates needed for cross calculation (both relative to RON)
-          const rateA = await bnrService.getExchangeRate(currency, date);
-          const rateB = await bnrService.getExchangeRate(secondaryCurrency, date);
-
-          // Cross rate = RateA / RateB
-          const rate = rateA / rateB;
-
-          exchangeRateInput.value = rate.toFixed(4);
-          calculateTotals();
-          toast.success(`Updated rate: 1 ${currency} = ${rate.toFixed(4)} ${secondaryCurrency}`);
-        } catch (error) {
-          console.error(error);
-          toast.error('Failed to fetch BNR rate: ' + error.message);
-        } finally {
-          fetchBnrBtn.textContent = 'Fetch Rate';
-          fetchBnrBtn.disabled = false;
-        }
+        await fetchAndApplyExchangeRate(true);
       });
     }
 
@@ -500,8 +512,14 @@ export async function initInvoiceForm(params = {}) {
     });
 
     // Recalculate on currency/rate change
-    form.querySelector('[name="currency"]').addEventListener('change', calculateTotals);
-    form.querySelector('[name="secondary_currency"]').addEventListener('change', calculateTotals);
+    currencyInput.addEventListener('change', async () => {
+      calculateTotals();
+      await fetchAndApplyExchangeRate(false);
+    });
+    secondaryCurrencyInput.addEventListener('change', async () => {
+      calculateTotals();
+      await fetchAndApplyExchangeRate(false);
+    });
     form.querySelector('[name="exchange_rate"]').addEventListener('input', calculateTotals);
     form.querySelector('[name="tax_rate"]').addEventListener('input', calculateTotals);
 

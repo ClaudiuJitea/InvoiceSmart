@@ -5,6 +5,7 @@ import { invoiceService } from '../db/services/invoiceService.js';
 import { settingsService } from '../db/services/settingsService.js';
 import { renderReceiptTemplate } from '../templates/receipt.js';
 import { toast } from '../components/common/Toast.js';
+import { confirm } from '../components/common/Modal.js';
 import { router } from '../router.js';
 
 let receipts = [];
@@ -95,7 +96,7 @@ function renderReceiptsList(container) {
                         <th>${t('receipts.client')}</th>
                         <th>${t('receipts.issueDate')}</th>
                         <th>${t('receipts.amount')}</th>
-                        <th style="text-align: right;">${t('actions.view')}</th>
+                        <th style="text-align: right;">${t('actions.view')} / ${t('actions.delete')}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -117,10 +118,15 @@ function renderReceiptsList(container) {
                                     <span class="amount">${receipt.amount.toFixed(2)} ${receipt.currency}</span>
                                 </td>
                                 <td style="text-align: right;">
-                                    <button class="btn btn-tonal btn-sm view-receipt-btn" data-receipt-id="${receipt.id}">
-                                        ${icons.eye}
-                                        ${t('receipts.viewReceipt')}
-                                    </button>
+                                    <div class="table-actions" style="justify-content: flex-end; align-items: center;">
+                                        <button class="btn btn-tonal btn-sm view-receipt-btn" data-receipt-id="${receipt.id}">
+                                            ${icons.eye}
+                                            ${t('receipts.viewReceipt')}
+                                        </button>
+                                        <button class="btn btn-tonal btn-sm delete-receipt-btn" data-receipt-id="${receipt.id}" title="${t('actions.delete')}" aria-label="${t('actions.delete')}" style="padding: 0 var(--space-3);">
+                                            ${icons.trash}
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         `;
@@ -140,6 +146,33 @@ function renderReceiptsList(container) {
             }
         });
     });
+
+    cardContent.querySelectorAll('.delete-receipt-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const receiptId = parseInt(btn.dataset.receiptId);
+            if (!receiptId) return;
+
+            confirm({
+                title: t('actions.delete'),
+                message: t('receipts.deleteConfirm'),
+                confirmText: t('actions.delete'),
+                cancelText: t('actions.cancel'),
+                onConfirm: async () => {
+                    try {
+                        const res = await fetch(`/api/receipts/${receiptId}`, { method: 'DELETE' });
+                        if (!res.ok) throw new Error('Failed to delete receipt');
+
+                        receipts = receipts.filter(r => r.id !== receiptId);
+                        renderReceiptsList(container);
+                        toast.success(t('receipts.deleteSuccess'));
+                    } catch (error) {
+                        console.error('Failed to delete receipt:', error);
+                        toast.error('Failed to delete receipt');
+                    }
+                },
+            });
+        });
+    });
 }
 
 function viewReceipt(receipt) {
@@ -157,13 +190,13 @@ function viewReceipt(receipt) {
         <html>
         <head>
             <title>Chitanță ${receipt.receipt_number}</title>
-            <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
             <style>
-                @page { size: A5 landscape; margin: 0; }
+                @page { size: A6 landscape; margin: 4mm; }
                 body { 
                     margin: 0; 
                     padding: 20px; 
-                    font-family: 'Roboto', sans-serif; 
+                    font-family: 'Inter', sans-serif; 
                     display: flex; 
                     justify-content: center; 
                     align-items: center; 
@@ -191,6 +224,13 @@ function viewReceipt(receipt) {
                     font-family: inherit;
                     font-weight: 500;
                     transition: all 0.2s;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .print-actions button svg {
+                    width: 16px;
+                    height: 16px;
                 }
                 .print-btn {
                     background: linear-gradient(135deg, #1E3A5F 0%, #2A4F7C 100%);
@@ -211,6 +251,7 @@ function viewReceipt(receipt) {
                     body { 
                         background: white; 
                         display: block; 
+                        min-height: auto;
                         padding: 0;
                     } 
                     .receipt-wrapper { 
@@ -225,8 +266,8 @@ function viewReceipt(receipt) {
         </head>
         <body>
             <div class="print-actions">
-                <button class="print-btn" onclick="window.print()">🖨️ Print / Save PDF</button>
-                <button class="close-btn" onclick="window.close()">✕ Close</button>
+                <button class="print-btn" onclick="window.print()">${icons.print} Print / Save PDF</button>
+                <button class="close-btn" onclick="window.close()">${icons.close} Close</button>
             </div>
             <div class="receipt-wrapper">
                 ${receiptHtml}

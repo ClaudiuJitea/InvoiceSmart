@@ -17,7 +17,7 @@ export function renderClients() {
           <p class="page-subtitle">${t('clients.subtitle')}</p>
         </div>
         <div class="page-header-actions">
-          <div class="search-container">
+          <div class="search-container" id="clientSearchContainer">
             <span class="search-icon">${icons.search}</span>
             <input type="text" 
                    class="search-input" 
@@ -25,10 +25,7 @@ export function renderClients() {
                    placeholder="${t('actions.search')}..."
                    value="${searchQuery}">
           </div>
-          <a href="#/clients/new" class="btn btn-filled">
-            ${icons.plus}
-            ${t('clients.newClient')}
-          </a>
+          <div id="clientsHeaderActions"></div>
         </div>
       </div>
 
@@ -45,6 +42,8 @@ export function renderClients() {
 export async function initClients() {
   const container = document.getElementById('clientsListContainer');
   const searchInput = document.getElementById('clientSearch');
+  const searchContainer = document.getElementById('clientSearchContainer');
+  const headerActions = document.getElementById('clientsHeaderActions');
 
   async function loadClients() {
     if (!container) return;
@@ -62,6 +61,21 @@ export async function initClients() {
   }
 
   function renderClientsList(clients) {
+    const showHeaderTools = clients.length > 0 || Boolean(searchQuery);
+
+    if (searchContainer) {
+      searchContainer.style.display = showHeaderTools ? '' : 'none';
+    }
+
+    if (headerActions) {
+      headerActions.innerHTML = showHeaderTools ? `
+        <a href="#/clients/new" class="btn btn-filled">
+          ${icons.plus}
+          ${t('clients.newClient')}
+        </a>
+      ` : '';
+    }
+
     if (clients.length > 0) {
       container.innerHTML = `
             <div class="table-container card-elevated">

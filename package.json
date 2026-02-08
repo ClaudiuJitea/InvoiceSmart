@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:full": "bash -lc 'npm --prefix server run dev & vite'",
     "server": "node server/index.js",
     "server:dev": "node --watch server/index.js",
     "build": "vite build",
@@ -30,7 +31,7 @@
   },
   "dependencies": {
     "html2canvas": "^1.4.1",
-    "jspdf": "^4.0.0",
+    "jspdf": "^4.1.0",
     "jspdf-autotable": "^5.0.7",
     "sql.js": "^1.13.0"
   }

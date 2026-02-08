@@ -151,6 +151,8 @@ export default {
         generateReceipt: 'Generează Chitanță',
         emptyTitle: 'Nu există chitanțe',
         emptyDescription: 'Chitanțele sunt generate când facturile sunt marcate ca plătite',
+        deleteConfirm: 'Ești sigur că vrei să ștergi această chitanță?',
+        deleteSuccess: 'Chitanța a fost ștearsă cu succes',
     },
 
     // Clients
