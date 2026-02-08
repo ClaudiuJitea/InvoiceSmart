@@ -316,6 +316,8 @@
 .page-header-actions {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     gap: var(--space-2);
 }
 

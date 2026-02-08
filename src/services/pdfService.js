@@ -2,16 +2,20 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-export async function exportToPdf(element, filename = 'invoice') {
+async function createPdfFromElement(element) {
     // Create a clone for rendering
     const clone = element.cloneNode(true);
     clone.style.width = '210mm';
-    clone.style.minHeight = '297mm';
-    clone.style.padding = '20mm';
+    clone.style.minHeight = '0';
+    clone.style.padding = '0';
+    clone.style.boxSizing = 'border-box';
     clone.style.background = 'white';
-    clone.style.position = 'absolute';
-    clone.style.left = '-9999px';
+    clone.style.position = 'fixed';
+    clone.style.left = '0';
     clone.style.top = '0';
+    clone.style.transform = 'translateX(-200vw)';
+    clone.style.pointerEvents = 'none';
+    clone.style.zIndex = '-1';
 
     document.body.appendChild(clone);
 
@@ -36,38 +40,55 @@ export async function exportToPdf(element, filename = 'invoice') {
         const imgData = canvas.toDataURL('image/png');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 16; // mm
+        const contentWidth = pdfWidth - margin * 2;
+        const contentHeight = pdfHeight - margin * 2;
 
         // Calculate dimensions to fit the page
-        const imgWidth = pdfWidth;
-        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+        const imgWidth = contentWidth;
+        const imgHeight = (canvas.height * contentWidth) / canvas.width;
+        const overflowRatio = imgHeight / contentHeight;
 
         // Add image (may need multiple pages for long invoices)
-        if (imgHeight <= pdfHeight) {
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        // Keep near-A4 invoices on one page to avoid orphaned totals spilling to page 2.
+        if (imgHeight <= contentHeight) {
+            pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+        } else if (overflowRatio <= 1.2) {
+            const fittedWidth = (contentHeight * canvas.width) / canvas.height;
+            const offsetX = (pdfWidth - fittedWidth) / 2;
+            pdf.addImage(imgData, 'PNG', offsetX, margin, fittedWidth, contentHeight);
         } else {
             // Multi-page handling
             let heightLeft = imgHeight;
-            let position = 0;
+            let position = margin;
 
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pdfHeight;
+            pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+            heightLeft -= contentHeight;
 
             while (heightLeft > 0) {
-                position = heightLeft - imgHeight;
+                position = margin - (imgHeight - heightLeft);
                 pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pdfHeight;
+                pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+                heightLeft -= contentHeight;
             }
         }
 
-        // Save the PDF
-        pdf.save(`${filename}.pdf`);
-
-        return true;
+        return pdf;
     } finally {
         // Cleanup
         document.body.removeChild(clone);
     }
 }
 
-export default { exportToPdf };
+export async function exportToPdfBlob(element) {
+    const pdf = await createPdfFromElement(element);
+    return pdf.output('blob');
+}
+
+export async function exportToPdf(element, filename = 'invoice') {
+    const pdf = await createPdfFromElement(element);
+    pdf.save(`${filename}.pdf`);
+    return true;
+}
+
+export default { exportToPdf, exportToPdfBlob };

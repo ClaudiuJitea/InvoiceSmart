@@ -417,6 +417,106 @@
     justify-content: flex-end;
 }
 
+.bulk-actions-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    border: 1px solid var(--md-outline-variant);
+    border-radius: var(--radius-full);
+    background: var(--md-surface-container-low);
+}
+
+.bulk-actions-count {
+    font-size: var(--text-label-md);
+    font-weight: 600;
+    color: var(--md-on-surface);
+    padding: 0 var(--space-2);
+}
+
+.bulk-select-column {
+    width: 52px;
+    text-align: center !important;
+}
+
+.bulk-select-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--md-primary);
+}
+
+.invoices-filters-card {
+    margin-bottom: var(--space-3);
+    overflow: visible;
+    padding: 0;
+}
+
+.invoices-filters-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    padding: var(--space-4);
+    background: linear-gradient(180deg, var(--md-surface-container-low) 0%, var(--md-surface) 100%);
+    border-radius: inherit;
+}
+
+.invoices-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.invoices-filter-search-group {
+    flex: 1;
+    min-width: 220px;
+}
+
+.invoices-filter-status-group {
+    min-width: 180px;
+    position: relative;
+}
+
+.invoices-filter-label {
+    font-size: var(--text-label-sm);
+    font-weight: 600;
+    color: var(--md-on-surface-variant);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.invoices-filter-input {
+    height: 40px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--md-outline-variant);
+    border-radius: var(--radius-md);
+    background: var(--md-surface);
+    color: var(--md-on-surface);
+    font-family: var(--font-family);
+    font-size: var(--text-body-md);
+}
+
+.invoices-filter-input:focus {
+    outline: none;
+    border-color: var(--md-primary);
+    box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.08);
+}
+
+.invoices-filter-status-group .custom-select-trigger {
+    height: 40px;
+    border-width: 1px;
+}
+
+.invoices-filter-status-group .custom-select-options {
+    top: calc(100% + 6px);
+    z-index: 120;
+}
+
+.invoices-clear-filters {
+    align-self: flex-end;
+}
+
 /* Empty state */
 .table-empty {
     padding: var(--space-12);

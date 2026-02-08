@@ -7,6 +7,9 @@ export class CustomSelect {
         this.optionsContainer = null;
         this.labelSpan = null;
         this.isOpen = false;
+        this.handleTriggerClick = null;
+        this.handleDocumentClick = null;
+        this.handleSelectChange = null;
 
         this.init();
     }
@@ -49,24 +52,27 @@ export class CustomSelect {
         this.select.parentNode.insertBefore(this.container, this.select.nextSibling);
 
         // Event Listeners
-        this.trigger.addEventListener('click', (e) => {
+        this.handleTriggerClick = (e) => {
             if (this.select.disabled) return;
             e.stopPropagation();
             this.toggle();
-        });
+        };
+        this.trigger.addEventListener('click', this.handleTriggerClick);
 
         // Close when clicking outside
-        document.addEventListener('click', (e) => {
+        this.handleDocumentClick = (e) => {
             if (!this.container.contains(e.target)) {
                 this.close();
             }
-        });
+        };
+        document.addEventListener('click', this.handleDocumentClick);
 
         // Listen for external changes to the select (e.g. programmatically changed)
-        this.select.addEventListener('change', () => {
+        this.handleSelectChange = () => {
             this.updateLabel();
             this.renderOptions(); // To update 'selected' class
-        });
+        };
+        this.select.addEventListener('change', this.handleSelectChange);
     }
 
     renderOptions() {
@@ -134,5 +140,25 @@ export class CustomSelect {
         this.container.classList.remove('open');
         this.trigger.classList.remove('open');
         this.isOpen = false;
+    }
+
+    destroy() {
+        if (this.trigger && this.handleTriggerClick) {
+            this.trigger.removeEventListener('click', this.handleTriggerClick);
+        }
+        if (this.select && this.handleSelectChange) {
+            this.select.removeEventListener('change', this.handleSelectChange);
+        }
+        if (this.handleDocumentClick) {
+            document.removeEventListener('click', this.handleDocumentClick);
+        }
+
+        if (this.container && this.container.parentNode) {
+            this.container.parentNode.removeChild(this.container);
+        }
+
+        if (this.select) {
+            this.select.style.display = '';
+        }
     }
 }

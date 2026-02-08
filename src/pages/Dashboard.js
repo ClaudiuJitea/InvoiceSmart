@@ -589,19 +589,19 @@ dashboardStyles.textContent = `
   }
 
   .dashboard-stat-invoices .stat-card-glow {
-    background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(30, 58, 95, 0.06) 0%, transparent 70%);
   }
 
   .dashboard-stat-clients .stat-card-glow {
-    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(30, 58, 95, 0.06) 0%, transparent 70%);
   }
 
   .dashboard-stat-revenue .stat-card-glow {
-    background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(30, 58, 95, 0.06) 0%, transparent 70%);
   }
 
   .dashboard-stat-pending .stat-card-glow {
-    background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(30, 58, 95, 0.06) 0%, transparent 70%);
   }
 
   .stat-card-content {
@@ -636,23 +636,23 @@ dashboardStyles.textContent = `
   }
 
   .stat-icon-blue {
-    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-    color: #2563eb;
+    background: linear-gradient(135deg, var(--md-surface-container) 0%, var(--md-surface-container-high) 100%);
+    color: var(--md-on-surface-variant);
   }
 
   .stat-icon-indigo {
-    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-    color: #4f46e5;
+    background: linear-gradient(135deg, var(--md-surface-container) 0%, var(--md-surface-container-high) 100%);
+    color: var(--md-on-surface-variant);
   }
 
   .stat-icon-emerald {
-    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-    color: #059669;
+    background: linear-gradient(135deg, var(--md-surface-container) 0%, var(--md-surface-container-high) 100%);
+    color: var(--md-on-surface-variant);
   }
 
   .stat-icon-amber {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    color: #d97706;
+    background: linear-gradient(135deg, var(--md-surface-container) 0%, var(--md-surface-container-high) 100%);
+    color: var(--md-on-surface-variant);
   }
 
   .stat-info {
