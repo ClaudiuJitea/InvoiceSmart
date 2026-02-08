@@ -1,5 +1,5 @@
 // Admin Dashboard Page Component
-import { t } from '../i18n/index.js';
+import { t, i18n } from '../i18n/index.js';
 import { icons } from '../components/icons.js';
 import { authService } from '../db/services/authService.js';
 import { userService } from '../db/services/userService.js';
@@ -15,13 +15,13 @@ export function renderAdminDashboard() {
     <div class="page admin-dashboard">
         <div class="page-header-row">
             <div class="page-header-left">
-                <h1 class="page-title">User Management</h1>
-                <p class="page-subtitle">Manage system users and permissions</p>
+                <h1 class="page-title">${t('admin.title')}</h1>
+                <p class="page-subtitle">${t('admin.subtitle')}</p>
             </div>
             <div class="page-header-actions">
                 <button class="btn btn-filled" id="addUserBtn">
                     ${icons.plus}
-                    <span>Add User</span>
+                    <span>${t('admin.addUser')}</span>
                 </button>
             </div>
         </div>
@@ -34,7 +34,7 @@ export function renderAdminDashboard() {
                     ${icons.clients}
                 </div>
                 <div class="stat-card-content">
-                    <span class="stat-card-label">Total Users</span>
+                    <span class="stat-card-label">${t('admin.totalUsers')}</span>
                     <span class="stat-card-value" id="statTotalUsers">-</span>
                 </div>
             </div>
@@ -44,7 +44,7 @@ export function renderAdminDashboard() {
                     ${icons.check}
                 </div>
                 <div class="stat-card-content">
-                    <span class="stat-card-label">Active Users</span>
+                    <span class="stat-card-label">${t('admin.activeUsers')}</span>
                     <span class="stat-card-value" id="statActiveUsers">-</span>
                 </div>
             </div>
@@ -54,7 +54,7 @@ export function renderAdminDashboard() {
                     ${icons.settings}
                 </div>
                 <div class="stat-card-content">
-                    <span class="stat-card-label">Admins</span>
+                    <span class="stat-card-label">${t('admin.admins')}</span>
                     <span class="stat-card-value" id="statAdmins">-</span>
                 </div>
             </div>
@@ -64,7 +64,7 @@ export function renderAdminDashboard() {
                     ${icons.close}
                 </div>
                 <div class="stat-card-content">
-                    <span class="stat-card-label">Inactive</span>
+                    <span class="stat-card-label">${t('admin.inactive')}</span>
                     <span class="stat-card-value" id="statInactiveUsers">-</span>
                 </div>
             </div>
@@ -79,15 +79,15 @@ export function renderAdminDashboard() {
                         type="text" 
                         id="userSearch" 
                         class="search-input" 
-                        placeholder="Search users..."
+                        placeholder="${t('admin.searchPlaceholder')}"
                         value="${searchQuery}"
                     >
                 </div>
                 <div class="admin-filter-group">
                     <select id="roleFilter" class="input admin-filter-select">
-                        <option value="">All Roles</option>
-                        <option value="admin" ${roleFilter === 'admin' ? 'selected' : ''}>Admin</option>
-                        <option value="user" ${roleFilter === 'user' ? 'selected' : ''}>User</option>
+                        <option value="">${t('admin.allRoles')}</option>
+                        <option value="admin" ${roleFilter === 'admin' ? 'selected' : ''}>${t('admin.form.roleAdmin')}</option>
+                        <option value="user" ${roleFilter === 'user' ? 'selected' : ''}>${t('admin.form.roleUser')}</option>
                     </select>
                 </div>
             </div>
@@ -99,19 +99,19 @@ export function renderAdminDashboard() {
                 <table class="table admin-users-table" id="usersTable">
                     <thead>
                         <tr>
-                            <th>User</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Status</th>
-                            <th>Last Login</th>
-                            <th class="text-right">Actions</th>
+                            <th>${t('admin.headers.user')}</th>
+                            <th>${t('admin.headers.email')}</th>
+                            <th>${t('admin.headers.role')}</th>
+                            <th>${t('admin.headers.status')}</th>
+                            <th>${t('admin.headers.lastLogin')}</th>
+                            <th class="text-right">${t('admin.headers.actions')}</th>
                         </tr>
                     </thead>
                     <tbody id="usersTableBody">
                         <tr>
                             <td colspan="6" class="table-loading">
                                 <div class="spinner"></div>
-                                <span>Loading users...</span>
+                                <span>${t('general.loading')}</span>
                             </td>
                         </tr>
                     </tbody>
@@ -126,7 +126,7 @@ export function renderAdminDashboard() {
         <div class="modal-overlay" id="userModal">
             <div class="modal">
                 <div class="modal-header">
-                    <h3 class="modal-title" id="modalTitle">Add User</h3>
+                    <h3 class="modal-title" id="modalTitle">${t('admin.modal.addUserTitle')}</h3>
                     <button class="modal-close" data-close-modal>${icons.close}</button>
                 </div>
                 <form id="userForm" class="modal-content">
@@ -134,43 +134,43 @@ export function renderAdminDashboard() {
                     
                     <div class="modal-form-grid">
                         <div class="form-group">
-                            <label class="input-label" for="userUsername">Username <span class="required-mark">*</span></label>
+                            <label class="input-label" for="userUsername">${t('admin.form.username')} <span class="required-mark">*</span></label>
                             <input type="text" id="userUsername" class="input" placeholder="e.g. jdoe" required>
                         </div>
                         <div class="form-group">
-                            <label class="input-label" for="userFullName">Full Name</label>
+                            <label class="input-label" for="userFullName">${t('admin.form.fullName')}</label>
                             <input type="text" id="userFullName" class="input" placeholder="e.g. John Doe">
                         </div>
                         
                         <div class="form-group modal-form-full">
-                            <label class="input-label" for="userEmail">Email <span class="required-mark">*</span></label>
+                            <label class="input-label" for="userEmail">${t('admin.form.email')} <span class="required-mark">*</span></label>
                             <input type="email" id="userEmail" class="input" placeholder="name@company.com" required>
                         </div>
                         
                         <div class="form-group">
-                            <label class="input-label" for="userPassword">Password <span class="required-mark">*</span></label>
-                            <input type="password" id="userPassword" class="input" placeholder="At least 6 chars" minlength="6" required>
+                            <label class="input-label" for="userPassword">${t('admin.form.password')} <span class="required-mark">*</span></label>
+                            <input type="password" id="userPassword" class="input" placeholder="${t('admin.form.passwordHint')}" minlength="6" required>
                         </div>
                         <div class="form-group">
-                            <label class="input-label" for="userRole">Role <span class="required-mark">*</span></label>
+                            <label class="input-label" for="userRole">${t('admin.form.role')} <span class="required-mark">*</span></label>
                             <select id="userRole" class="input select" required>
-                                <option value="user">User</option>
-                                <option value="admin">Admin</option>
+                                <option value="user">${t('admin.form.roleUser')}</option>
+                                <option value="admin">${t('admin.form.roleAdmin')}</option>
                             </select>
                         </div>
                         
                         <div class="form-group modal-form-full" id="isActiveField" style="display: none;">
                             <label class="toggle-switch">
                                 <input type="checkbox" id="userIsActive" checked>
-                                <span class="toggle-label">Active Account</span>
+                                <span class="toggle-label">${t('admin.form.activeAccount')}</span>
                             </label>
                         </div>
                     </div>
                 </form>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-outlined" data-close-modal>Cancel</button>
+                    <button type="button" class="btn btn-outlined" data-close-modal>${t('actions.cancel')}</button>
                     <button type="submit" form="userForm" class="btn btn-filled" id="saveUserBtn">
-                        Save User
+                        ${t('admin.form.saveUser')}
                     </button>
                 </div>
             </div>
@@ -180,7 +180,7 @@ export function renderAdminDashboard() {
         <div class="modal-overlay" id="resetPasswordModal">
             <div class="modal" style="max-width: 400px;">
                 <div class="modal-header">
-                    <h3 class="modal-title">Reset Password</h3>
+                    <h3 class="modal-title">${t('admin.modal.resetPasswordTitle')}</h3>
                     <button class="modal-close" data-close-modal>${icons.close}</button>
                 </div>
                 <form id="resetPasswordForm" class="modal-content">
@@ -188,15 +188,15 @@ export function renderAdminDashboard() {
                     <p class="mb-4 text-muted" id="resetPasswordUsername"></p>
                     
                     <div class="form-group">
-                        <label class="input-label" for="newPassword">New Password <span class="required-mark">*</span></label>
-                        <input type="password" id="newPassword" class="input" minlength="6" required placeholder="Enter new password">
-                        <span class="text-sm text-muted mt-4">Minimum 6 characters</span>
+                        <label class="input-label" for="newPassword">${t('admin.form.newPassword')} <span class="required-mark">*</span></label>
+                        <input type="password" id="newPassword" class="input" minlength="6" required placeholder="${t('admin.form.newPasswordPlaceholder')}">
+                        <span class="text-sm text-muted mt-4">${t('admin.messages.passwordLength')}</span>
                     </div>
                 </form>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-outlined" data-close-modal>Cancel</button>
+                    <button type="button" class="btn btn-outlined" data-close-modal>${t('actions.cancel')}</button>
                     <button type="submit" form="resetPasswordForm" class="btn btn-filled">
-                        Reset Password
+                        ${t('admin.form.resetPassword')}
                     </button>
                 </div>
             </div>
@@ -206,18 +206,18 @@ export function renderAdminDashboard() {
         <div class="modal-overlay" id="deleteUserModal">
             <div class="modal" style="max-width: 400px;">
                 <div class="modal-header">
-                    <h3 class="modal-title">Delete User</h3>
+                    <h3 class="modal-title">${t('admin.modal.deleteUserTitle')}</h3>
                     <button class="modal-close" data-close-modal>${icons.close}</button>
                 </div>
                 <div class="modal-content">
                     <input type="hidden" id="deleteUserId" value="">
-                    <p class="mb-4">Are you sure you want to delete <strong id="deleteUsername"></strong>?</p>
-                    <p class="text-error text-sm">This action cannot be undone.</p>
+                    <p class="mb-4"><span id="deleteUsername"></span></p>
+                    <p class="text-error text-sm">${t('admin.messages.deleteWarning')}</p>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-outlined" data-close-modal>Cancel</button>
+                    <button type="button" class="btn btn-outlined" data-close-modal>${t('actions.cancel')}</button>
                     <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-                        Delete User
+                        ${t('admin.form.deleteUser')}
                     </button>
                 </div>
             </div>
@@ -276,7 +276,7 @@ async function loadUsers() {
                     <td colspan="6" class="table-empty">
                         <div class="empty-state">
                             ${icons.clients}
-                            <p>No users found</p>
+                            <p>${t('general.noResults')}</p>
                         </div>
                     </td>
                 </tr>
@@ -299,24 +299,24 @@ async function loadUsers() {
                 <td>${escapeHtml(user.email)}</td>
                 <td>
                     <span class="badge badge-${user.role === 'admin' ? 'primary' : 'secondary'}">
-                        ${user.role}
+                        ${user.role === 'admin' ? t('admin.form.roleAdmin') : t('admin.form.roleUser')}
                     </span>
                 </td>
                 <td>
                     <span class="badge badge-${user.is_active ? 'success' : 'danger'}">
-                        ${user.is_active ? 'Active' : 'Inactive'}
+                        ${user.is_active ? t('admin.status.active') : t('admin.status.inactive')}
                     </span>
                 </td>
-                <td>${user.last_login ? formatDate(user.last_login) : 'Never'}</td>
+                <td>${user.last_login ? formatDate(user.last_login) : t('admin.never')}</td>
                 <td class="text-right">
                     <div class="table-actions">
-                        <button class="btn btn-icon btn-ghost" data-action="edit" data-id="${user.id}" title="Edit">
+                        <button class="btn btn-icon btn-ghost" data-action="edit" data-id="${user.id}" title="${t('actions.edit')}">
                             ${icons.edit}
                         </button>
-                        <button class="btn btn-icon btn-ghost" data-action="reset-password" data-id="${user.id}" title="Reset Password">
+                        <button class="btn btn-icon btn-ghost" data-action="reset-password" data-id="${user.id}" title="${t('admin.form.resetPassword')}">
                             ${icons.lock}
                         </button>
-                        <button class="btn btn-icon btn-ghost btn-danger-ghost" data-action="delete" data-id="${user.id}" title="Delete">
+                        <button class="btn btn-icon btn-ghost btn-danger-ghost" data-action="delete" data-id="${user.id}" title="${t('actions.delete')}">
                             ${icons.trash}
                         </button>
                     </div>
@@ -337,8 +337,8 @@ async function loadUsers() {
         tbody.innerHTML = `
             <tr>
                 <td colspan="6" class="table-error">
-                    <p>Failed to load users. Please try again.</p>
-                    <button class="btn btn-outline btn-sm" onclick="window.location.reload()">Retry</button>
+                    <p>${t('admin.messages.loadError')}.</p>
+                    <button class="btn btn-outline btn-sm" onclick="window.location.reload()">${t('actions.refresh') || 'Retry'}</button>
                 </td>
             </tr>
         `;
@@ -369,7 +369,7 @@ function renderPagination(pagination) {
     container.innerHTML = `
         <div class="pagination">
             <button class="pagination-btn" ${pagination.page === 1 ? 'disabled' : ''} data-page="${pagination.page - 1}">
-                Previous
+                ${t('admin.pagination.previous')}
             </button>
             <div class="pagination-pages">
                 ${pages.map(p => p === '...'
@@ -378,11 +378,15 @@ function renderPagination(pagination) {
     ).join('')}
             </div>
             <button class="pagination-btn" ${pagination.page === pagination.totalPages ? 'disabled' : ''} data-page="${pagination.page + 1}">
-                Next
+                ${t('admin.pagination.next')}
             </button>
         </div>
         <span class="pagination-info">
-            Showing ${(pagination.page - 1) * pagination.limit + 1} to ${Math.min(pagination.page * pagination.limit, pagination.total)} of ${pagination.total}
+            ${t('admin.pagination.showing', {
+        start: (pagination.page - 1) * pagination.limit + 1,
+        end: Math.min(pagination.page * pagination.limit, pagination.total),
+        total: pagination.total
+    })}
         </span>
     `;
 
@@ -450,7 +454,7 @@ function openUserModal(user = null) {
     const passwordInput = document.getElementById('userPassword');
 
     if (user) {
-        title.textContent = 'Edit User';
+        title.textContent = t('admin.modal.editUserTitle');
         document.getElementById('userId').value = user.id;
         document.getElementById('userUsername').value = user.username;
         document.getElementById('userFullName').value = user.full_name || '';
@@ -461,11 +465,11 @@ function openUserModal(user = null) {
         passwordInput.placeholder = 'Leave empty to keep current';
         isActiveField.style.display = 'block';
     } else {
-        title.textContent = 'Add User';
+        title.textContent = t('admin.modal.addUserTitle');
         document.getElementById('userId').value = '';
         document.getElementById('userForm').reset();
         passwordInput.required = true;
-        passwordInput.placeholder = 'At least 6 chars';
+        passwordInput.placeholder = t('admin.form.passwordHint');
         isActiveField.style.display = 'none';
     }
 
@@ -486,7 +490,7 @@ async function handleUserAction(e) {
                 const user = await userService.getById(userId);
                 openUserModal(user);
             } catch (error) {
-                alert('Failed to load user: ' + error.message);
+                alert(t('admin.messages.loadError') + ': ' + error.message);
             }
             break;
 
@@ -495,7 +499,7 @@ async function handleUserAction(e) {
             const username = row.querySelector('.user-username').textContent;
             document.getElementById('resetPasswordUserId').value = userId;
             document.getElementById('resetPasswordUsername').innerHTML =
-                `Reset password for <strong>${username}</strong>`;
+                `${t('admin.form.resetPassword')} <strong>${username}</strong>`;
             document.getElementById('newPassword').value = '';
             document.getElementById('resetPasswordModal').classList.add('open');
             break;
@@ -504,7 +508,7 @@ async function handleUserAction(e) {
             const deleteRow = btn.closest('tr');
             const deleteUsername = deleteRow.querySelector('.user-name').textContent;
             document.getElementById('deleteUserId').value = userId;
-            document.getElementById('deleteUsername').textContent = deleteUsername;
+            document.getElementById('deleteUsername').textContent = t('admin.messages.deleteConfirm', { name: deleteUsername });
             document.getElementById('deleteUserModal').classList.add('open');
             break;
     }
@@ -529,7 +533,7 @@ async function handleUserSubmit(e) {
     } else {
         // Create mode
         if (!password || password.length < 6) {
-            alert('Password must be at least 6 characters');
+            alert(t('admin.messages.passwordLength'));
             return;
         }
         userData.password = password;
@@ -546,7 +550,7 @@ async function handleUserSubmit(e) {
         await loadStats();
         await loadUsers();
     } catch (error) {
-        alert('Failed to save user: ' + error.message);
+        alert(t('admin.messages.saveError', { error: error.message }));
     }
 }
 
@@ -557,16 +561,16 @@ async function handleResetPassword(e) {
     const newPassword = document.getElementById('newPassword').value;
 
     if (!newPassword || newPassword.length < 6) {
-        alert('Password must be at least 6 characters');
+        alert(t('admin.messages.passwordLength'));
         return;
     }
 
     try {
         await userService.resetPassword(userId, newPassword);
         closeAllModals();
-        alert('Password reset successfully');
+        alert(t('admin.messages.resetSuccess'));
     } catch (error) {
-        alert('Failed to reset password: ' + error.message);
+        alert(t('admin.messages.resetError', { error: error.message }));
     }
 }
 
@@ -579,7 +583,7 @@ async function handleDeleteUser() {
         await loadStats();
         await loadUsers();
     } catch (error) {
-        alert('Failed to delete user: ' + error.message);
+        alert(t('admin.messages.deleteError', { error: error.message }));
     }
 }
 
@@ -608,7 +612,7 @@ function escapeHtml(str) {
 function formatDate(dateStr) {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(i18n.locale === 'ro' ? 'ro-RO' : 'en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
