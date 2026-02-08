@@ -4,6 +4,9 @@ import { settingsService } from '../db/services/settingsService.js';
 
 export function renderClassicTemplate(invoice) {
   const settings = settingsService.get() || {};
+  const items = invoice.items || [];
+  const minVisibleRows = 12;
+  const fillerHeight = Math.max(0, (minVisibleRows - items.length) * 34);
 
   // Classic color palette
   const colors = {
@@ -130,6 +133,10 @@ export function renderClassicTemplate(invoice) {
         }
         .invoice-classic .items-table td.number {
           text-align: center;
+        }
+        .invoice-classic .items-table .filler-row td {
+          height: ${fillerHeight}px;
+          padding: 0;
         }
         .invoice-classic .totals {
           display: flex;
@@ -275,7 +282,7 @@ export function renderClassicTemplate(invoice) {
           </tr>
         </thead>
         <tbody>
-          ${(invoice.items || []).map((item, index) => `
+          ${items.map((item, index) => `
             <tr>
               <td class="number">${index + 1}</td>
               <td>${item.description}</td>
@@ -285,6 +292,11 @@ export function renderClassicTemplate(invoice) {
               <td>${item.total.toFixed(2)} ${invoice.currency}</td>
             </tr>
           `).join('')}
+          ${fillerHeight > 0 ? `
+            <tr class="filler-row">
+              <td colspan="6"></td>
+            </tr>
+          ` : ''}
         </tbody>
       </table>
 

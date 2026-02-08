@@ -7,12 +7,24 @@ export function renderModernTemplate(invoice) {
   const lang = invoice.language || 'en';
   const secLang = invoice.secondary_language || 'ro';
   const mode = invoice.language_mode || 'single';
+  const items = invoice.items || [];
+  const minVisibleRows = 12;
+  const fillerHeight = Math.max(0, (minVisibleRows - items.length) * 38);
 
   const text = (key) => {
     if (mode === 'dual') {
       return tDual(key, lang, secLang);
     }
     return i18n.get(key, lang);
+  };
+  const headerLabel = (key) => {
+    if (mode === 'dual') {
+      return `
+        <span class="label-primary">${i18n.get(key, lang)}</span>
+        <span class="label-secondary">${i18n.get(key, secLang)}</span>
+      `;
+    }
+    return `<span class="label-single">${i18n.get(key, lang)}</span>`;
   };
 
   // Modern color palette
@@ -122,25 +134,94 @@ export function renderModernTemplate(invoice) {
           width: 100%;
           border-collapse: collapse;
           margin-bottom: 30px;
+          table-layout: fixed;
         }
         .invoice-modern .items-table th {
-          text-align: left;
-          padding: 14px 12px;
+          padding: 8px 10px 9px;
           border-bottom: 3px solid ${colors.primary};
           font-weight: 600;
-          font-size: 9pt;
+          font-size: 8.5pt;
           color: ${colors.primary};
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
+          text-transform: none;
+          letter-spacing: 0.2px;
+          vertical-align: top;
+          line-height: 1.3;
         }
-        .invoice-modern .items-table th:last-child,
-        .invoice-modern .items-table td:last-child {
-          text-align: right;
+        .invoice-modern .items-table th .header-label {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          min-height: 40px;
+          white-space: normal;
+          word-break: keep-all;
+          overflow-wrap: break-word;
+          width: 100%;
+        }
+        .invoice-modern .items-table th .label-primary,
+        .invoice-modern .items-table th .label-secondary,
+        .invoice-modern .items-table th .label-single {
+          display: block;
+        }
+        .invoice-modern .items-table th .label-primary {
+          font-weight: 700;
+          line-height: 1.2;
+        }
+        .invoice-modern .items-table th .label-secondary {
+          margin-top: 2px;
+          font-size: 8pt;
+          opacity: 0.88;
+          line-height: 1.2;
         }
         .invoice-modern .items-table td {
           padding: 14px 12px;
           border-bottom: 1px solid ${colors.border};
           vertical-align: top;
+        }
+        .invoice-modern .items-table .col-description {
+          width: 44%;
+          text-align: left;
+        }
+        .invoice-modern .items-table .col-unit,
+        .invoice-modern .items-table .col-qty {
+          width: 10%;
+          text-align: center;
+        }
+        .invoice-modern .items-table .col-unit-price,
+        .invoice-modern .items-table .col-amount {
+          width: 18%;
+          text-align: right;
+        }
+        .invoice-modern .items-table td.col-description {
+          word-break: break-word;
+          overflow-wrap: anywhere;
+        }
+        .invoice-modern .items-table td.col-unit,
+        .invoice-modern .items-table td.col-qty {
+          white-space: nowrap;
+        }
+        .invoice-modern .items-table td.col-unit-price,
+        .invoice-modern .items-table td.col-amount {
+          white-space: nowrap;
+          font-variant-numeric: tabular-nums;
+        }
+        .invoice-modern .items-table th.col-description .header-label {
+          align-items: flex-start;
+          text-align: left;
+        }
+        .invoice-modern .items-table th.col-unit .header-label,
+        .invoice-modern .items-table th.col-qty .header-label {
+          align-items: center;
+          text-align: center;
+        }
+        .invoice-modern .items-table th.col-unit-price .header-label,
+        .invoice-modern .items-table th.col-amount .header-label {
+          align-items: flex-end;
+          text-align: right;
+        }
+        .invoice-modern .items-table .filler-row td {
+          height: ${fillerHeight}px;
+          padding: 0;
+          border-bottom: 1px solid ${colors.border};
         }
         .invoice-modern .totals {
           display: flex;
@@ -245,23 +326,28 @@ export function renderModernTemplate(invoice) {
       <table class="items-table">
         <thead>
           <tr>
-            <th style="width: 50%">${text('invoice.description')}</th>
-            <th>${text('invoice.unit')}</th>
-            <th>${text('invoice.quantity')}</th>
-            <th>${text('invoice.unitPrice')}</th>
-            <th>${text('invoice.amount')}</th>
+            <th class="col-description"><span class="header-label">${headerLabel('invoice.description')}</span></th>
+            <th class="col-unit"><span class="header-label">${headerLabel('invoice.unit')}</span></th>
+            <th class="col-qty"><span class="header-label">${headerLabel('invoice.quantity')}</span></th>
+            <th class="col-unit-price"><span class="header-label">${headerLabel('invoice.unitPrice')}</span></th>
+            <th class="col-amount"><span class="header-label">${headerLabel('invoice.amount')}</span></th>
           </tr>
         </thead>
         <tbody>
-          ${(invoice.items || []).map(item => `
+          ${items.map(item => `
             <tr>
-              <td>${item.description}</td>
-              <td>${item.unit}</td>
-              <td>${item.quantity}</td>
-              <td>${item.unit_price.toFixed(2)} ${invoice.currency}</td>
-              <td>${item.total.toFixed(2)} ${invoice.currency}</td>
+              <td class="col-description">${item.description}</td>
+              <td class="col-unit">${item.unit}</td>
+              <td class="col-qty">${item.quantity}</td>
+              <td class="col-unit-price">${item.unit_price.toFixed(2)} ${invoice.currency}</td>
+              <td class="col-amount">${item.total.toFixed(2)} ${invoice.currency}</td>
             </tr>
           `).join('')}
+          ${fillerHeight > 0 ? `
+            <tr class="filler-row">
+              <td colspan="5"></td>
+            </tr>
+          ` : ''}
         </tbody>
       </table>
 

@@ -1,9 +1,9 @@
 // Classic Blue Invoice Template - Professional Blue Style
-import { t } from '../i18n/index.js';
 import { settingsService } from '../db/services/settingsService.js';
 
 export function renderClassicBlueTemplate(invoice) {
     const settings = settingsService.get() || {};
+    const items = invoice.items || [];
     // Classic Blue color palette
     const colors = {
         primary: '#21618C',
@@ -11,6 +11,13 @@ export function renderClassicBlueTemplate(invoice) {
         border: '#21618C',
         bgLight: '#f0f8ff'
     };
+    const primaryCurrency = invoice.currency || settings.default_currency || 'EUR';
+    const secondaryCurrency = invoice.secondary_currency || settings.secondary_currency || 'RON';
+    const totalSecondary = Number(invoice.total_secondary);
+    const hasSecondaryTotal = Number.isFinite(totalSecondary) && totalSecondary > 0 && primaryCurrency !== secondaryCurrency;
+    const formatAmount = (value) => Number(value || 0).toFixed(2);
+    const minVisibleRows = 12;
+    const fillerHeight = Math.max(0, (minVisibleRows - items.length) * 30);
 
     return `
     <div class="invoice-template invoice-classic-blue">
@@ -56,6 +63,11 @@ export function renderClassicBlueTemplate(invoice) {
             margin-bottom: 20px;
             line-height: 1.4;
         }
+        .invoice-classic-blue .currency-line {
+            margin-top: 6px;
+            font-size: 8.5pt;
+            font-weight: 600;
+        }
         .invoice-classic-blue .client-col {
            /* ensuring margin reset if any */
         }
@@ -93,6 +105,10 @@ export function renderClassicBlueTemplate(invoice) {
         .invoice-classic-blue .col-vat { width: 80px; text-align: right; }
 
         .invoice-classic-blue .col-number { text-align: center; font-size: 8pt; }
+        .invoice-classic-blue .items-table .filler-row td {
+            height: ${fillerHeight}px;
+            padding: 0;
+        }
         
         /* Footer/Totals */
         .invoice-classic-blue .footer-row {
@@ -169,6 +185,7 @@ export function renderClassicBlueTemplate(invoice) {
                  Nr.: ${invoice.invoice_number}<br>
                  Seria: ${invoice.series || 'XXX'}<br>
                  Data: ${new Date(invoice.issue_date).toLocaleDateString()}
+                 <div class="currency-line">Moneda: ${primaryCurrency}</div>
             </div>
         </div>
 
@@ -191,9 +208,9 @@ export function renderClassicBlueTemplate(invoice) {
             <th class="col-desc">Denumirea produselor sau a serviciilor</th>
             <th class="col-unit">U.M.</th>
             <th class="col-qty">Cant.</th>
-            <th class="col-price">Pret unitar<br>(fara TVA)<br>-${invoice.currency}-</th>
-            <th class="col-val">Valoare<br>-${invoice.currency}-</th>
-            <th class="col-vat">Valoare TVA<br>-${invoice.currency}-</th>
+            <th class="col-price">Pret unitar<br>(fara TVA)<br>-${primaryCurrency}-</th>
+            <th class="col-val">Valoare<br>-${primaryCurrency}-</th>
+            <th class="col-vat">Valoare TVA<br>-${primaryCurrency}-</th>
           </tr>
           <tr style="font-size: 8pt; background-color: ${colors.bgLight};">
             <th class="col-idx">0</th>
@@ -206,21 +223,19 @@ export function renderClassicBlueTemplate(invoice) {
           </tr>
         </thead>
         <tbody>
-          ${(invoice.items || []).map((item, index) => `
+          ${items.map((item, index) => `
             <tr>
               <td class="col-idx">${index + 1}</td>
               <td class="col-desc">${item.description}</td>
               <td class="col-unit">${item.unit}</td>
               <td class="col-qty">${item.quantity}</td>
-              <td class="col-price">${item.unit_price.toFixed(2)}</td>
-              <td class="col-val">${item.total.toFixed(2)}</td>
-              <td class="col-vat">${(item.total * (item.tax_rate / 100)).toFixed(2)}</td>
+              <td class="col-price">${formatAmount(item.unit_price)}</td>
+              <td class="col-val">${formatAmount(item.total)}</td>
+              <td class="col-vat">${formatAmount(item.total * ((item.tax_rate ?? invoice.tax_rate ?? 0) / 100))}</td>
             </tr>
           `).join('')}
-          <!-- Fill with specialized empty rows if we want to mimic the height, 
-               but dynamic height is better for web. 
-               We can add a minimum height row if needed. -->
-            <tr style="height: 200px;">
+          ${fillerHeight > 0 ? `
+            <tr class="filler-row">
                 <td class="col-idx"></td>
                 <td class="col-desc"></td>
                 <td class="col-unit"></td>
@@ -229,6 +244,7 @@ export function renderClassicBlueTemplate(invoice) {
                 <td class="col-val"></td>
                 <td class="col-vat"></td>
             </tr>
+          ` : ''}
         </tbody>
       </table>
 
@@ -248,20 +264,28 @@ export function renderClassicBlueTemplate(invoice) {
         <div class="footer-totals">
             <div class="footer-total-row">
                 <div style="width: 80px; padding: 5px; text-align: right; border-right: 1px solid ${colors.border};">
-                    ${invoice.subtotal.toFixed(2)}
+                    ${formatAmount(invoice.subtotal)}
                 </div>
                 <div style="width: 80px; padding: 5px; text-align: right;">
-                    ${invoice.tax_amount.toFixed(2)}
+                    ${formatAmount(invoice.tax_amount)}
                 </div>
             </div>
             <div class="footer-total-row" style="flex: 1;">
                  <div class="footer-total-label" style="border-right: 1px solid ${colors.border}; font-size: 14pt;">
-                    Total
+                    Total (${primaryCurrency})
                  </div>
                  <div class="footer-total-val" style="display: flex; align-items: center; justify-content: flex-end; font-size: 12pt; font-weight: bold; border-left: none;">
-                    ${invoice.total.toFixed(2)}
+                    ${formatAmount(invoice.total)}
                  </div>
             </div>
+            ${hasSecondaryTotal ? `
+            <div class="footer-total-row">
+                <div style="width: 100%; padding: 5px 8px; text-align: right;">
+                    Total (${secondaryCurrency}): <strong>${formatAmount(totalSecondary)}</strong>
+                    ${invoice.exchange_rate ? `<br><span style="font-size: 8pt;">Curs: 1 ${primaryCurrency} = ${Number(invoice.exchange_rate).toFixed(4)} ${secondaryCurrency}</span>` : ''}
+                </div>
+            </div>
+            ` : ''}
         </div>
       </div>
     

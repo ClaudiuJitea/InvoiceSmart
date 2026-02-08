@@ -7,6 +7,9 @@ export function renderCreativeTemplate(invoice) {
   const lang = invoice.language || 'en';
   const secLang = invoice.secondary_language || 'ro';
   const mode = invoice.language_mode || 'single';
+  const items = invoice.items || [];
+  const minVisibleRows = 12;
+  const fillerHeight = Math.max(0, (minVisibleRows - items.length) * 30);
 
   // Helper to get text based on mode
   // The image shows specific bilingual labels (RO/EN) regardless of mode for some headers
@@ -199,6 +202,11 @@ export function renderCreativeTemplate(invoice) {
         .invoice-creative .items-table td.text-center {
             text-align: center;
         }
+        .invoice-creative .items-table .filler-row td {
+            height: ${fillerHeight}px;
+            padding: 0;
+            border-bottom: 1px solid #eee;
+        }
 
         /* Totals */
         .invoice-creative .totals-section {
@@ -332,7 +340,7 @@ export function renderCreativeTemplate(invoice) {
             </tr>
         </thead>
         <tbody>
-            ${(invoice.items || []).map((item, index) => `
+            ${items.map((item, index) => `
                 <tr>
                     <td class="text-center">${index + 1}</td>
                     <td>${item.description}</td>
@@ -349,6 +357,11 @@ export function renderCreativeTemplate(invoice) {
                     </td>
                 </tr>
             `).join('')}
+            ${fillerHeight > 0 ? `
+                <tr class="filler-row">
+                    <td colspan="7"></td>
+                </tr>
+            ` : ''}
         </tbody>
       </table>
 
@@ -391,4 +404,3 @@ export function renderCreativeTemplate(invoice) {
     </div>
     `;
 }
-
