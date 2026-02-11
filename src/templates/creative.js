@@ -4,6 +4,7 @@ import { settingsService } from '../db/services/settingsService.js';
 
 export function renderCreativeTemplate(invoice) {
   const settings = settingsService.get() || {};
+  const isDeliveryNote = invoice.document_type === 'delivery_note';
   const lang = invoice.language || 'en';
   const secLang = invoice.secondary_language || 'ro';
   const mode = invoice.language_mode || 'single';
@@ -31,7 +32,7 @@ export function renderCreativeTemplate(invoice) {
     account: 'Cont:',
     swift: 'SWIFT:',
     bank: 'Banca:',
-    invoiceTitle: 'FACTURA\nINVOICE',
+    invoiceTitle: isDeliveryNote ? 'AVIZ DE INSOTIRE A MARFII\nDELIVERY NOTE' : 'FACTURA\nINVOICE',
     nr: 'Nr./No.:',
     date: 'Data/Date:',
     client: 'Client/To:',

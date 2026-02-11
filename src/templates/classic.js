@@ -4,6 +4,8 @@ import { settingsService } from '../db/services/settingsService.js';
 
 export function renderClassicTemplate(invoice) {
   const settings = settingsService.get() || {};
+  const isDeliveryNote = invoice.document_type === 'delivery_note';
+  const documentTitle = isDeliveryNote ? 'AVIZ DE INSOTIRE A MARFII / DELIVERY NOTE' : t('invoice.invoice');
   const items = invoice.items || [];
   const minVisibleRows = 12;
   const fillerHeight = Math.max(0, (minVisibleRows - items.length) * 34);
@@ -229,7 +231,7 @@ export function renderClassicTemplate(invoice) {
           </div>
         </div>
         <div class="invoice-info">
-          <div class="invoice-title">${t('invoice.invoice')}</div>
+          <div class="invoice-title">${documentTitle}</div>
           <div class="info-row">
             <span class="info-label">${t('invoice.invoiceNo')}:</span>
             <span>${invoice.invoice_number}</span>

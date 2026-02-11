@@ -16,6 +16,12 @@ function isValidParam(value) {
 function buildWhereClause(filters = {}, params = []) {
     let where = 'WHERE 1=1';
 
+    const documentType = isValidParam(filters.document_type) ? filters.document_type : 'invoice';
+    if (documentType !== 'all') {
+        where += ' AND i.document_type = ?';
+        params.push(documentType);
+    }
+
     if (isValidParam(filters.currency)) {
         where += ' AND (i.currency = ? OR i.secondary_currency = ?)';
         params.push(filters.currency, filters.currency);
@@ -47,6 +53,7 @@ router.get('/revenue-by-currency', async (req, res) => {
         const targetCurrency = sanitizeCurrency(req.query.currency || 'EUR');
 
         // Get all invoices with their currency info (excluding cancelled)
+        const documentType = isValidParam(req.query.document_type) ? String(req.query.document_type) : 'invoice';
         const invoices = await db.all(`
             SELECT 
                 i.currency as primary_currency,
@@ -57,7 +64,8 @@ router.get('/revenue-by-currency', async (req, res) => {
                 i.status
             FROM invoices i
             WHERE i.status != 'cancelled'
-        `);
+              AND i.document_type = ?
+        `, [documentType]);
 
         let totalRevenue = 0;
 
@@ -91,9 +99,10 @@ router.get('/revenue-by-currency', async (req, res) => {
 router.get('/available-currencies', async (req, res) => {
     try {
         const db = await getDb();
+        const documentType = isValidParam(req.query.document_type) ? String(req.query.document_type) : 'invoice';
         // Get both primary currencies and secondary currencies
-        const primaryResults = await db.all('SELECT DISTINCT currency FROM invoices WHERE currency IS NOT NULL');
-        const secondaryResults = await db.all('SELECT DISTINCT secondary_currency FROM invoices WHERE secondary_currency IS NOT NULL');
+        const primaryResults = await db.all('SELECT DISTINCT currency FROM invoices WHERE currency IS NOT NULL AND document_type = ?', [documentType]);
+        const secondaryResults = await db.all('SELECT DISTINCT secondary_currency FROM invoices WHERE secondary_currency IS NOT NULL AND document_type = ?', [documentType]);
 
         const primaryCurrencies = primaryResults.map(r => r.currency).filter(c => c);
         const secondaryCurrencies = secondaryResults.map(r => r.secondary_currency).filter(c => c);

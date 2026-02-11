@@ -79,6 +79,7 @@ class Database {
         default_payment_terms INTEGER DEFAULT 30,
         invoice_series TEXT DEFAULT 'INV',
         next_invoice_number INTEGER DEFAULT 1,
+        document_series_templates TEXT,
         language TEXT DEFAULT 'en'
       );
 
@@ -118,6 +119,7 @@ class Database {
         secondary_currency TEXT DEFAULT 'RON',
         payment_method TEXT,
         notes TEXT,
+        document_type TEXT DEFAULT 'invoice',
         status TEXT DEFAULT 'draft',
         template TEXT DEFAULT 'modern',
         language TEXT DEFAULT 'en',
@@ -149,10 +151,22 @@ class Database {
     }
 
     insertDefaultSettings() {
+        const defaultSeriesTemplates = JSON.stringify([
+            {
+                id: 'default-invoice',
+                document_type: 'invoice',
+                prefix: 'INV',
+                separator: '-',
+                next_number: 1,
+                number_padding: 4,
+                is_default: true,
+            },
+        ]);
+
         this.db.run(`
-      INSERT INTO settings (id, company_name, invoice_series) 
-      VALUES (1, '', 'INV')
-    `);
+      INSERT INTO settings (id, company_name, invoice_series, document_series_templates) 
+      VALUES (?, ?, ?, ?)
+    `, [1, '', 'INV', defaultSeriesTemplates]);
     }
 
     runMigrations() {
@@ -167,6 +181,10 @@ class Database {
             if (!settingsColumns.includes('company_country')) {
                 console.log('Migrating: Adding company_country to settings');
                 this.db.run("ALTER TABLE settings ADD COLUMN company_country TEXT");
+            }
+            if (!settingsColumns.includes('document_series_templates')) {
+                console.log('Migrating: Adding document_series_templates to settings');
+                this.db.run("ALTER TABLE settings ADD COLUMN document_series_templates TEXT");
             }
 
             // Check if columns exist in clients
@@ -200,6 +218,10 @@ class Database {
             if (!columns.includes('language_mode')) {
                 console.log('Migrating: Adding language_mode column to invoices');
                 this.db.run("ALTER TABLE invoices ADD COLUMN language_mode TEXT DEFAULT 'single'");
+            }
+            if (!columns.includes('document_type')) {
+                console.log('Migrating: Adding document_type column to invoices');
+                this.db.run("ALTER TABLE invoices ADD COLUMN document_type TEXT DEFAULT 'invoice'");
             }
 
             // Check invoice_items columns

@@ -1,10 +1,13 @@
 // Invoice Service - API version
 import { settingsService } from './settingsService.js';
+import { formatSeriesNumber, getDefaultSeriesTemplate } from '../../utils/seriesTemplates.js';
 
 export const invoiceService = {
   // Get all invoices with client info
-  async getAll() {
-    const response = await fetch('/api/invoices?limit=1000'); // Higher limit for "all"
+  async getAll(filters = {}) {
+    const params = new URLSearchParams({ limit: '1000' });
+    if (filters.document_type) params.set('document_type', filters.document_type);
+    const response = await fetch(`/api/invoices?${params.toString()}`); // Higher limit for "all"
     if (!response.ok) throw new Error('Failed to fetch invoices');
     return response.json();
   },
@@ -76,27 +79,27 @@ export const invoiceService = {
     const original = await this.getById(id);
     if (!original) return null;
 
-    const settings = await settingsService.get();
-    const nextNumber = settings.next_invoice_number;
+    const documentType = original.document_type || 'invoice';
+    const nextSeriesData = await this.getNextInvoiceNumber(documentType);
 
     const newInvoice = {
       ...original,
-      invoice_number: `${settings.invoice_series}-${String(nextNumber).padStart(4, '0')}`,
-      series: settings.invoice_series,
+      invoice_number: nextSeriesData.formatted,
+      series: nextSeriesData.series,
       issue_date: new Date().toISOString().split('T')[0],
-      due_date: new Date(Date.now() + settings.default_payment_terms * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      due_date: new Date(Date.now() + nextSeriesData.defaultPaymentTerms * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       status: 'draft',
+      document_type: documentType,
     };
 
-    // Increment on server
-    await settingsService.incrementInvoiceNumber();
-
-    return this.create(newInvoice, original.items);
+    const newId = await this.create(newInvoice, original.items);
+    await settingsService.consumeSeriesTemplateNumber(nextSeriesData.templateId);
+    return newId;
   },
 
   // Get invoice count
-  async getCount() {
-    const invoices = await this.getAll();
+  async getCount(filters = {}) {
+    const invoices = await this.getAll(filters);
     return invoices.length;
   },
 
@@ -115,33 +118,52 @@ export const invoiceService = {
 
   // Use stats endpoint for overview
   async getOverview(filters) {
-    const q = new URLSearchParams(filters).toString();
+    const mergedFilters = { document_type: 'invoice', ...(filters || {}) };
+    const q = new URLSearchParams(mergedFilters).toString();
     const response = await fetch(`/api/stats/overview?${q}`);
     return response.json();
   },
 
   // Get revenue converted to a target currency
   async getRevenueByCurrency(currency = 'EUR') {
-    const response = await fetch(`/api/stats/revenue-by-currency?currency=${currency}`);
+    const response = await fetch(`/api/stats/revenue-by-currency?currency=${currency}&document_type=invoice`);
     if (!response.ok) throw new Error('Failed to fetch revenue by currency');
     return response.json();
   },
 
 
   // Get recent invoices
-  async getRecent(limit = 5) {
-    const response = await fetch(`/api/invoices?limit=${limit}`);
+  async getRecent(limit = 5, filters = {}) {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (filters.document_type) params.set('document_type', filters.document_type);
+    const response = await fetch(`/api/invoices?${params.toString()}`);
     if (!response.ok) throw new Error('Failed to fetch recent invoices');
     return response.json();
   },
 
   // Generate next invoice number
-  async getNextInvoiceNumber() {
+  async getNextInvoiceNumber(documentType = 'invoice') {
     const settings = await settingsService.get();
+    const defaultTemplate = getDefaultSeriesTemplate(settings.document_series_templates, documentType);
+
+    if (!defaultTemplate) {
+      return {
+        templateId: null,
+        series: settings.invoice_series,
+        number: settings.next_invoice_number,
+        formatted: `${settings.invoice_series}-${String(settings.next_invoice_number).padStart(4, '0')}`,
+        defaultPaymentTerms: settings.default_payment_terms || 30,
+        documentType,
+      };
+    }
+
     return {
-      series: settings.invoice_series,
-      number: settings.next_invoice_number,
-      formatted: `${settings.invoice_series}-${String(settings.next_invoice_number).padStart(4, '0')}`,
+      templateId: defaultTemplate.id,
+      series: defaultTemplate.prefix,
+      number: defaultTemplate.next_number,
+      formatted: formatSeriesNumber(defaultTemplate),
+      defaultPaymentTerms: settings.default_payment_terms || 30,
+      documentType,
     };
   },
 };

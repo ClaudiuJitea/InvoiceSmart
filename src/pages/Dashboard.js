@@ -162,7 +162,7 @@ export async function initDashboard() {
 
     // Fetch stats in parallel
     const [totalInvoices, totalClients, pendingInvoices, availableCurrencies] = await Promise.all([
-      invoiceService.getCount(),
+      invoiceService.getCount({ document_type: 'invoice' }),
       clientService.getCount(),
       invoiceService.getPendingCount(),
       fetchAvailableCurrencies()
@@ -233,7 +233,7 @@ export async function initDashboard() {
     }
 
     // Fetch and render recent invoices
-    const recentInvoices = await invoiceService.getRecent(5);
+    const recentInvoices = await invoiceService.getRecent(5, { document_type: 'invoice' });
     renderRecentInvoices(recentInvoices, defaultCurrency, settings);
 
   } catch (error) {

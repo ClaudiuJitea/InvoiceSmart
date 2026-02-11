@@ -11,6 +11,14 @@ import modal from '../components/common/Modal.js';
 import { router } from '../router.js';
 
 let currentTemplate = null;
+function getPreviewConfig(params = {}) {
+  const isDeliveryNote = params?.document_type === 'delivery_note';
+  return {
+    isDeliveryNote,
+    basePath: isDeliveryNote ? '/delivery-notes' : '/invoices',
+    previewTitle: isDeliveryNote ? t('deliveryNotes.preview') : t('invoices.preview'),
+  };
+}
 
 function getReceiptButtonContent(mode = 'generate') {
   if (mode === 'view') {
@@ -72,6 +80,7 @@ export function renderInvoicePreview(params = {}) {
 }
 
 export async function initInvoicePreview(params = {}) {
+  const section = getPreviewConfig(params);
   const container = document.getElementById('previewContainer');
   if (!container) return;
 
@@ -95,7 +104,7 @@ export async function initInvoicePreview(params = {}) {
         <div class="empty-state">
           <h3>${t('general.error')}</h3>
           <p>Invoice not found</p>
-          <a href="#/invoices" class="btn btn-filled">${t('actions.back')}</a>
+          <a href="#${section.basePath}" class="btn btn-filled">${t('actions.back')}</a>
         </div>
       `;
       return;
@@ -107,13 +116,13 @@ export async function initInvoicePreview(params = {}) {
     container.innerHTML = `
       <div class="page-header-row">
         <div class="page-header-left">
-          <a href="#/invoices" class="btn btn-text" style="margin-left: -12px; margin-bottom: var(--space-2);">
+          <a href="#${section.basePath}" class="btn btn-text" style="margin-left: -12px; margin-bottom: var(--space-2);">
             ${icons.arrowLeft} ${t('actions.back')}
           </a>
-          <h1 class="page-title">${t('invoices.preview')}: ${invoice.invoice_number}</h1>
+          <h1 class="page-title">${section.previewTitle}: ${invoice.invoice_number}</h1>
         </div>
         <div class="page-header-actions">
-          <a href="#/invoices/${params.id}" class="btn btn-tonal">
+          <a href="#${section.basePath}/${params.id}" class="btn btn-tonal">
             ${icons.edit}
             ${t('actions.edit')}
           </a>
@@ -138,9 +147,11 @@ export async function initInvoicePreview(params = {}) {
             </div>
           </div>
           <div class="invoice-preview-actions">
-            <button class="btn btn-tonal" id="receiptBtn">
-                ${getReceiptButtonContent(latestReceipt ? 'view' : 'generate')}
-            </button>
+            ${section.isDeliveryNote ? '' : `
+              <button class="btn btn-tonal" id="receiptBtn">
+                  ${getReceiptButtonContent(latestReceipt ? 'view' : 'generate')}
+              </button>
+            `}
             <button class="btn btn-tonal" id="printBtn">
               ${icons.print}
               ${t('actions.print')}

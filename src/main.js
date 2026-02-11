@@ -91,7 +91,7 @@ function renderPage() {
     case 'clientForm':
       return renderClientForm(currentParams);
     case 'invoices':
-      return renderInvoices();
+      return renderInvoices(currentParams);
     case 'invoiceForm':
       return renderInvoiceForm(currentParams);
     case 'invoicePreview':
@@ -128,7 +128,7 @@ function initPage() {
       initClientForm(currentParams);
       break;
     case 'invoices':
-      initInvoices();
+      initInvoices(currentParams);
       break;
     case 'invoiceForm':
       initInvoiceForm(currentParams);
@@ -236,22 +236,42 @@ function setupRoutes() {
     })
     .on('/invoices', () => {
       currentPage = 'invoices';
-      currentParams = {};
+      currentParams = { document_type: 'invoice' };
       renderApp();
     })
     .on('/invoices/new', () => {
       currentPage = 'invoiceForm';
-      currentParams = { id: 'new' };
+      currentParams = { id: 'new', document_type: 'invoice' };
       renderApp();
     })
     .on('/invoices/:id', (params) => {
       currentPage = 'invoiceForm';
-      currentParams = params;
+      currentParams = { ...params, document_type: 'invoice' };
       renderApp();
     })
     .on('/invoices/:id/preview', (params) => {
       currentPage = 'invoicePreview';
-      currentParams = params;
+      currentParams = { ...params, document_type: 'invoice' };
+      renderApp();
+    })
+    .on('/delivery-notes', () => {
+      currentPage = 'invoices';
+      currentParams = { document_type: 'delivery_note' };
+      renderApp();
+    })
+    .on('/delivery-notes/new', () => {
+      currentPage = 'invoiceForm';
+      currentParams = { id: 'new', document_type: 'delivery_note' };
+      renderApp();
+    })
+    .on('/delivery-notes/:id', (params) => {
+      currentPage = 'invoiceForm';
+      currentParams = { ...params, document_type: 'delivery_note' };
+      renderApp();
+    })
+    .on('/delivery-notes/:id/preview', (params) => {
+      currentPage = 'invoicePreview';
+      currentParams = { ...params, document_type: 'delivery_note' };
       renderApp();
     })
     .on('/settings', () => {

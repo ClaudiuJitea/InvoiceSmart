@@ -10,13 +10,38 @@ import { exportToPdfBlob } from '../services/pdfService.js';
 import { createZipBlob } from '../utils/zip.js';
 import { CustomSelect } from '../components/common/CustomSelect.js';
 
-export function renderInvoices() {
+function getSectionConfig(params = {}) {
+  const isDeliveryNotes = params?.document_type === 'delivery_note';
+  return {
+    isDeliveryNotes,
+    documentType: isDeliveryNotes ? 'delivery_note' : 'invoice',
+    basePath: isDeliveryNotes ? '/delivery-notes' : '/invoices',
+    title: isDeliveryNotes ? t('deliveryNotes.title') : t('invoices.title'),
+    subtitle: isDeliveryNotes ? t('deliveryNotes.subtitle') : t('invoices.subtitle'),
+    newLabel: isDeliveryNotes ? t('deliveryNotes.newDeliveryNote') : t('invoices.newInvoice'),
+    emptyTitle: isDeliveryNotes ? t('deliveryNotes.emptyTitle') : t('invoices.emptyTitle'),
+    emptyDescription: isDeliveryNotes ? t('deliveryNotes.emptyDescription') : t('invoices.emptyDescription'),
+    noFilteredResults: isDeliveryNotes ? t('deliveryNotes.noFilteredResults') : t('invoices.noFilteredResults'),
+    searchPlaceholder: isDeliveryNotes ? t('deliveryNotes.searchPlaceholder') : t('invoices.searchPlaceholder'),
+    selectAriaLabel: (number) => isDeliveryNotes
+      ? t('deliveryNotes.selectDocument', { number })
+      : t('invoices.selectInvoice', { number }),
+    saveSuccess: isDeliveryNotes ? t('deliveryNotes.saveSuccess') : t('invoices.saveSuccess'),
+    deleteConfirm: isDeliveryNotes ? t('deliveryNotes.deleteConfirm') : t('invoices.deleteConfirm'),
+    deleteSuccess: isDeliveryNotes ? t('deliveryNotes.deleteSuccess') : t('invoices.deleteSuccess'),
+    zipNamePrefix: isDeliveryNotes ? 'delivery-notes' : 'invoices',
+  };
+}
+
+export function renderInvoices(params = {}) {
+  const section = getSectionConfig(params);
+
   return `
     <div class="page-container">
       <div class="page-header-row">
         <div class="page-header-left">
-          <h1 class="page-title">${t('invoices.title')}</h1>
-          <p class="page-subtitle">${t('invoices.subtitle')}</p>
+          <h1 class="page-title">${section.title}</h1>
+          <p class="page-subtitle">${section.subtitle}</p>
         </div>
         <div class="page-header-actions" id="invoicesHeaderActions"></div>
       </div>
@@ -31,7 +56,8 @@ export function renderInvoices() {
   `;
 }
 
-export async function initInvoices() {
+export async function initInvoices(params = {}) {
+  const section = getSectionConfig(params);
   const container = document.getElementById('invoicesListContainer');
   const headerActions = document.getElementById('invoicesHeaderActions');
 
@@ -140,9 +166,9 @@ export async function initInvoices() {
         </div>
       ` : ''}
       ${currentInvoices.length > 0 ? `
-        <a href="#/invoices/new" class="btn btn-filled">
+        <a href="#${section.basePath}/new" class="btn btn-filled">
           ${icons.plus}
-          ${t('invoices.newInvoice')}
+          ${section.newLabel}
         </a>
       ` : ''}
     `;
@@ -196,11 +222,11 @@ export async function initInvoices() {
         <div class="card card-elevated">
           <div class="empty-state">
             <div class="empty-state-icon">${icons.emptyInvoice}</div>
-            <h3 class="empty-state-title">${t('invoices.emptyTitle')}</h3>
-            <p class="empty-state-description">${t('invoices.emptyDescription')}</p>
-            <a href="#/invoices/new" class="btn btn-filled">
+            <h3 class="empty-state-title">${section.emptyTitle}</h3>
+            <p class="empty-state-description">${section.emptyDescription}</p>
+            <a href="#${section.basePath}/new" class="btn btn-filled">
               ${icons.plus}
-              ${t('invoices.newInvoice')}
+              ${section.newLabel}
             </a>
           </div>
         </div>
@@ -220,7 +246,7 @@ export async function initInvoices() {
               id="invoiceSearchInput"
               class="invoices-filter-input"
               type="text"
-              placeholder="${t('invoices.searchPlaceholder')}"
+              placeholder="${section.searchPlaceholder}"
               value="${escapeHtml(filters.query)}"
             >
           </div>
@@ -268,11 +294,11 @@ export async function initInvoices() {
       return `
                   <tr data-invoice-id="${invoice.id}">
                     <td class="bulk-select-column">
-                      <input type="checkbox" class="bulk-select-checkbox select-invoice-checkbox" data-id="${invoice.id}" ${checked} aria-label="${t('invoices.selectInvoice', { number: invoice.invoice_number })}">
+                      <input type="checkbox" class="bulk-select-checkbox select-invoice-checkbox" data-id="${invoice.id}" ${checked} aria-label="${section.selectAriaLabel(invoice.invoice_number)}">
                     </td>
                     <td>${new Date(invoice.issue_date).toLocaleDateString()}</td>
                     <td>
-                      <a href="#/invoices/${invoice.id}" class="text-primary font-medium">
+                      <a href="#${section.basePath}/${invoice.id}" class="text-primary font-medium">
                         ${invoice.invoice_number}
                       </a>
                     </td>
@@ -313,7 +339,7 @@ export async function initInvoices() {
         <div class="table-container card-elevated">
           <div class="table-empty">
             <div class="table-empty-icon">${icons.search}</div>
-            <p>${t('invoices.noFilteredResults')}</p>
+            <p>${section.noFilteredResults}</p>
             <button class="btn btn-text" id="clearInvoiceFiltersBtn" type="button">${t('invoices.clearFilters')}</button>
           </div>
         </div>
@@ -377,7 +403,7 @@ export async function initInvoices() {
       }
 
       const zipBlob = createZipBlob(files);
-      const zipName = `invoices-${new Date().toISOString().split('T')[0]}.zip`;
+      const zipName = `${section.zipNamePrefix}-${new Date().toISOString().split('T')[0]}.zip`;
       triggerBlobDownload(zipBlob, zipName);
 
       toast.success(t('invoices.bulkDownloadSuccess', { count: files.length }));
@@ -481,7 +507,7 @@ export async function initInvoices() {
 
     container.querySelectorAll('.preview-invoice-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        router.navigate(`/invoices/${btn.dataset.id}/preview`);
+        router.navigate(`${section.basePath}/${btn.dataset.id}/preview`);
       });
     });
 
@@ -489,7 +515,7 @@ export async function initInvoices() {
       btn.addEventListener('click', async () => {
         try {
           await invoiceService.updateStatus(parseInt(btn.dataset.id, 10), 'paid');
-          toast.success(t('invoices.saveSuccess'));
+          toast.success(section.saveSuccess);
           loadInvoices();
         } catch (error) {
           toast.error('Failed to update status');
@@ -499,7 +525,7 @@ export async function initInvoices() {
 
     container.querySelectorAll('.edit-invoice-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        router.navigate(`/invoices/${btn.dataset.id}`);
+        router.navigate(`${section.basePath}/${btn.dataset.id}`);
       });
     });
 
@@ -508,7 +534,7 @@ export async function initInvoices() {
         try {
           const newId = await invoiceService.duplicate(parseInt(btn.dataset.id, 10));
           if (newId) {
-            toast.success(t('invoices.saveSuccess'));
+            toast.success(section.saveSuccess);
             loadInvoices();
           }
         } catch (error) {
@@ -523,14 +549,14 @@ export async function initInvoices() {
 
         confirm({
           title: t('actions.delete'),
-          message: t('invoices.deleteConfirm'),
+          message: section.deleteConfirm,
           confirmText: t('actions.delete'),
           cancelText: t('actions.cancel'),
           onConfirm: async () => {
             try {
               await invoiceService.delete(invoiceId);
               selectedInvoiceIds.delete(invoiceId);
-              toast.success(t('invoices.deleteSuccess'));
+              toast.success(section.deleteSuccess);
               loadInvoices();
             } catch (error) {
               toast.error('Failed to delete invoice');
@@ -545,7 +571,7 @@ export async function initInvoices() {
     if (!container) return;
 
     try {
-      currentInvoices = await invoiceService.getAll();
+      currentInvoices = await invoiceService.getAll({ document_type: section.documentType });
       syncSelection();
       renderInvoicesList(getFilteredInvoices());
     } catch (error) {

@@ -562,6 +562,17 @@
     gap: var(--space-4);
 }
 
+.form-row.invoice-number-grid {
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.75fr) minmax(0, 1.1fr);
+    align-items: end;
+}
+
+@media (max-width: 640px) {
+    .form-row.invoice-number-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Table actions cell */
 .table-actions {
     display: flex;

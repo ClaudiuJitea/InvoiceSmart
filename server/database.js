@@ -80,6 +80,7 @@ async function initDb(db) {
       default_payment_terms INTEGER DEFAULT 30,
       invoice_series TEXT DEFAULT 'INV',
       next_invoice_number INTEGER DEFAULT 1,
+      document_series_templates TEXT,
       language TEXT DEFAULT 'en'
     );
   `);
@@ -123,6 +124,7 @@ async function initDb(db) {
       secondary_currency TEXT DEFAULT 'RON',
       payment_method TEXT,
       notes TEXT,
+      document_type TEXT DEFAULT 'invoice',
       status TEXT DEFAULT 'draft',
       template TEXT DEFAULT 'modern',
       language TEXT DEFAULT 'en',
@@ -199,14 +201,32 @@ async function initDb(db) {
   try {
     await db.exec("ALTER TABLE settings ADD COLUMN next_receipt_number INTEGER DEFAULT 1");
   } catch (e) { }
+  try {
+    await db.exec("ALTER TABLE settings ADD COLUMN document_series_templates TEXT");
+  } catch (e) { }
+  try {
+    await db.exec("ALTER TABLE invoices ADD COLUMN document_type TEXT DEFAULT 'invoice'");
+  } catch (e) { }
 
   // Default Settings (after migrations so receipt_series column exists)
   const existingSettings = await db.get('SELECT id FROM settings WHERE id = 1');
   if (!existingSettings) {
+    const defaultSeriesTemplates = JSON.stringify([
+      {
+        id: 'default-invoice',
+        document_type: 'invoice',
+        prefix: 'INV',
+        separator: '-',
+        next_number: 1,
+        number_padding: 4,
+        is_default: true,
+      },
+    ]);
+
     await db.run(`
-      INSERT INTO settings (id, company_name, invoice_series, receipt_series) 
-      VALUES (1, '', 'INV', 'RC')
-    `);
+      INSERT INTO settings (id, company_name, invoice_series, receipt_series, document_series_templates)
+      VALUES (1, '', 'INV', 'RC', ?)
+    `, [defaultSeriesTemplates]);
   }
 
   // Default Admin User

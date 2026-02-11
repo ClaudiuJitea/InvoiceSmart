@@ -39,6 +39,7 @@ router.put('/', async (req, res) => {
         default_payment_terms = ?,
         invoice_series = ?,
         next_invoice_number = ?,
+        document_series_templates = ?,
         language = ?
       WHERE id = 1
     `, [
@@ -58,6 +59,7 @@ router.put('/', async (req, res) => {
             settings.default_payment_terms || 30,
             settings.invoice_series || 'INV',
             settings.next_invoice_number || 1,
+            settings.document_series_templates || null,
             settings.language || 'en'
         ]);
 

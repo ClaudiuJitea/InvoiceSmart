@@ -8,6 +8,17 @@ router.get('/', async (req, res) => {
     try {
         const db = await getDb();
         const limit = req.query.limit ? parseInt(req.query.limit) : 50;
+        const documentType = req.query.document_type ? String(req.query.document_type) : null;
+
+        const filters = [];
+        const params = [];
+        if (documentType) {
+            filters.push('i.document_type = ?');
+            params.push(documentType);
+        }
+
+        const whereClause = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : '';
+        params.push(limit);
 
         const invoices = await db.all(`
       SELECT 
@@ -16,9 +27,10 @@ router.get('/', async (req, res) => {
         c.cif as client_cif
       FROM invoices i
       LEFT JOIN clients c ON i.client_id = c.id
+      ${whereClause}
       ORDER BY i.issue_date DESC, i.id DESC
       LIMIT ?
-    `, [limit]);
+    `, params);
 
         res.json(invoices);
     } catch (error) {
@@ -93,10 +105,10 @@ router.post('/', async (req, res) => {
         invoice_number, series, client_id, issue_date, due_date,
         currency, exchange_rate, subtotal, tax_rate, tax_amount,
         total, total_secondary, secondary_currency, payment_method,
-        notes, status, template,
+        notes, document_type, status, template,
         language, secondary_language, language_mode
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
             invoice.invoice_number,
             invoice.series,
@@ -113,6 +125,7 @@ router.post('/', async (req, res) => {
             invoice.secondary_currency || 'RON',
             invoice.payment_method || null,
             invoice.notes || null,
+            invoice.document_type || 'invoice',
             invoice.status || 'draft',
             invoice.template || 'modern',
             invoice.language || 'en',
@@ -187,6 +200,7 @@ router.put('/:id', async (req, res) => {
         secondary_currency = ?,
         payment_method = ?,
         notes = ?,
+        document_type = ?,
         status = ?,
         template = ?,
         language = ?,
@@ -210,6 +224,7 @@ router.put('/:id', async (req, res) => {
             invoice.secondary_currency || 'RON',
             invoice.payment_method || null,
             invoice.notes || null,
+            invoice.document_type || 'invoice',
             invoice.status || 'draft',
             invoice.template || 'modern',
             invoice.language || 'en',

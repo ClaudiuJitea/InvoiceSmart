@@ -4,6 +4,7 @@ import { settingsService } from '../db/services/settingsService.js';
 
 export function renderModernTemplate(invoice) {
   const settings = settingsService.get() || {};
+  const isDeliveryNote = invoice.document_type === 'delivery_note';
   const lang = invoice.language || 'en';
   const secLang = invoice.secondary_language || 'ro';
   const mode = invoice.language_mode || 'single';
@@ -17,6 +18,7 @@ export function renderModernTemplate(invoice) {
     }
     return i18n.get(key, lang);
   };
+  const documentTitle = isDeliveryNote ? 'AVIZ DE INSOTIRE A MARFII / DELIVERY NOTE' : text('invoice.invoice');
   const headerLabel = (key) => {
     if (mode === 'dual') {
       return `
@@ -294,7 +296,7 @@ export function renderModernTemplate(invoice) {
           </div>
         </div>
         <div class="invoice-badge">
-          <div class="invoice-title">${text('invoice.invoice')}</div>
+          <div class="invoice-title">${documentTitle}</div>
           <div class="invoice-number">${invoice.invoice_number}</div>
         </div>
       </div>

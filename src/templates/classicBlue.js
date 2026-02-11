@@ -3,6 +3,8 @@ import { settingsService } from '../db/services/settingsService.js';
 
 export function renderClassicBlueTemplate(invoice) {
     const settings = settingsService.get() || {};
+    const isDeliveryNote = invoice.document_type === 'delivery_note';
+    const documentTitle = isDeliveryNote ? 'AVIZ DE INSOTIRE A MARFII<br>DELIVERY NOTE' : 'FACTURA';
     const items = invoice.items || [];
     // Classic Blue color palette
     const colors = {
@@ -180,7 +182,7 @@ export function renderClassicBlueTemplate(invoice) {
 
         <!-- Invoice Title (Center) -->
         <div class="invoice-title-col">
-            <div class="invoice-title">FACTURA</div>
+            <div class="invoice-title">${documentTitle}</div>
             <div class="invoice-subtitle-row">
                  Nr.: ${invoice.invoice_number}<br>
                  Seria: ${invoice.series || 'XXX'}<br>

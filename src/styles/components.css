@@ -1207,3 +1207,77 @@
     color: var(--md-error);
     margin-left: 2px;
 }
+
+.document-series-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.document-series-subtitle {
+    margin: 6px 0 0;
+    color: var(--md-on-surface-variant);
+    font-size: var(--text-body-sm);
+}
+
+.document-series-empty {
+    border: 1px dashed var(--md-outline-variant);
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+    color: var(--md-on-surface-variant);
+    text-align: center;
+}
+
+.document-series-actions {
+    display: inline-flex;
+    gap: 6px;
+}
+
+.series-template-grid-top {
+    grid-template-columns: 1.2fr 1fr;
+    align-items: end;
+}
+
+.series-template-grid-main {
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+}
+
+.series-template-grid-bottom {
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+}
+
+.series-default-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 52px;
+    color: var(--md-on-surface-variant);
+    font-size: var(--text-body-md);
+}
+
+@media (max-width: 720px) {
+    .series-template-grid-top,
+    .series-template-grid-main,
+    .series-template-grid-bottom {
+        grid-template-columns: 1fr;
+    }
+}
+
+.invoice-number-grid {
+    grid-template-columns: 1.45fr 0.75fr 1.1fr;
+    align-items: end;
+}
+
+@media (max-width: 760px) {
+    .invoice-number-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .invoice-number-grid .input-group:last-child {
+        grid-column: auto;
+    }
+}

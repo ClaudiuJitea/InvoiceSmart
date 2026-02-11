@@ -8,18 +8,36 @@ import { bnrService } from '../services/bnrService.js';
 import { toast } from '../components/common/Toast.js';
 import { CustomSelect } from '../components/common/CustomSelect.js';
 import { router } from '../router.js';
+import {
+  formatSeriesNumber,
+  getDefaultSeriesTemplate,
+  getSeriesTemplatesForDocument,
+} from '../utils/seriesTemplates.js';
 
 let invoiceItems = [];
 
+function getDocumentFormConfig(params = {}) {
+  const isDeliveryNote = params?.document_type === 'delivery_note';
+  return {
+    isDeliveryNote,
+    documentType: isDeliveryNote ? 'delivery_note' : 'invoice',
+    basePath: isDeliveryNote ? '/delivery-notes' : '/invoices',
+    newTitle: isDeliveryNote ? t('deliveryNotes.newDeliveryNote') : t('invoices.newInvoice'),
+    editTitle: isDeliveryNote ? t('deliveryNotes.editDeliveryNote') : t('invoices.editInvoice'),
+    saveSuccess: isDeliveryNote ? t('deliveryNotes.saveSuccess') : t('invoices.saveSuccess'),
+  };
+}
+
 export function renderInvoiceForm(params = {}) {
+  const section = getDocumentFormConfig(params);
   return `
     <div class="page-container">
       <div class="page-header-row">
         <div class="page-header-left">
-          <a href="#/invoices" class="btn btn-text" style="margin-left: -12px; margin-bottom: var(--space-2);">
+          <a href="#${section.basePath}" class="btn btn-text" style="margin-left: -12px; margin-bottom: var(--space-2);">
             ${icons.arrowLeft} ${t('actions.back')}
           </a>
-          <h1 class="page-title" id="formPageTitle">${t('invoices.newInvoice')}</h1>
+          <h1 class="page-title" id="formPageTitle">${section.newTitle}</h1>
         </div>
         <div class="page-header-actions" id="formPageActions">
           <!-- Preview button will be injected here -->
@@ -38,6 +56,7 @@ export function renderInvoiceForm(params = {}) {
 
 export async function initInvoiceForm(params = {}) {
   try {
+    const section = getDocumentFormConfig(params);
     const isEdit = params.id && params.id !== 'new';
     const container = document.getElementById('invoiceFormContainer');
     if (!container) return;
@@ -47,24 +66,24 @@ export async function initInvoiceForm(params = {}) {
       clientService.getAll(),
       settingsService.get(),
       isEdit ? invoiceService.getById(parseInt(params.id)) : Promise.resolve(null),
-      !isEdit ? invoiceService.getNextInvoiceNumber() : Promise.resolve(null)
+      !isEdit ? invoiceService.getNextInvoiceNumber(section.documentType) : Promise.resolve(null)
     ]);
 
     if (isEdit && !invoice) {
       toast.error('Invoice not found');
-      router.navigate('/invoices');
+      router.navigate(section.basePath);
       return;
     }
 
     // Initialize state
-    const title = isEdit ? t('invoices.editInvoice') : t('invoices.newInvoice');
+    const title = isEdit ? section.editTitle : section.newTitle;
     document.getElementById('formPageTitle').textContent = title;
 
     if (isEdit) {
       document.getElementById('formPageActions').innerHTML = `
-            <a href="#/invoices/${params.id}/preview" class="btn btn-tonal">
+            <a href="#${section.basePath}/${params.id}/preview" class="btn btn-tonal">
               ${icons.eye}
-              ${t('invoices.preview')}
+              ${section.isDeliveryNote ? t('deliveryNotes.preview') : t('invoices.preview')}
             </a>
           `;
     }
@@ -77,8 +96,17 @@ export async function initInvoiceForm(params = {}) {
     }
 
     // Prep values
-    const invoiceNumber = invoice?.invoice_number || nextNumber?.formatted || '';
-    const series = invoice?.series || nextNumber?.series || 'INV';
+    const invoiceSeriesTemplates = getSeriesTemplatesForDocument(settings?.document_series_templates, section.documentType);
+    const defaultSeriesTemplate = getDefaultSeriesTemplate(settings?.document_series_templates, section.documentType);
+
+    const selectedTemplateId = invoiceSeriesTemplates.some((template) => template.prefix === invoice?.series)
+      ? invoiceSeriesTemplates.find((template) => template.prefix === invoice?.series)?.id
+      : (defaultSeriesTemplate?.id || invoiceSeriesTemplates[0]?.id || '');
+
+    const invoiceNumber = invoice?.invoice_number
+      || nextNumber?.formatted
+      || (defaultSeriesTemplate ? formatSeriesNumber(defaultSeriesTemplate) : '');
+    const series = invoice?.series || defaultSeriesTemplate?.prefix || nextNumber?.series || 'INV';
 
     const today = new Date().toISOString().split('T')[0];
     const defaultTerms = settings?.default_payment_terms || 30;
@@ -110,17 +138,27 @@ export async function initInvoiceForm(params = {}) {
       <form id="invoiceForm" class="card card-elevated">
         <!-- Header Info -->
         <div class="form-section">
-          <div class="form-row" style="grid-template-columns: 1fr 2fr;">
+          <div class="form-row" style="grid-template-columns: 1.35fr 1.65fr;">
             <div>
               <h3 class="form-section-title">${t('invoices.invoiceNumber')}</h3>
-              <div class="form-row" style="grid-template-columns: 100px 1fr;">
+              <div class="form-row invoice-number-grid">
+                <div class="input-group">
+                  <label class="input-label">${t('settings.documentSeriesTemplates')}</label>
+                  <select class="input select" name="series_template_id" id="seriesTemplateSelect" ${isEdit ? 'disabled' : ''} ${isEdit ? '' : 'required'}>
+                    ${invoiceSeriesTemplates.map((template) => `
+                      <option value="${template.id}" ${selectedTemplateId === template.id ? 'selected' : ''}>
+                        ${template.prefix}${template.is_default ? ` (${t('settings.isDefault')})` : ''}
+                      </option>
+                    `).join('')}
+                  </select>
+                </div>
                 <div class="input-group">
                   <label class="input-label">${t('invoices.series')}</label>
-                  <input type="text" class="input" name="series" value="${series}" required>
+                  <input type="text" class="input" name="series" id="seriesInput" value="${series}" required readonly>
                 </div>
                 <div class="input-group">
                   <label class="input-label">${t('invoices.number')}</label>
-                  <input type="text" class="input" name="invoice_number" value="${invoiceNumber}" required>
+                  <input type="text" class="input" name="invoice_number" id="invoiceNumberInput" value="${invoiceNumber}" required ${isEdit ? '' : 'readonly'}>
                 </div>
               </div>
             </div>
@@ -322,7 +360,7 @@ export async function initInvoiceForm(params = {}) {
         </div>
 
         <div class="form-actions">
-          <a href="#/invoices" class="btn btn-text">${t('actions.cancel')}</a>
+          <a href="#${section.basePath}" class="btn btn-text">${t('actions.cancel')}</a>
           <button type="submit" class="btn btn-filled">${t('actions.save')}</button>
         </div>
       </form>
@@ -335,6 +373,21 @@ export async function initInvoiceForm(params = {}) {
     const issueDateInput = document.getElementById('issueDateInput');
     const dueDateInput = document.getElementById('dueDateInput');
     const paymentTermsSelect = document.getElementById('paymentTermsSelect');
+    const seriesTemplateSelect = document.getElementById('seriesTemplateSelect');
+    const seriesInput = document.getElementById('seriesInput');
+    const invoiceNumberInput = document.getElementById('invoiceNumberInput');
+
+    const updateInvoiceNumberFromTemplate = () => {
+      if (!seriesTemplateSelect || !seriesInput || !invoiceNumberInput) return;
+
+      const selectedSeriesTemplate = invoiceSeriesTemplates.find((template) => template.id === seriesTemplateSelect.value);
+      if (!selectedSeriesTemplate) return;
+
+      seriesInput.value = selectedSeriesTemplate.prefix;
+      if (!isEdit) {
+        invoiceNumberInput.value = formatSeriesNumber(selectedSeriesTemplate);
+      }
+    };
 
     function calculateTotals() {
       let subtotal = 0;
@@ -504,6 +557,11 @@ export async function initInvoiceForm(params = {}) {
       });
     }
 
+    if (seriesTemplateSelect) {
+      seriesTemplateSelect.addEventListener('change', updateInvoiceNumberFromTemplate);
+      updateInvoiceNumberFromTemplate();
+    }
+
     // Add item button
     addItemBtn.addEventListener('click', () => {
       const defaultTaxRate = parseFloat(form.querySelector('[name="tax_rate"]').value) || 0;
@@ -564,17 +622,19 @@ export async function initInvoiceForm(params = {}) {
           secondary_language: formData.get('secondary_language'),
           language_mode: formData.get('language_mode'),
           secondary_currency: formData.get('secondary_currency') || 'RON',
+          document_type: section.documentType,
         };
 
         if (isEdit) {
           await invoiceService.update(parseInt(params.id), data, invoiceItems);
         } else {
+          const selectedSeriesTemplateId = formData.get('series_template_id');
           await invoiceService.create(data, invoiceItems);
-          await settingsService.incrementInvoiceNumber();
+          await settingsService.consumeSeriesTemplateNumber(selectedSeriesTemplateId);
         }
 
-        toast.success(t('invoices.saveSuccess'));
-        router.navigate('/invoices');
+        toast.success(section.saveSuccess);
+        router.navigate(section.basePath);
       } catch (error) {
         console.error('Save error:', error);
         toast.error(error.message || 'Failed to save invoice');
@@ -584,7 +644,7 @@ export async function initInvoiceForm(params = {}) {
   } catch (error) {
     console.error('Failed to init invoice form:', error);
     toast.error('Failed to load invoice data');
-    router.navigate('/invoices');
+    router.navigate(getDocumentFormConfig(params).basePath);
   }
 }
 
