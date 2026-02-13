@@ -1,5 +1,6 @@
 import express from 'express';
 import { getDb } from '../database.js';
+import { buildRequestAuditContext, logAuditEvent } from '../auditLogger.js';
 
 const router = express.Router();
 
@@ -370,6 +371,24 @@ router.post('/', async (req, res) => {
         }
 
         await db.exec('COMMIT');
+
+        await logAuditEvent({
+            ...buildRequestAuditContext(req),
+            userId: req.user?.id || null,
+            username: req.user?.username || null,
+            action: (invoice.document_type || 'invoice') === 'delivery_note' ? 'delivery_note.create' : 'invoice.create',
+            method: 'POST',
+            path: '/api/invoices',
+            statusCode: 201,
+            details: {
+                id: invoiceId,
+                invoice_number: invoice.invoice_number,
+                document_type: invoice.document_type || 'invoice',
+                client_id: invoice.client_id,
+                total,
+            },
+        });
+
         res.status(201).json({ id: invoiceId });
     } catch (error) {
         await db.exec('ROLLBACK');
@@ -489,6 +508,24 @@ router.put('/:id', async (req, res) => {
         }
 
         await db.exec('COMMIT');
+
+        await logAuditEvent({
+            ...buildRequestAuditContext(req),
+            userId: req.user?.id || null,
+            username: req.user?.username || null,
+            action: (invoice.document_type || 'invoice') === 'delivery_note' ? 'delivery_note.update' : 'invoice.update',
+            method: 'PUT',
+            path: `/api/invoices/${id}`,
+            statusCode: 200,
+            details: {
+                id: parseInt(id, 10),
+                invoice_number: invoice.invoice_number,
+                document_type: invoice.document_type || 'invoice',
+                client_id: invoice.client_id,
+                total,
+            },
+        });
+
         res.json({ success: true });
     } catch (error) {
         await db.exec('ROLLBACK');
@@ -501,9 +538,30 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     const db = await getDb();
     try {
+        const existing = await db.get('SELECT id, invoice_number, document_type FROM invoices WHERE id = ?', [req.params.id]);
+        if (!existing) {
+            return res.status(404).json({ error: 'Invoice not found' });
+        }
+
         await db.run('DELETE FROM invoice_delivery_notes WHERE invoice_id = ? OR delivery_note_id = ?', [req.params.id, req.params.id]);
         await db.run('DELETE FROM invoice_items WHERE invoice_id = ?', req.params.id);
         await db.run('DELETE FROM invoices WHERE id = ?', req.params.id);
+
+        await logAuditEvent({
+            ...buildRequestAuditContext(req),
+            userId: req.user?.id || null,
+            username: req.user?.username || null,
+            action: existing.document_type === 'delivery_note' ? 'delivery_note.delete' : 'invoice.delete',
+            method: 'DELETE',
+            path: `/api/invoices/${req.params.id}`,
+            statusCode: 200,
+            details: {
+                id: existing.id,
+                invoice_number: existing.invoice_number,
+                document_type: existing.document_type,
+            },
+        });
+
         res.json({ success: true });
     } catch (error) {
         console.error('Error deleting invoice:', error);
@@ -516,7 +574,30 @@ router.patch('/:id/status', async (req, res) => {
     try {
         const db = await getDb();
         const { status } = req.body;
+        const existing = await db.get('SELECT id, invoice_number, document_type, status FROM invoices WHERE id = ?', [req.params.id]);
+        if (!existing) {
+            return res.status(404).json({ error: 'Invoice not found' });
+        }
+
         await db.run('UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [status, req.params.id]);
+
+        await logAuditEvent({
+            ...buildRequestAuditContext(req),
+            userId: req.user?.id || null,
+            username: req.user?.username || null,
+            action: existing.document_type === 'delivery_note' ? 'delivery_note.status_update' : 'invoice.status_update',
+            method: 'PATCH',
+            path: `/api/invoices/${req.params.id}/status`,
+            statusCode: 200,
+            details: {
+                id: existing.id,
+                invoice_number: existing.invoice_number,
+                from_status: existing.status,
+                to_status: status,
+                document_type: existing.document_type,
+            },
+        });
+
         res.json({ success: true });
     } catch (error) {
         console.error('Error updating status:', error);

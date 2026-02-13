@@ -1,6 +1,7 @@
 
 import express from 'express';
 import { getDb } from '../database.js';
+import { buildRequestAuditContext, logAuditEvent } from '../auditLogger.js';
 
 const router = express.Router();
 
@@ -92,6 +93,24 @@ router.post('/', async (req, res) => {
 
             // Return the new receipt
             const newReceipt = await db.get('SELECT * FROM receipts WHERE id = ?', [result.lastID]);
+
+            await logAuditEvent({
+                ...buildRequestAuditContext(req),
+                userId: req.user?.id || null,
+                username: req.user?.username || null,
+                action: 'receipt.create',
+                method: 'POST',
+                path: '/api/receipts',
+                statusCode: 201,
+                details: {
+                    id: newReceipt.id,
+                    receipt_number: newReceipt.receipt_number,
+                    invoice_id: newReceipt.invoice_id,
+                    amount: newReceipt.amount,
+                    currency: newReceipt.currency,
+                },
+            });
+
             res.status(201).json(newReceipt);
 
         } catch (error) {
@@ -108,11 +127,33 @@ router.post('/', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const db = await getDb();
+        const existing = await db.get('SELECT id, receipt_number, invoice_id, amount, currency FROM receipts WHERE id = ?', [req.params.id]);
+        if (!existing) {
+            return res.status(404).json({ error: 'Receipt not found' });
+        }
+
         const result = await db.run('DELETE FROM receipts WHERE id = ?', [req.params.id]);
 
         if (!result?.changes) {
             return res.status(404).json({ error: 'Receipt not found' });
         }
+
+        await logAuditEvent({
+            ...buildRequestAuditContext(req),
+            userId: req.user?.id || null,
+            username: req.user?.username || null,
+            action: 'receipt.delete',
+            method: 'DELETE',
+            path: `/api/receipts/${req.params.id}`,
+            statusCode: 200,
+            details: {
+                id: existing.id,
+                receipt_number: existing.receipt_number,
+                invoice_id: existing.invoice_id,
+                amount: existing.amount,
+                currency: existing.currency,
+            },
+        });
 
         res.json({ success: true });
     } catch (error) {

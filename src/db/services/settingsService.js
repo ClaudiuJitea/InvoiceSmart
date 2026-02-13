@@ -1,4 +1,5 @@
 // Settings Service - API version
+import { authService } from './authService.js';
 import {
     formatSeriesNumber,
     getDefaultSeriesTemplate,
@@ -7,9 +8,15 @@ import {
 } from '../../utils/seriesTemplates.js';
 
 export const settingsService = {
+    getAuthHeader() {
+        return authService.getAuthHeader();
+    },
+
     // Get all settings
     async get() {
-        const response = await fetch('/api/settings');
+        const response = await fetch('/api/settings', {
+            headers: this.getAuthHeader(),
+        });
         if (!response.ok) throw new Error('Failed to fetch settings');
         const settings = await response.json();
         const templates = normalizeSeriesTemplates(settings || {});
@@ -36,6 +43,7 @@ export const settingsService = {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
+                ...this.getAuthHeader(),
             },
             body: JSON.stringify(payload),
         });

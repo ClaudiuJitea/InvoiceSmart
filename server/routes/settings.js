@@ -75,6 +75,7 @@ router.post('/increment-invoice', async (req, res) => {
     try {
         const db = await getDb();
         await db.run('UPDATE settings SET next_invoice_number = next_invoice_number + 1 WHERE id = 1');
+
         res.json({ success: true });
     } catch (error) {
         console.error('Error incrementing invoice number:', error);

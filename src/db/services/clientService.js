@@ -1,23 +1,34 @@
 // Client Service - API version
+import { authService } from './authService.js';
 
 export const clientService = {
+  getAuthHeader() {
+    return authService.getAuthHeader();
+  },
+
   // Get all clients
   async getAll() {
-    const response = await fetch('/api/clients');
+    const response = await fetch('/api/clients', {
+      headers: this.getAuthHeader(),
+    });
     if (!response.ok) throw new Error('Failed to fetch clients');
     return response.json();
   },
 
   // Get client by ID
   async getById(id) {
-    const response = await fetch(`/api/clients/${id}`);
+    const response = await fetch(`/api/clients/${id}`, {
+      headers: this.getAuthHeader(),
+    });
     if (!response.ok) throw new Error('Failed to fetch client');
     return response.json();
   },
 
   // Search clients by name
   async search(query) {
-    const response = await fetch(`/api/clients?q=${encodeURIComponent(query)}`);
+    const response = await fetch(`/api/clients?q=${encodeURIComponent(query)}`, {
+      headers: this.getAuthHeader(),
+    });
     if (!response.ok) throw new Error('Failed to search clients');
     return response.json();
   },
@@ -28,6 +39,7 @@ export const clientService = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...this.getAuthHeader(),
       },
       body: JSON.stringify(client),
     });
@@ -42,6 +54,7 @@ export const clientService = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...this.getAuthHeader(),
       },
       body: JSON.stringify(client),
     });
@@ -53,6 +66,7 @@ export const clientService = {
   async delete(id) {
     const response = await fetch(`/api/clients/${id}`, {
       method: 'DELETE',
+      headers: this.getAuthHeader(),
     });
     if (!response.ok) throw new Error('Failed to delete client');
     return response.json();

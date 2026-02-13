@@ -132,6 +132,29 @@ export const userService = {
 
         return data;
     },
+
+    // Get audit logs (admin only)
+    async getLogs(options = {}) {
+        const { page = 1, limit = 20, search = '', userId = '' } = options;
+        const params = new URLSearchParams({
+            page: String(page),
+            limit: String(limit),
+            search,
+        });
+
+        if (userId) params.set('user_id', String(userId));
+
+        const response = await fetch(`${API_BASE}/logs?${params.toString()}`, {
+            headers: this.getAuthHeader(),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch audit logs');
+        }
+
+        return data;
+    },
 };
 
 export default userService;

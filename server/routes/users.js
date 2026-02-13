@@ -3,6 +3,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import { getDb } from '../database.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
+import { buildRequestAuditContext, logAuditEvent } from '../auditLogger.js';
 
 const router = express.Router();
 
@@ -60,6 +61,77 @@ router.get('/', async (req, res) => {
     } catch (error) {
         console.error('Get users error:', error);
         res.status(500).json({ error: 'Failed to get users' });
+    }
+});
+
+// Get audit logs (admin only)
+router.get('/logs', async (req, res) => {
+    try {
+        const { page = 1, limit = 20, search = '', user_id = '' } = req.query;
+        const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 200);
+        const safePage = Math.max(parseInt(page, 10) || 1, 1);
+        const offset = (safePage - 1) * safeLimit;
+        const db = await getDb();
+
+        let whereClause = `
+            al.action <> 'api.mutation'
+            AND al.action NOT LIKE 'auth.%'
+            AND al.action NOT LIKE 'settings.%'
+        `;
+        const params = [];
+
+        if (search) {
+            whereClause += ' AND (al.action LIKE ? OR al.path LIKE ? OR al.username_snapshot LIKE ?)';
+            const pattern = `%${search}%`;
+            params.push(pattern, pattern, pattern);
+        }
+
+        if (user_id) {
+            whereClause += ' AND al.user_id = ?';
+            params.push(parseInt(user_id, 10));
+        }
+
+        const totalRow = await db.get(
+            `SELECT COUNT(*) as total
+             FROM audit_logs al
+             WHERE ${whereClause}`,
+            params
+        );
+
+        const logs = await db.all(
+            `SELECT
+                al.id,
+                al.user_id,
+                al.username_snapshot,
+                COALESCE(u.full_name, u.username, al.username_snapshot, 'System') as actor_name,
+                al.action,
+                al.method,
+                al.path,
+                al.status_code,
+                al.details,
+                al.ip_address,
+                al.user_agent,
+                al.created_at
+             FROM audit_logs al
+             LEFT JOIN users u ON u.id = al.user_id
+             WHERE ${whereClause}
+             ORDER BY al.created_at DESC, al.id DESC
+             LIMIT ? OFFSET ?`,
+            [...params, safeLimit, offset]
+        );
+
+        res.json({
+            logs,
+            pagination: {
+                total: totalRow?.total || 0,
+                page: safePage,
+                limit: safeLimit,
+                totalPages: Math.ceil((totalRow?.total || 0) / safeLimit),
+            },
+        });
+    } catch (error) {
+        console.error('Get audit logs error:', error);
+        res.status(500).json({ error: 'Failed to get audit logs' });
     }
 });
 
@@ -128,6 +200,21 @@ router.post('/', async (req, res) => {
              FROM users WHERE id = ?`,
             [result.lastID]
         );
+
+        await logAuditEvent({
+            userId: req.user.id,
+            username: req.user.username,
+            action: 'admin.user.create',
+            method: 'POST',
+            path: '/api/users',
+            statusCode: 201,
+            details: {
+                created_user_id: newUser.id,
+                created_username: newUser.username,
+                role: newUser.role,
+            },
+            ...buildRequestAuditContext(req),
+        });
 
         res.status(201).json(newUser);
     } catch (error) {
@@ -211,6 +298,27 @@ router.put('/:id', async (req, res) => {
             [req.params.id]
         );
 
+        await logAuditEvent({
+            userId: req.user.id,
+            username: req.user.username,
+            action: 'admin.user.update',
+            method: 'PUT',
+            path: `/api/users/${req.params.id}`,
+            statusCode: 200,
+            details: {
+                target_user_id: updatedUser.id,
+                target_username: updatedUser.username,
+                updates: {
+                    username,
+                    email,
+                    fullName,
+                    role,
+                    isActive,
+                },
+            },
+            ...buildRequestAuditContext(req),
+        });
+
         res.json(updatedUser);
     } catch (error) {
         console.error('Update user error:', error);
@@ -242,6 +350,17 @@ router.post('/:id/reset-password', async (req, res) => {
             [passwordHash, req.params.id]
         );
 
+        await logAuditEvent({
+            userId: req.user.id,
+            username: req.user.username,
+            action: 'admin.user.reset_password',
+            method: 'POST',
+            path: `/api/users/${req.params.id}/reset-password`,
+            statusCode: 200,
+            details: { target_user_id: parseInt(req.params.id, 10) },
+            ...buildRequestAuditContext(req),
+        });
+
         res.json({ message: 'Password reset successfully' });
     } catch (error) {
         console.error('Reset password error:', error);
@@ -254,7 +373,7 @@ router.delete('/:id', async (req, res) => {
     try {
         const db = await getDb();
 
-        const user = await db.get('SELECT id FROM users WHERE id = ?', [req.params.id]);
+        const user = await db.get('SELECT id, username FROM users WHERE id = ?', [req.params.id]);
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
@@ -265,6 +384,17 @@ router.delete('/:id', async (req, res) => {
         }
 
         await db.run('DELETE FROM users WHERE id = ?', [req.params.id]);
+
+        await logAuditEvent({
+            userId: req.user.id,
+            username: req.user.username,
+            action: 'admin.user.delete',
+            method: 'DELETE',
+            path: `/api/users/${req.params.id}`,
+            statusCode: 200,
+            details: { deleted_user_id: parseInt(req.params.id, 10), deleted_username: user.username },
+            ...buildRequestAuditContext(req),
+        });
 
         res.json({ message: 'User deleted successfully' });
     } catch (error) {

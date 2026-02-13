@@ -9,6 +9,7 @@ import { exportToPdf } from '../services/pdfService.js';
 import { toast } from '../components/common/Toast.js';
 import modal from '../components/common/Modal.js';
 import { router } from '../router.js';
+import { authService } from '../db/services/authService.js';
 
 let currentTemplate = null;
 function getPreviewConfig(params = {}) {
@@ -93,7 +94,9 @@ export async function initInvoicePreview(params = {}) {
     // Fetch existing receipts if any
     let receipts = [];
     try {
-      const res = await fetch(`/api/receipts/invoice/${params.id}`);
+      const res = await fetch(`/api/receipts/invoice/${params.id}`, {
+        headers: authService.getAuthHeader(),
+      });
       if (res.ok) receipts = await res.json();
     } catch (e) { console.error("Failed to fetch receipts", e); }
 
@@ -197,7 +200,10 @@ function attachpreviewListeners(invoice, settings, existingReceipt) {
             receiptBtn.innerHTML = getReceiptButtonContent('loading');
             const res = await fetch('/api/receipts', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                ...authService.getAuthHeader(),
+              },
               body: JSON.stringify({ invoice_id: invoice.id })
             });
             if (!res.ok) throw new Error('Failed to create receipt');

@@ -1148,6 +1148,7 @@
     padding: var(--space-4);
     border-bottom: 1px solid var(--md-outline-variant);
     color: var(--md-on-surface);
+    vertical-align: top;
 }
 
 .table tbody tr:last-child td {
@@ -1156,6 +1157,41 @@
 
 .table tbody tr:hover {
     background: var(--md-surface-container-low);
+}
+
+.admin-log-action,
+.admin-log-endpoint {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--md-surface-container-high);
+    color: var(--md-on-surface-variant);
+}
+
+.admin-log-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    min-height: 44px;
+    gap: 4px;
+    line-height: 1.25;
+    padding-top: 2px;
+}
+
+.admin-log-summary {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--md-on-surface-variant);
+    letter-spacing: 0.01em;
+}
+
+.admin-log-action-text {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--md-on-surface);
 }
 
 /* Form Row for modal */

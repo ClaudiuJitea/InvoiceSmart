@@ -3,6 +3,7 @@ import { t } from '../i18n/index.js';
 import { icons } from '../components/icons.js';
 import { invoiceService } from '../db/services/invoiceService.js';
 import { settingsService } from '../db/services/settingsService.js';
+import { authService } from '../db/services/authService.js';
 import { renderReceiptTemplate } from '../templates/receipt.js';
 import { exportToPdfBlob } from '../services/pdfService.js';
 import { createZipBlob } from '../utils/zip.js';
@@ -368,7 +369,10 @@ export async function initReceipts() {
 
         try {
           const results = await Promise.allSettled(
-            selected.map((receipt) => fetch(`/api/receipts/${receipt.id}`, { method: 'DELETE' }))
+            selected.map((receipt) => fetch(`/api/receipts/${receipt.id}`, {
+              method: 'DELETE',
+              headers: authService.getAuthHeader(),
+            }))
           );
 
           const deletedCount = results.filter((result) => result.status === 'fulfilled' && result.value.ok).length;
@@ -464,7 +468,10 @@ export async function initReceipts() {
           cancelText: t('actions.cancel'),
           onConfirm: async () => {
             try {
-              const res = await fetch(`/api/receipts/${receiptId}`, { method: 'DELETE' });
+              const res = await fetch(`/api/receipts/${receiptId}`, {
+                method: 'DELETE',
+                headers: authService.getAuthHeader(),
+              });
               if (!res.ok) throw new Error('Failed to delete receipt');
 
               receipts = receipts.filter((receipt) => receipt.id !== receiptId);
@@ -484,7 +491,7 @@ export async function initReceipts() {
   async function loadReceipts() {
     try {
       const [receiptsRes, settingsData] = await Promise.all([
-        fetch('/api/receipts'),
+        fetch('/api/receipts', { headers: authService.getAuthHeader() }),
         settingsService.get(),
       ]);
 

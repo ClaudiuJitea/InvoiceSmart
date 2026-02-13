@@ -1,5 +1,6 @@
 import express from 'express';
 import { getDb } from '../database.js';
+import { buildRequestAuditContext, logAuditEvent } from '../auditLogger.js';
 
 const router = express.Router();
 
@@ -64,6 +65,17 @@ router.post('/', async (req, res) => {
             client.notes || null,
         ]);
 
+        await logAuditEvent({
+            ...buildRequestAuditContext(req),
+            userId: req.user?.id || null,
+            username: req.user?.username || null,
+            action: 'client.create',
+            method: 'POST',
+            path: '/api/clients',
+            statusCode: 201,
+            details: { id: result.lastID, name: client.name, cif: client.cif || null },
+        });
+
         res.status(201).json({ id: result.lastID });
     } catch (error) {
         console.error('Error creating client:', error);
@@ -107,6 +119,17 @@ router.put('/:id', async (req, res) => {
             req.params.id,
         ]);
 
+        await logAuditEvent({
+            ...buildRequestAuditContext(req),
+            userId: req.user?.id || null,
+            username: req.user?.username || null,
+            action: 'client.update',
+            method: 'PUT',
+            path: `/api/clients/${req.params.id}`,
+            statusCode: 200,
+            details: { id: parseInt(req.params.id, 10), name: client.name, cif: client.cif || null },
+        });
+
         res.json({ success: true });
     } catch (error) {
         console.error('Error updating client:', error);
@@ -118,7 +141,24 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const db = await getDb();
+        const existing = await db.get('SELECT id, name, cif FROM clients WHERE id = ?', [req.params.id]);
+        if (!existing) {
+            return res.status(404).json({ error: 'Client not found' });
+        }
+
         await db.run('DELETE FROM clients WHERE id = ?', req.params.id);
+
+        await logAuditEvent({
+            ...buildRequestAuditContext(req),
+            userId: req.user?.id || null,
+            username: req.user?.username || null,
+            action: 'client.delete',
+            method: 'DELETE',
+            path: `/api/clients/${req.params.id}`,
+            statusCode: 200,
+            details: { id: existing.id, name: existing.name, cif: existing.cif || null },
+        });
+
         res.json({ success: true });
     } catch (error) {
         console.error('Error deleting client:', error);

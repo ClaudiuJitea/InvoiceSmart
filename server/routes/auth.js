@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getDb } from '../database.js';
 import { authenticateToken, JWT_SECRET } from '../middleware/auth.js';
+import { buildRequestAuditContext, logAuditEvent } from '../auditLogger.js';
 
 const router = express.Router();
 
@@ -52,6 +53,17 @@ router.post('/register', async (req, res) => {
             JWT_SECRET,
             { expiresIn: TOKEN_EXPIRY }
         );
+
+        await logAuditEvent({
+            ...buildRequestAuditContext(req),
+            userId: result.lastID,
+            username,
+            action: 'auth.register',
+            method: 'POST',
+            path: '/api/auth/register',
+            statusCode: 201,
+            details: { email, fullName: fullName || username },
+        });
 
         res.status(201).json({
             message: 'User registered successfully',
@@ -114,6 +126,17 @@ router.post('/login', async (req, res) => {
             JWT_SECRET,
             { expiresIn: TOKEN_EXPIRY }
         );
+
+        await logAuditEvent({
+            ...buildRequestAuditContext(req),
+            userId: user.id,
+            username: user.username,
+            action: 'auth.login',
+            method: 'POST',
+            path: '/api/auth/login',
+            statusCode: 200,
+            details: { usernameOrEmail: username },
+        });
 
         res.json({
             message: 'Login successful',
@@ -185,6 +208,16 @@ router.post('/change-password', authenticateToken, async (req, res) => {
             [newPasswordHash, req.user.id]
         );
 
+        await logAuditEvent({
+            ...buildRequestAuditContext(req),
+            userId: req.user.id,
+            username: req.user.username,
+            action: 'auth.change_password',
+            method: 'POST',
+            path: '/api/auth/change-password',
+            statusCode: 200,
+        });
+
         res.json({ message: 'Password changed successfully' });
     } catch (error) {
         console.error('Change password error:', error);
@@ -193,8 +226,20 @@ router.post('/change-password', authenticateToken, async (req, res) => {
 });
 
 // Logout (client-side - just invalidate token)
-router.post('/logout', (req, res) => {
+router.post('/logout', async (req, res) => {
     // In a production app, you might want to blacklist the token
+    if (req.user?.id) {
+        await logAuditEvent({
+            ...buildRequestAuditContext(req),
+            userId: req.user.id,
+            username: req.user.username,
+            action: 'auth.logout',
+            method: 'POST',
+            path: '/api/auth/logout',
+            statusCode: 200,
+        });
+    }
+
     res.json({ message: 'Logged out successfully' });
 });
 

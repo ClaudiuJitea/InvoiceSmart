@@ -1,20 +1,29 @@
 // Invoice Service - API version
+import { authService } from './authService.js';
 import { settingsService } from './settingsService.js';
 import { formatSeriesNumber, getDefaultSeriesTemplate } from '../../utils/seriesTemplates.js';
 
 export const invoiceService = {
+  getAuthHeader() {
+    return authService.getAuthHeader();
+  },
+
   // Get all invoices with client info
   async getAll(filters = {}) {
     const params = new URLSearchParams({ limit: '1000' });
     if (filters.document_type) params.set('document_type', filters.document_type);
-    const response = await fetch(`/api/invoices?${params.toString()}`); // Higher limit for "all"
+    const response = await fetch(`/api/invoices?${params.toString()}`, {
+      headers: this.getAuthHeader(),
+    }); // Higher limit for "all"
     if (!response.ok) throw new Error('Failed to fetch invoices');
     return response.json();
   },
 
   // Get invoice by ID with client info
   async getById(id) {
-    const response = await fetch(`/api/invoices/${id}`);
+    const response = await fetch(`/api/invoices/${id}`, {
+      headers: this.getAuthHeader(),
+    });
     if (!response.ok) return null;
     return response.json();
   },
@@ -36,6 +45,7 @@ export const invoiceService = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...this.getAuthHeader(),
       },
       body: JSON.stringify(payload),
     });
@@ -58,6 +68,7 @@ export const invoiceService = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...this.getAuthHeader(),
       },
       body: JSON.stringify(payload),
     });
@@ -73,6 +84,7 @@ export const invoiceService = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...this.getAuthHeader(),
       },
       body: JSON.stringify({ delivery_note_ids: deliveryNoteIds }),
     });
@@ -89,6 +101,7 @@ export const invoiceService = {
   async delete(id) {
     const response = await fetch(`/api/invoices/${id}`, {
       method: 'DELETE',
+      headers: this.getAuthHeader(),
     });
     if (!response.ok) throw new Error('Failed to delete invoice');
     return response.json();
@@ -100,6 +113,7 @@ export const invoiceService = {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        ...this.getAuthHeader(),
       },
       body: JSON.stringify({ status }),
     });

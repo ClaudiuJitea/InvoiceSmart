@@ -9,6 +9,8 @@ import { CustomSelect } from '../components/common/CustomSelect.js';
 let currentPage = 1;
 let searchQuery = '';
 let roleFilter = '';
+let currentLogsPage = 1;
+let logsSearchQuery = '';
 
 export function renderAdminDashboard() {
     return `
@@ -120,6 +122,51 @@ export function renderAdminDashboard() {
             
             <!-- Pagination -->
             <div class="table-pagination" id="usersPagination"></div>
+        </div>
+
+        <div class="card" style="margin-top: var(--space-6);">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">${t('admin.logsTitle')}</h3>
+                    <p class="card-subtitle">${t('admin.logsSubtitle')}</p>
+                </div>
+            </div>
+            <div class="admin-filters" style="border: 0; border-radius: 0;">
+                <div class="admin-filters-row">
+                    <div class="search-container admin-search">
+                        <span class="search-icon">${icons.search}</span>
+                        <input
+                            type="text"
+                            id="logsSearch"
+                            class="search-input"
+                            placeholder="${t('admin.logsSearchPlaceholder')}"
+                            value="${logsSearchQuery}"
+                        >
+                    </div>
+                </div>
+            </div>
+            <div class="card-body table-wrapper">
+                <table class="table admin-logs-table">
+                    <thead>
+                        <tr>
+                            <th>${t('admin.logsHeaders.when')}</th>
+                            <th>${t('admin.logsHeaders.actor')}</th>
+                            <th>${t('admin.logsHeaders.action')}</th>
+                            <th>${t('admin.logsHeaders.endpoint')}</th>
+                            <th>${t('admin.logsHeaders.statusCode')}</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <tr>
+                            <td colspan="5" class="table-loading">
+                                <div class="spinner"></div>
+                                <span>${t('general.loading')}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-pagination" id="logsPagination"></div>
         </div>
 
         <!-- User Modal -->
@@ -236,6 +283,7 @@ export async function initAdminDashboard() {
     // Load initial data
     await loadStats();
     await loadUsers();
+    await loadLogs();
 
     // Setup event listeners
     setupEventListeners();
@@ -345,6 +393,64 @@ async function loadUsers() {
     }
 }
 
+async function loadLogs() {
+    const tbody = document.getElementById('logsTableBody');
+    if (!tbody) return;
+
+    try {
+        const result = await userService.getLogs({
+            page: currentLogsPage,
+            limit: 20,
+            search: logsSearchQuery,
+        });
+
+        if (!result.logs || result.logs.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="table-empty">
+                        <div class="empty-state">
+                            ${icons.search}
+                            <p>${t('admin.logsNoResults')}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            document.getElementById('logsPagination').innerHTML = '';
+            return;
+        }
+
+        tbody.innerHTML = result.logs.map((log) => `
+            <tr>
+                <td>${formatDate(log.created_at)}</td>
+                <td>${escapeHtml(log.actor_name || log.username_snapshot || 'System')}</td>
+                <td>
+                    <div class="admin-log-cell">
+                        <span class="admin-log-action-text">${escapeHtml(formatActionLabel(log.action || '-'))}</span>
+                        ${buildLogSummary(log) ? `<div class="admin-log-summary">${escapeHtml(buildLogSummary(log))}</div>` : ''}
+                    </div>
+                </td>
+                <td><code class="admin-log-endpoint">${escapeHtml(log.method || '')} ${escapeHtml(log.path || '')}</code></td>
+                <td>
+                    <span class="badge badge-${Number(log.status_code) >= 400 ? 'danger' : 'success'}">
+                        ${escapeHtml(String(log.status_code || '-'))}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+
+        renderLogsPagination(result.pagination);
+    } catch (error) {
+        console.error('Failed to load logs:', error);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="table-error">
+                    <p>${t('admin.logsLoadError')}: ${escapeHtml(error.message)}</p>
+                </td>
+            </tr>
+        `;
+    }
+}
+
 function renderPagination(pagination) {
     const container = document.getElementById('usersPagination');
 
@@ -398,6 +504,41 @@ function renderPagination(pagination) {
     });
 }
 
+function renderLogsPagination(pagination) {
+    const container = document.getElementById('logsPagination');
+    if (!container) return;
+
+    if (!pagination || pagination.totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="pagination">
+            <button class="pagination-btn" ${pagination.page === 1 ? 'disabled' : ''} data-logs-page="${pagination.page - 1}">
+                ${t('admin.pagination.previous')}
+            </button>
+            <span class="pagination-info">
+                ${t('admin.pagination.showing', {
+                    start: (pagination.page - 1) * pagination.limit + 1,
+                    end: Math.min(pagination.page * pagination.limit, pagination.total),
+                    total: pagination.total
+                })}
+            </span>
+            <button class="pagination-btn" ${pagination.page === pagination.totalPages ? 'disabled' : ''} data-logs-page="${pagination.page + 1}">
+                ${t('admin.pagination.next')}
+            </button>
+        </div>
+    `;
+
+    container.querySelectorAll('[data-logs-page]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            currentLogsPage = parseInt(btn.dataset.logsPage, 10);
+            loadLogs();
+        });
+    });
+}
+
 function setupEventListeners() {
     // Add user button
     document.getElementById('addUserBtn')?.addEventListener('click', () => openUserModal());
@@ -419,6 +560,17 @@ function setupEventListeners() {
         roleFilter = e.target.value;
         currentPage = 1;
         loadUsers();
+    });
+
+    const logsSearchInput = document.getElementById('logsSearch');
+    let logsSearchTimeout;
+    logsSearchInput?.addEventListener('input', (e) => {
+        clearTimeout(logsSearchTimeout);
+        logsSearchTimeout = setTimeout(() => {
+            logsSearchQuery = e.target.value;
+            currentLogsPage = 1;
+            loadLogs();
+        }, 300);
     });
 
     // User form submission
@@ -549,6 +701,7 @@ async function handleUserSubmit(e) {
         closeAllModals();
         await loadStats();
         await loadUsers();
+        await loadLogs();
     } catch (error) {
         alert(t('admin.messages.saveError', { error: error.message }));
     }
@@ -568,6 +721,7 @@ async function handleResetPassword(e) {
     try {
         await userService.resetPassword(userId, newPassword);
         closeAllModals();
+        await loadLogs();
         alert(t('admin.messages.resetSuccess'));
     } catch (error) {
         alert(t('admin.messages.resetError', { error: error.message }));
@@ -582,6 +736,7 @@ async function handleDeleteUser() {
         closeAllModals();
         await loadStats();
         await loadUsers();
+        await loadLogs();
     } catch (error) {
         alert(t('admin.messages.deleteError', { error: error.message }));
     }
@@ -619,4 +774,56 @@ function formatDate(dateStr) {
         hour: '2-digit',
         minute: '2-digit'
     });
+}
+
+function buildLogSummary(log) {
+    if (!log?.details) return '';
+
+    let details;
+    try {
+        details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
+    } catch {
+        return '';
+    }
+
+    const invoiceNumber = details.invoice_number || details.receipt_number || details.deleted_username || details.name;
+    const clientName = details.name;
+    const fromStatus = details.from_status;
+    const toStatus = details.to_status;
+
+    if (fromStatus && toStatus) {
+        return `${fromStatus} -> ${toStatus}${invoiceNumber ? ` (${invoiceNumber})` : ''}`;
+    }
+
+    if (invoiceNumber) return String(invoiceNumber);
+    if (clientName) return String(clientName);
+    if (details.id) return `ID ${details.id}`;
+
+    return '';
+}
+
+function formatActionLabel(action) {
+    const actionMap = {
+        'invoice.create': 'admin.actionLabels.invoiceCreate',
+        'invoice.update': 'admin.actionLabels.invoiceUpdate',
+        'invoice.delete': 'admin.actionLabels.invoiceDelete',
+        'invoice.status_update': 'admin.actionLabels.invoiceStatusUpdate',
+        'delivery_note.create': 'admin.actionLabels.deliveryNoteCreate',
+        'delivery_note.update': 'admin.actionLabels.deliveryNoteUpdate',
+        'delivery_note.delete': 'admin.actionLabels.deliveryNoteDelete',
+        'delivery_note.status_update': 'admin.actionLabels.deliveryNoteStatusUpdate',
+        'client.create': 'admin.actionLabels.clientCreate',
+        'client.update': 'admin.actionLabels.clientUpdate',
+        'client.delete': 'admin.actionLabels.clientDelete',
+        'receipt.create': 'admin.actionLabels.receiptCreate',
+        'receipt.delete': 'admin.actionLabels.receiptDelete',
+        'admin.user.create': 'admin.actionLabels.userCreate',
+        'admin.user.update': 'admin.actionLabels.userUpdate',
+        'admin.user.delete': 'admin.actionLabels.userDelete',
+        'admin.user.reset_password': 'admin.actionLabels.userResetPassword',
+    };
+
+    const key = actionMap[action];
+    if (key) return t(key);
+    return action.replaceAll('.', ' ').replaceAll('_', ' ').replace(/\b\w/g, (m) => m.toUpperCase());
 }
