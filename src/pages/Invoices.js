@@ -156,6 +156,12 @@ export async function initInvoices(params = {}) {
             ${icons.download}
             ${t('invoices.downloadZip')}
           </button>
+          ${section.isDeliveryNotes ? `
+            <button class="btn btn-filled btn-sm" id="createInvoiceFromSelectedBtn" type="button">
+              ${icons.plus}
+              ${t('deliveryNotes.createInvoiceFromSelected')}
+            </button>
+          ` : ''}
           <button class="btn btn-danger btn-sm" id="deleteSelectedBtn" type="button" ${isBulkDeleteRunning ? 'disabled' : ''}>
             ${icons.trash}
             ${t('invoices.deleteSelected')}
@@ -177,6 +183,7 @@ export async function initInvoices(params = {}) {
       const toggleSelectAllBtn = document.getElementById('toggleSelectAllBtn');
       const selectAllFilteredBtn = document.getElementById('selectAllFilteredBtn');
       const downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
+      const createInvoiceFromSelectedBtn = document.getElementById('createInvoiceFromSelectedBtn');
       const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
       const clearSelectionBtn = document.getElementById('clearSelectionBtn');
 
@@ -196,6 +203,10 @@ export async function initInvoices(params = {}) {
 
       downloadSelectedBtn?.addEventListener('click', async () => {
         await handleBulkDownload();
+      });
+
+      createInvoiceFromSelectedBtn?.addEventListener('click', () => {
+        handleCreateInvoiceFromSelected();
       });
 
       deleteSelectedBtn?.addEventListener('click', () => {
@@ -290,6 +301,8 @@ export async function initInvoices(params = {}) {
               ${filteredInvoices.map((invoice) => {
       const status = getStatusChip(invoice.status);
       const checked = selectedInvoiceIds.has(invoice.id) ? 'checked' : '';
+      const isInvoicedDeliveryNote = section.isDeliveryNotes && Number(invoice.is_invoiced) === 1;
+      const linkedNumbers = invoice.linked_invoice_numbers ? escapeHtml(invoice.linked_invoice_numbers) : '';
 
       return `
                   <tr data-invoice-id="${invoice.id}">
@@ -301,9 +314,17 @@ export async function initInvoices(params = {}) {
                       <a href="#${section.basePath}/${invoice.id}" class="text-primary font-medium">
                         ${invoice.invoice_number}
                       </a>
+                      ${isInvoicedDeliveryNote && linkedNumbers ? `
+                        <br><span class="text-sm text-muted">${t('deliveryNotes.invoicedAs')}: ${linkedNumbers}</span>
+                      ` : ''}
                     </td>
                     <td>${invoice.client_name || '-'}</td>
-                    <td><span class="${status.class}">${status.text}</span></td>
+                    <td class="status-cell">
+                      <div class="status-badges">
+                        <span class="${status.class}">${status.text}</span>
+                        ${isInvoicedDeliveryNote ? `<span class="chip chip-success">${t('deliveryNotes.invoiced')}</span>` : ''}
+                      </div>
+                    </td>
                     <td class="text-right">
                       <span class="font-medium">${Number(invoice.total).toFixed(2)} ${invoice.currency}</span>
                       ${invoice.total_secondary ? `<br><span class="text-sm text-muted">${Number(invoice.total_secondary).toFixed(2)} ${invoice.secondary_currency}</span>` : ''}
@@ -453,6 +474,14 @@ export async function initInvoices(params = {}) {
         }
       },
     });
+  }
+
+  function handleCreateInvoiceFromSelected() {
+    const selected = getSelectedInvoices();
+    if (!section.isDeliveryNotes || selected.length === 0) return;
+
+    const ids = selected.map((invoice) => invoice.id).join(',');
+    router.navigate(`/invoices/new/from-delivery-notes/${ids}`);
   }
 
   function attachEventListeners(filteredInvoices, allFilteredSelected) {

@@ -175,6 +175,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 22px;
+    min-width: 22px;
 }
 
 .sidebar-nav-icon svg {
@@ -915,7 +917,18 @@
 /* Ensure button stays correct in collapsed mode */
 .sidebar-collapsed .sidebar-toggle {
     right: -12px;
-    margin-top: 0;
+    top: 50%;
+    transform: translateY(-50%);
     width: 24px;
     height: 24px;
+}
+
+/* Keep nav-label collapse visually consistent even for longer labels (e.g., Delivery Notes) */
+.sidebar-nav-label {
+    display: inline-block;
+    transform-origin: left center;
+}
+
+.sidebar-collapsed .sidebar-nav-label {
+    width: 0;
 }

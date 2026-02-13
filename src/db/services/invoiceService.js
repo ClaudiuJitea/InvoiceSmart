@@ -26,29 +26,62 @@ export const invoiceService = {
   },
 
   // Create new invoice
-  async create(invoice, items = []) {
+  async create(invoice, items = [], options = {}) {
+    const payload = { invoice, items };
+    if (Array.isArray(options.related_delivery_note_ids)) {
+      payload.related_delivery_note_ids = options.related_delivery_note_ids;
+    }
+
     const response = await fetch('/api/invoices', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ invoice, items }),
+      body: JSON.stringify(payload),
     });
-    if (!response.ok) throw new Error('Failed to create invoice');
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to create invoice');
+    }
     const result = await response.json();
     return result.id;
   },
 
   // Update invoice
-  async update(id, invoice, items = []) {
+  async update(id, invoice, items = [], options = {}) {
+    const payload = { invoice, items };
+    if (Array.isArray(options.related_delivery_note_ids)) {
+      payload.related_delivery_note_ids = options.related_delivery_note_ids;
+    }
+
     const response = await fetch(`/api/invoices/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ invoice, items }),
+      body: JSON.stringify(payload),
     });
-    if (!response.ok) throw new Error('Failed to update invoice');
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to update invoice');
+    }
+    return response.json();
+  },
+
+  async buildDraftFromDeliveryNotes(deliveryNoteIds = []) {
+    const response = await fetch('/api/invoices/delivery-notes/draft', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ delivery_note_ids: deliveryNoteIds }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to create invoice draft from delivery notes');
+    }
+
     return response.json();
   },
 

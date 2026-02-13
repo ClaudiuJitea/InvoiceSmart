@@ -15,6 +15,8 @@ import {
 } from '../utils/seriesTemplates.js';
 
 let invoiceItems = [];
+let relatedDeliveryNoteIds = [];
+let relatedDeliveryNoteNumbers = [];
 
 function getDocumentFormConfig(params = {}) {
   const isDeliveryNote = params?.document_type === 'delivery_note';
@@ -61,12 +63,22 @@ export async function initInvoiceForm(params = {}) {
     const container = document.getElementById('invoiceFormContainer');
     if (!container) return;
 
+    const fromDeliveryNoteIds = (!isEdit && section.documentType === 'invoice')
+      ? String(params.from_delivery_notes || '')
+        .split(',')
+        .map((id) => parseInt(id, 10))
+        .filter((id) => Number.isInteger(id) && id > 0)
+      : [];
+
     // Fetch all required data in parallel
-    const [clients, settings, invoice, nextNumber] = await Promise.all([
+    const [clients, settings, invoice, nextNumber, draftFromDeliveryNotes] = await Promise.all([
       clientService.getAll(),
       settingsService.get(),
       isEdit ? invoiceService.getById(parseInt(params.id)) : Promise.resolve(null),
-      !isEdit ? invoiceService.getNextInvoiceNumber(section.documentType) : Promise.resolve(null)
+      !isEdit ? invoiceService.getNextInvoiceNumber(section.documentType) : Promise.resolve(null),
+      fromDeliveryNoteIds.length > 0
+        ? invoiceService.buildDraftFromDeliveryNotes(fromDeliveryNoteIds)
+        : Promise.resolve(null),
     ]);
 
     if (isEdit && !invoice) {
@@ -88,9 +100,32 @@ export async function initInvoiceForm(params = {}) {
           `;
     }
 
+    relatedDeliveryNoteIds = [];
+    relatedDeliveryNoteNumbers = [];
+
+    if (isEdit && section.documentType === 'invoice') {
+      relatedDeliveryNoteIds = Array.isArray(invoice?.related_delivery_note_ids)
+        ? invoice.related_delivery_note_ids.map((id) => parseInt(id, 10)).filter((id) => Number.isInteger(id) && id > 0)
+        : [];
+      relatedDeliveryNoteNumbers = Array.isArray(invoice?.related_delivery_notes)
+        ? invoice.related_delivery_notes.map((note) => note.invoice_number).filter(Boolean)
+        : [];
+    } else if (!isEdit && draftFromDeliveryNotes) {
+      relatedDeliveryNoteIds = Array.isArray(draftFromDeliveryNotes.source_delivery_note_ids)
+        ? draftFromDeliveryNotes.source_delivery_note_ids
+        : [];
+      relatedDeliveryNoteNumbers = Array.isArray(draftFromDeliveryNotes.source_delivery_note_numbers)
+        ? draftFromDeliveryNotes.source_delivery_note_numbers
+        : [];
+    }
+
+    const draftInvoice = draftFromDeliveryNotes?.draft_invoice || {};
+
     // Initialize items
     if (invoice && invoice.items) {
       invoiceItems = invoice.items.map(item => ({ ...item }));
+    } else if (!isEdit && draftFromDeliveryNotes?.items?.length) {
+      invoiceItems = draftFromDeliveryNotes.items.map((item) => ({ ...item }));
     } else if (!isEdit) {
       invoiceItems = [{ description: '', unit: 'hrs', quantity: 1, unit_price: 0, tax_rate: settings?.default_tax_rate || 0, total: 0 }];
     }
@@ -110,7 +145,7 @@ export async function initInvoiceForm(params = {}) {
 
     const today = new Date().toISOString().split('T')[0];
     const defaultTerms = settings?.default_payment_terms || 30;
-    const initialIssueDate = invoice?.issue_date || today;
+    const initialIssueDate = invoice?.issue_date || draftInvoice.issue_date || today;
     let initialDueDate = invoice?.due_date;
 
     if (!initialDueDate) {
@@ -136,6 +171,13 @@ export async function initInvoiceForm(params = {}) {
     // Render Form HTML
     container.innerHTML = `
       <form id="invoiceForm" class="card card-elevated">
+        ${relatedDeliveryNoteNumbers.length > 0 ? `
+          <div class="form-section" style="padding-bottom: 0;">
+            <div class="chip chip-primary">
+              ${t('deliveryNotes.createdFrom')}: ${relatedDeliveryNoteNumbers.join(', ')}
+            </div>
+          </div>
+        ` : ''}
         <!-- Header Info -->
         <div class="form-section">
           <div class="form-row" style="grid-template-columns: 1.35fr 1.65fr;">
@@ -170,7 +212,7 @@ export async function initInvoiceForm(params = {}) {
                 <select class="input select" name="client_id" required>
                   <option value="">${t('invoices.selectClient')}</option>
                   ${clients.map(c => `
-                    <option value="${c.id}" ${invoice?.client_id === c.id ? 'selected' : ''}>
+                    <option value="${c.id}" ${(invoice?.client_id || draftInvoice.client_id) === c.id ? 'selected' : ''}>
                       ${c.name}${c.cif ? ` (${c.cif})` : ''}
                     </option>
                   `).join('')}
@@ -209,36 +251,36 @@ export async function initInvoiceForm(params = {}) {
 
             <div class="input-group">
               <label class="input-label">${t('invoices.taxRate')} (Default %)</label>
-              <input type="number" step="0.1" class="input" name="tax_rate" value="${invoice?.tax_rate || 0}" min="0">
+              <input type="number" step="0.1" class="input" name="tax_rate" value="${invoice?.tax_rate ?? draftInvoice.tax_rate ?? 0}" min="0">
             </div>
 
             <!-- Row 2 -->
             <div class="input-group">
               <label class="input-label">${t('invoices.currency')}</label>
               <select class="input select" name="currency">
-                <option value="EUR" ${(invoice?.currency || settings?.default_currency) === 'EUR' ? 'selected' : ''}>EUR</option>
-                <option value="RON" ${(invoice?.currency || settings?.default_currency) === 'RON' ? 'selected' : ''}>RON</option>
-                <option value="USD" ${invoice?.currency === 'USD' ? 'selected' : ''}>USD</option>
-                <option value="GBP" ${invoice?.currency === 'GBP' ? 'selected' : ''}>GBP</option>
-                <option value="CHF" ${invoice?.currency === 'CHF' ? 'selected' : ''}>CHF</option>
+                <option value="EUR" ${(invoice?.currency || draftInvoice.currency || settings?.default_currency) === 'EUR' ? 'selected' : ''}>EUR</option>
+                <option value="RON" ${(invoice?.currency || draftInvoice.currency || settings?.default_currency) === 'RON' ? 'selected' : ''}>RON</option>
+                <option value="USD" ${(invoice?.currency || draftInvoice.currency) === 'USD' ? 'selected' : ''}>USD</option>
+                <option value="GBP" ${(invoice?.currency || draftInvoice.currency) === 'GBP' ? 'selected' : ''}>GBP</option>
+                <option value="CHF" ${(invoice?.currency || draftInvoice.currency) === 'CHF' ? 'selected' : ''}>CHF</option>
               </select>
             </div>
 
             <div class="input-group">
               <label class="input-label">Secondary Currency</label>
               <select class="input select" name="secondary_currency">
-                <option value="RON" ${(invoice?.secondary_currency || 'RON') === 'RON' ? 'selected' : ''}>RON</option>
-                <option value="EUR" ${(invoice?.secondary_currency) === 'EUR' ? 'selected' : ''}>EUR</option>
-                <option value="USD" ${(invoice?.secondary_currency) === 'USD' ? 'selected' : ''}>USD</option>
-                <option value="GBP" ${(invoice?.secondary_currency) === 'GBP' ? 'selected' : ''}>GBP</option>
-                <option value="CHF" ${(invoice?.secondary_currency) === 'CHF' ? 'selected' : ''}>CHF</option>
+                <option value="RON" ${(invoice?.secondary_currency || draftInvoice.secondary_currency || 'RON') === 'RON' ? 'selected' : ''}>RON</option>
+                <option value="EUR" ${(invoice?.secondary_currency || draftInvoice.secondary_currency) === 'EUR' ? 'selected' : ''}>EUR</option>
+                <option value="USD" ${(invoice?.secondary_currency || draftInvoice.secondary_currency) === 'USD' ? 'selected' : ''}>USD</option>
+                <option value="GBP" ${(invoice?.secondary_currency || draftInvoice.secondary_currency) === 'GBP' ? 'selected' : ''}>GBP</option>
+                <option value="CHF" ${(invoice?.secondary_currency || draftInvoice.secondary_currency) === 'CHF' ? 'selected' : ''}>CHF</option>
               </select>
             </div>
 
             <div class="input-group" style="grid-column: span 2;">
-              <label class="input-label" id="exchangeRateLabel">${t('invoices.exchangeRate')} (${invoice?.secondary_currency || 'RON'})</label>
+              <label class="input-label" id="exchangeRateLabel">${t('invoices.exchangeRate')} (${invoice?.secondary_currency || draftInvoice.secondary_currency || 'RON'})</label>
               <div style="display: flex; gap: 8px;">
-                <input type="number" step="0.0001" class="input" name="exchange_rate" id="exchangeRateInput" value="${invoice?.exchange_rate || 1.0}" min="0">
+                <input type="number" step="0.0001" class="input" name="exchange_rate" id="exchangeRateInput" value="${invoice?.exchange_rate ?? draftInvoice.exchange_rate ?? 1.0}" min="0">
                 <button type="button" class="btn btn-tonal" id="fetchBnrBtn" title="Fetch from BNR" style="padding: 0 24px; white-space: nowrap; height: 52px; border-radius: var(--radius-md);">Fetch Rate</button>
               </div>
             </div>
@@ -355,7 +397,7 @@ export async function initInvoiceForm(params = {}) {
         <div class="form-section">
           <div class="input-group">
             <label class="input-label">${t('invoices.notes')}</label>
-            <textarea class="input textarea" name="notes" rows="3">${invoice?.notes || ''}</textarea>
+            <textarea class="input textarea" name="notes" rows="3">${invoice?.notes || draftInvoice.notes || ''}</textarea>
           </div>
         </div>
 
@@ -626,10 +668,14 @@ export async function initInvoiceForm(params = {}) {
         };
 
         if (isEdit) {
-          await invoiceService.update(parseInt(params.id), data, invoiceItems);
+          await invoiceService.update(parseInt(params.id), data, invoiceItems, {
+            related_delivery_note_ids: relatedDeliveryNoteIds,
+          });
         } else {
           const selectedSeriesTemplateId = formData.get('series_template_id');
-          await invoiceService.create(data, invoiceItems);
+          await invoiceService.create(data, invoiceItems, {
+            related_delivery_note_ids: relatedDeliveryNoteIds,
+          });
           await settingsService.consumeSeriesTemplateNumber(selectedSeriesTemplateId);
         }
 
@@ -643,8 +689,9 @@ export async function initInvoiceForm(params = {}) {
 
   } catch (error) {
     console.error('Failed to init invoice form:', error);
-    toast.error('Failed to load invoice data');
-    router.navigate(getDocumentFormConfig(params).basePath);
+    toast.error(error.message || 'Failed to load invoice data');
+    const fallbackPath = params.from_delivery_notes ? '/delivery-notes' : getDocumentFormConfig(params).basePath;
+    router.navigate(fallbackPath);
   }
 }
 

@@ -244,6 +244,15 @@ function setupRoutes() {
       currentParams = { id: 'new', document_type: 'invoice' };
       renderApp();
     })
+    .on('/invoices/new/from-delivery-notes/:deliveryNoteIds', (params) => {
+      currentPage = 'invoiceForm';
+      currentParams = {
+        id: 'new',
+        document_type: 'invoice',
+        from_delivery_notes: params.deliveryNoteIds,
+      };
+      renderApp();
+    })
     .on('/invoices/:id', (params) => {
       currentPage = 'invoiceForm';
       currentParams = { ...params, document_type: 'invoice' };

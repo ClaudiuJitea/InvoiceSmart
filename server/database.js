@@ -152,6 +152,18 @@ async function initDb(db) {
     );
   `);
 
+  // Invoice <-> Delivery Note relations
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS invoice_delivery_notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      invoice_id INTEGER NOT NULL,
+      delivery_note_id INTEGER NOT NULL UNIQUE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
+      FOREIGN KEY (delivery_note_id) REFERENCES invoices(id) ON DELETE CASCADE
+    );
+  `);
+
   // Users table for authentication
   await db.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -173,6 +185,7 @@ async function initDb(db) {
     CREATE INDEX IF NOT EXISTS idx_invoices_client ON invoices(client_id);
     CREATE INDEX IF NOT EXISTS idx_invoices_date ON invoices(issue_date);
     CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_items(invoice_id);
+    CREATE INDEX IF NOT EXISTS idx_invoice_delivery_notes_invoice ON invoice_delivery_notes(invoice_id);
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
     CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
   `);
