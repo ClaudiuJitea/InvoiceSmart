@@ -1,7 +1,11 @@
 // Service to fetch exchange rates from BNR (National Bank of Romania)
 
-// We use a CORS proxy because BNR does not support CORS for browser requests
-const PROXY_URL = 'https://corsproxy.io/?';
+// We use CORS proxies because BNR does not support CORS for browser requests.
+// Different proxies expose different URL formats and may fail intermittently.
+const PROXY_BUILDERS = [
+    (targetUrl) => `https://corsproxy.io/?${targetUrl}`,
+    (targetUrl) => `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
+];
 const BNR_CURRENT_URL = 'https://www.bnr.ro/nbrfxrates.xml';
 const BNR_YEAR_URL = (year) => `https://www.bnr.ro/files/xml/years/nbrfxrates${year}.xml`;
 
@@ -14,38 +18,110 @@ export const bnrService = {
 
             if (dateStr) {
                 const date = new Date(dateStr);
+                if (Number.isNaN(date.getTime())) {
+                    throw new Error(`Invalid date: ${dateStr}`);
+                }
                 const year = date.getFullYear();
                 url = BNR_YEAR_URL(year);
                 // We only care about YYYY-MM-DD
                 targetDate = dateStr;
             }
 
-            const response = await fetch(PROXY_URL + url);
-            if (!response.ok) {
-                // Fallback for current year if file doesn't exist yet (very start of year)
-                if (dateStr && new Date(dateStr).getFullYear() === new Date().getFullYear()) {
-                    console.warn('Yearly file not found, trying current rates...');
-                    const fallbackResponse = await fetch(PROXY_URL + BNR_CURRENT_URL);
-                    if (!fallbackResponse.ok) throw new Error('Failed to fetch BNR rates');
-                    return this.parseXml(await fallbackResponse.text(), currency, targetDate);
-                }
-                throw new Error('Failed to fetch BNR rates');
-            }
-
-            const text = await response.text();
+            const text = await this.fetchXmlText(url);
             return this.parseXml(text, currency, targetDate);
 
         } catch (error) {
+            // Fallback for current year if yearly file is unavailable early in January.
+            if (dateStr) {
+                const requestedYear = new Date(dateStr).getFullYear();
+                if (requestedYear === new Date().getFullYear()) {
+                    try {
+                        console.warn('Yearly file unavailable, trying current rates...');
+                        const fallbackText = await this.fetchXmlText(BNR_CURRENT_URL);
+                        return this.parseXml(fallbackText, currency, dateStr);
+                    } catch (fallbackError) {
+                        console.error('BNR fallback error:', fallbackError);
+                    }
+                }
+            }
             console.error('BNR Service Error:', error);
             throw error;
         }
     },
 
+    async fetchXmlText(targetUrl) {
+        const errors = [];
+
+        for (const buildProxyUrl of PROXY_BUILDERS) {
+            const proxyUrl = buildProxyUrl(targetUrl);
+            try {
+                const response = await fetch(proxyUrl);
+                if (!response.ok) {
+                    errors.push(`${proxyUrl} -> HTTP ${response.status}`);
+                    continue;
+                }
+
+                const rawText = await response.text();
+                const xmlText = this.extractXml(rawText);
+                if (xmlText) return xmlText;
+
+                errors.push(`${proxyUrl} -> invalid XML payload`);
+            } catch (error) {
+                errors.push(`${proxyUrl} -> ${error.message}`);
+            }
+        }
+
+        throw new Error(`Failed to fetch BNR rates. Attempts: ${errors.join(' | ')}`);
+    },
+
+    extractXml(rawText) {
+        if (!rawText) return null;
+
+        const text = rawText.trim();
+        if (!text) return null;
+
+        if (text.startsWith('<?xml') || text.includes('<DataSet')) {
+            return text;
+        }
+
+        // Some proxies return JSON wrappers, e.g. {"contents":"<?xml ..."}
+        try {
+            const parsed = JSON.parse(text);
+            const wrapped = parsed?.contents || parsed?.data || parsed?.response;
+            if (typeof wrapped === 'string') {
+                const normalized = wrapped.trim();
+                if (normalized.startsWith('<?xml') || normalized.includes('<DataSet')) {
+                    return normalized;
+                }
+            }
+        } catch (_) {
+            // Not JSON.
+        }
+
+        // Some proxies HTML-escape XML in body/pre tags.
+        if (text.includes('&lt;') && text.includes('&gt;')) {
+            const decoded = text
+                .replaceAll('&lt;', '<')
+                .replaceAll('&gt;', '>')
+                .replaceAll('&amp;', '&')
+                .trim();
+            if (decoded.startsWith('<?xml') || decoded.includes('<DataSet')) {
+                return decoded;
+            }
+        }
+
+        return null;
+    },
+
     parseXml(xmlText, currency, targetDate) {
         const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+        const xmlDoc = parser.parseFromString(xmlText, 'application/xml');
+        const parserError = xmlDoc.getElementsByTagName('parsererror')[0];
+        if (parserError) {
+            throw new Error('Failed to parse BNR XML response');
+        }
 
-        const cubes = Array.from(xmlDoc.getElementsByTagName('Cube'));
+        const cubes = Array.from(xmlDoc.getElementsByTagNameNS('*', 'Cube'));
 
         // Filter cubes that have a date attribute
         const dateCubes = cubes.filter(c => c.getAttribute('date'));
@@ -77,7 +153,7 @@ export const bnrService = {
             selectedCube = dateCubes[0];
         }
 
-        const rates = selectedCube.getElementsByTagName('Rate');
+        const rates = selectedCube.getElementsByTagNameNS('*', 'Rate');
         for (let i = 0; i < rates.length; i++) {
             if (rates[i].getAttribute('currency') === currency) {
                 return parseFloat(rates[i].textContent);

@@ -95,7 +95,7 @@ export function renderDashboard() {
                 ${icons.money}
               </div>
               <div class="stat-info">
-                <span class="stat-label" id="revenue-label">TOTAL IN <span id="revenue-label-currency">EUR</span></span>
+                <span class="stat-label" id="revenue-label">${t('dashboard.totalIn')} <span id="revenue-label-currency">EUR</span></span>
                 <div class="stat-value-row">
                   <span class="stat-number stat-number-sm" id="dashboard-total-revenue">
                     <span class="stat-loading"></span>
@@ -341,7 +341,7 @@ function renderRecentInvoices(invoices, currency, settings) {
               <span class="invoice-number">${invoice.invoice_number}</span>
               <span class="invoice-arrow">→</span>
             </a>
-            <span class="invoice-client">${invoice.client_name || 'Unknown Client'}</span>
+            <span class="invoice-client">${invoice.client_name || t('clients.unknownClient')}</span>
           </div>
           <div class="invoice-meta">
             <span class="invoice-date">${formattedDate}</span>

@@ -10,7 +10,7 @@ export function renderClientForm(params = {}) {
     <div class="page-container" style="max-width: 800px;" id="clientFormContainer">
       <div class="card card-elevated" style="padding: 40px; text-align: center;">
         <div class="loading-spinner"></div>
-        <p style="margin-top: 10px; color: var(--md-on-surface-variant);">Loading...</p>
+        <p style="margin-top: 10px; color: var(--md-on-surface-variant);">${t('general.loading')}</p>
       </div>
     </div>
   `;
@@ -52,11 +52,11 @@ export async function initClientForm(params = {}) {
           <div class="form-row">
             <div class="input-group">
               <label class="input-label">${t('clients.cif')}</label>
-              <input type="text" class="input" name="cif" value="${client?.cif || ''}" placeholder="e.g., RO12345678">
+              <input type="text" class="input" name="cif" value="${client?.cif || ''}" placeholder="${t('clients.cifPlaceholder')}">
             </div>
             <div class="input-group">
               <label class="input-label">${t('clients.regNo')}</label>
-              <input type="text" class="input" name="reg_no" value="${client?.reg_no || ''}" placeholder="e.g., J40/123/2020">
+              <input type="text" class="input" name="reg_no" value="${client?.reg_no || ''}" placeholder="${t('clients.regNoPlaceholder')}">
             </div>
           </div>
         </div>
@@ -100,7 +100,7 @@ export async function initClientForm(params = {}) {
           <div class="form-row">
             <div class="input-group">
               <label class="input-label">${t('settings.bankAccount')}</label>
-              <input type="text" class="input" name="bank_account" value="${client?.bank_account || ''}" placeholder="IBAN">
+              <input type="text" class="input" name="bank_account" value="${client?.bank_account || ''}" placeholder="${t('settings.bankAccountPlaceholder')}">
             </div>
             <div class="input-group">
               <label class="input-label">${t('settings.bankName')}</label>
@@ -154,14 +154,14 @@ export async function initClientForm(params = {}) {
           router.navigate('/clients');
         } catch (error) {
           console.error('Failed to save client:', error);
-          toast.error(error.message || 'Failed to save client');
+          toast.error(error.message || t('clients.saveError'));
         }
       });
     }
 
   } catch (error) {
     console.error('Error loading client form:', error);
-    toast.error('Failed to load client data');
+    toast.error(t('clients.loadError'));
     router.navigate('/clients');
   }
 }

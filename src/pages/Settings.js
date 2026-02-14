@@ -50,14 +50,14 @@ function renderSettingsForm(settings, locales) {
           </div>
         </div>
         <div class="form-row">
-          <div class="input-group">
-            <label class="input-label">${t('settings.companyCif')}</label>
-            <input type="text" class="input" name="company_cif" value="${escapeHtml(settings.company_cif || '')}" placeholder="e.g., RO12345678">
-          </div>
-          <div class="input-group">
-            <label class="input-label">${t('settings.companyRegNo')}</label>
-            <input type="text" class="input" name="company_reg_no" value="${escapeHtml(settings.company_reg_no || '')}" placeholder="e.g., J40/123/2020">
-          </div>
+            <div class="input-group">
+              <label class="input-label">${t('settings.companyCif')}</label>
+            <input type="text" class="input" name="company_cif" value="${escapeHtml(settings.company_cif || '')}" placeholder="${t('clients.cifPlaceholder')}">
+            </div>
+            <div class="input-group">
+              <label class="input-label">${t('settings.companyRegNo')}</label>
+            <input type="text" class="input" name="company_reg_no" value="${escapeHtml(settings.company_reg_no || '')}" placeholder="${t('clients.regNoPlaceholder')}">
+            </div>
         </div>
         <div class="form-row">
           <div class="input-group">
@@ -91,10 +91,10 @@ function renderSettingsForm(settings, locales) {
       <div class="form-section">
         <h3 class="form-section-title">${t('settings.bankDetails')}</h3>
         <div class="form-row">
-          <div class="input-group">
-            <label class="input-label">${t('settings.bankAccount')}</label>
-            <input type="text" class="input" name="company_bank_account" value="${escapeHtml(settings.company_bank_account || '')}" placeholder="IBAN">
-          </div>
+            <div class="input-group">
+              <label class="input-label">${t('settings.bankAccount')}</label>
+            <input type="text" class="input" name="company_bank_account" value="${escapeHtml(settings.company_bank_account || '')}" placeholder="${t('settings.bankAccountPlaceholder')}">
+            </div>
         </div>
         <div class="form-row">
           <div class="input-group">
@@ -354,7 +354,7 @@ export function renderSettings() {
 
       <div id="settingsFormContainer" class="card card-elevated" style="padding: 40px; text-align: center;">
         <div class="loading-spinner"></div>
-        <p style="margin-top: 10px; color: var(--md-on-surface-variant);">Loading...</p>
+        <p style="margin-top: 10px; color: var(--md-on-surface-variant);">${t('general.loading')}</p>
       </div>
     </div>
   `;
@@ -512,6 +512,6 @@ export async function initSettings() {
     renderForm();
   } catch (error) {
     console.error('Failed to load settings:', error);
-    container.innerHTML = '<p style="color: var(--md-error);">Failed to load settings.</p>';
+    container.innerHTML = `<p style="color: var(--md-error);">${t('settings.loadError')}</p>`;
   }
 }

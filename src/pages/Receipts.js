@@ -609,7 +609,7 @@ export async function initReceipts() {
                 method: 'DELETE',
                 headers: authService.getAuthHeader(),
               });
-              if (!res.ok) throw new Error('Failed to delete receipt');
+              if (!res.ok) throw new Error(t('receipts.deleteFailed'));
 
               receipts = receipts.filter((receipt) => receipt.id !== receiptId);
               selectedReceiptIds.delete(receiptId);
@@ -632,7 +632,7 @@ export async function initReceipts() {
         settingsService.get(),
       ]);
 
-      if (!receiptsRes.ok) throw new Error('Failed to fetch receipts');
+      if (!receiptsRes.ok) throw new Error(t('receipts.fetchFailed'));
       receipts = await receiptsRes.json();
       settings = settingsData;
 
@@ -669,7 +669,7 @@ function viewReceipt(receipt, invoicesById, settings) {
 
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
-    toast.error('Pop-up blocked. Please allow pop-ups.');
+    toast.error(t('general.popupBlocked'));
     return;
   }
 
@@ -677,7 +677,7 @@ function viewReceipt(receipt, invoicesById, settings) {
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Chitanță ${receipt.receipt_number}</title>
+      <title>${t('receipts.title')} ${receipt.receipt_number}</title>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
       <style>
         @page { size: A6 landscape; margin: 4mm; }
@@ -754,8 +754,8 @@ function viewReceipt(receipt, invoicesById, settings) {
     </head>
     <body>
       <div class="print-actions">
-        <button class="print-btn" onclick="window.print()">${icons.print} Print / Save PDF</button>
-        <button class="close-btn" onclick="window.close()">${icons.close} Close</button>
+        <button class="print-btn" onclick="window.print()">${icons.print} ${t('receipts.printSavePdf')}</button>
+        <button class="close-btn" onclick="window.close()">${icons.close} ${t('actions.close')}</button>
       </div>
       <div class="receipt-wrapper">
         ${receiptHtml}

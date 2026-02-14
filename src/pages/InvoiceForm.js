@@ -7,6 +7,7 @@ import { productService } from '../db/services/productService.js';
 import { settingsService } from '../db/services/settingsService.js';
 import { bnrService } from '../services/bnrService.js';
 import { toast } from '../components/common/Toast.js';
+import modal from '../components/common/Modal.js';
 import { CustomSelect } from '../components/common/CustomSelect.js';
 import { router } from '../router.js';
 import {
@@ -51,7 +52,7 @@ export function renderInvoiceForm(params = {}) {
       <div id="invoiceFormContainer">
           <div class="card card-elevated" style="padding: 40px; text-align: center;">
             <div class="loading-spinner"></div>
-            <p style="margin-top: 10px; color: var(--md-on-surface-variant);">Loading...</p>
+            <p style="margin-top: 10px; color: var(--md-on-surface-variant);">${t('general.loading')}</p>
           </div>
       </div>
     </div>
@@ -85,7 +86,7 @@ export async function initInvoiceForm(params = {}) {
     ]);
 
     if (isEdit && !invoice) {
-      toast.error('Invoice not found');
+      toast.error(t('invoices.notFound'));
       router.navigate(section.basePath);
       return;
     }
@@ -174,7 +175,7 @@ export async function initInvoiceForm(params = {}) {
 
     // Render Form HTML
     container.innerHTML = `
-      <form id="invoiceForm" class="card card-elevated">
+      <form id="invoiceForm" class="card card-elevated" novalidate>
         ${relatedDeliveryNoteNumbers.length > 0 ? `
           <div class="form-section" style="padding-bottom: 0;">
             <div class="chip chip-primary">
@@ -237,7 +238,7 @@ export async function initInvoiceForm(params = {}) {
             <div class="input-group">
               <label class="input-label">${t('invoices.paymentTerms')}</label>
               <select class="input select" id="paymentTermsSelect">
-                <option value="custom" ${selectedTerm === 'custom' ? 'selected' : ''}>Custom</option>
+                <option value="custom" ${selectedTerm === 'custom' ? 'selected' : ''}>${t('invoices.custom')}</option>
                 <option value="7" ${selectedTerm === '7' ? 'selected' : ''}>7 ${t('invoices.days')}</option>
                 <option value="14" ${selectedTerm === '14' ? 'selected' : ''}>14 ${t('invoices.days')}</option>
                 <option value="15" ${selectedTerm === '15' ? 'selected' : ''}>15 ${t('invoices.days')}</option>
@@ -271,7 +272,7 @@ export async function initInvoiceForm(params = {}) {
             </div>
 
             <div class="input-group">
-              <label class="input-label">Secondary Currency</label>
+              <label class="input-label">${t('settings.secondaryCurrency')}</label>
               <select class="input select" name="secondary_currency">
                 <option value="RON" ${(invoice?.secondary_currency || draftInvoice.secondary_currency || 'RON') === 'RON' ? 'selected' : ''}>RON</option>
                 <option value="EUR" ${(invoice?.secondary_currency || draftInvoice.secondary_currency) === 'EUR' ? 'selected' : ''}>EUR</option>
@@ -285,7 +286,7 @@ export async function initInvoiceForm(params = {}) {
               <label class="input-label" id="exchangeRateLabel">${t('invoices.exchangeRate')} (${invoice?.secondary_currency || draftInvoice.secondary_currency || 'RON'})</label>
               <div style="display: flex; gap: 8px;">
                 <input type="number" step="0.0001" class="input" name="exchange_rate" id="exchangeRateInput" value="${invoice?.exchange_rate ?? draftInvoice.exchange_rate ?? 1.0}" min="0">
-                <button type="button" class="btn btn-tonal" id="fetchBnrBtn" title="Fetch from BNR" style="padding: 0 24px; white-space: nowrap; height: 52px; border-radius: var(--radius-md);">Fetch Rate</button>
+                <button type="button" class="btn btn-tonal" id="fetchBnrBtn" title="${t('invoices.fetchFromBnr')}" style="padding: 0 24px; white-space: nowrap; height: 52px; border-radius: var(--radius-md);">${t('invoices.fetchRate')}</button>
               </div>
             </div>
           </div>
@@ -302,7 +303,7 @@ export async function initInvoiceForm(params = {}) {
                   <th style="width: 80px">${t('invoices.itemUnit')}</th>
                   <th style="width: 100px" class="text-right">${t('invoices.itemQuantity')}</th>
                   <th style="width: 120px" class="text-right">${t('invoices.itemPrice')}</th>
-                  <th style="width: 80px" class="text-right">VAT %</th>
+                  <th style="width: 80px" class="text-right">${t('productsServices.taxRate')}</th>
                   <th style="width: 120px" class="text-right">${t('invoices.itemTotal')}</th>
                   <th style="width: 50px"></th>
                 </tr>
@@ -374,21 +375,21 @@ export async function initInvoiceForm(params = {}) {
           <h3 class="form-section-title">${t('settings.language')}</h3>
           <div class="form-row" style="grid-template-columns: repeat(3, 1fr);">
             <div class="input-group">
-              <label class="input-label">Mode</label>
+              <label class="input-label">${t('invoices.languageMode')}</label>
               <select class="input select" name="language_mode" id="languageMode">
-                <option value="single" ${invoice?.language_mode === 'single' ? 'selected' : ''}>Single Language</option>
-                <option value="dual" ${invoice?.language_mode === 'dual' ? 'selected' : ''}>Dual Language</option>
+                <option value="single" ${invoice?.language_mode === 'single' ? 'selected' : ''}>${t('invoices.singleLanguage')}</option>
+                <option value="dual" ${invoice?.language_mode === 'dual' ? 'selected' : ''}>${t('invoices.dualLanguage')}</option>
               </select>
             </div>
             <div class="input-group">
-              <label class="input-label">Primary Language</label>
+              <label class="input-label">${t('invoices.primaryLanguage')}</label>
               <select class="input select" name="language">
                 <option value="en" ${(invoice?.language || 'en') === 'en' ? 'selected' : ''}>English</option>
                 <option value="ro" ${(invoice?.language || 'en') === 'ro' ? 'selected' : ''}>Română</option>
               </select>
             </div>
             <div class="input-group" id="secondaryLanguageGroup" style="display: ${invoice?.language_mode === 'dual' ? 'block' : 'none'};">
-              <label class="input-label">Secondary Language</label>
+              <label class="input-label">${t('invoices.secondaryLanguage')}</label>
               <select class="input select" name="secondary_language">
                 <option value="en" ${(invoice?.secondary_language || 'ro') === 'en' ? 'selected' : ''}>English</option>
                 <option value="ro" ${(invoice?.secondary_language || 'ro') === 'ro' ? 'selected' : ''}>Română</option>
@@ -620,7 +621,7 @@ export async function initInvoiceForm(params = {}) {
           exchangeRateInput.value = 1;
           calculateTotals();
           if (showToast) {
-            toast.info('Currencies are the same');
+            toast.info(t('invoices.currenciesSame'));
           }
           return;
         }
@@ -640,13 +641,17 @@ export async function initInvoiceForm(params = {}) {
         exchangeRateInput.value = rate.toFixed(4);
         calculateTotals();
         if (showToast) {
-          toast.success(`Updated rate: 1 ${currency} = ${rate.toFixed(4)} ${secondaryCurrency}`);
+          toast.success(t('invoices.rateUpdated', {
+            currency,
+            rate: rate.toFixed(4),
+            secondaryCurrency,
+          }));
         }
       } catch (error) {
         console.error(error);
-        toast.error('Failed to fetch BNR rate: ' + error.message);
+        toast.error(t('invoices.rateFetchFailed', { error: error.message }));
       } finally {
-        fetchBnrBtn.textContent = 'Fetch Rate';
+        fetchBnrBtn.textContent = t('invoices.fetchRate');
         fetchBnrBtn.disabled = false;
       }
     };
@@ -699,9 +704,46 @@ export async function initInvoiceForm(params = {}) {
       new CustomSelect(el);
     });
 
+    function getFirstMissingRequiredField() {
+      return Array.from(form.querySelectorAll('[required]')).find((field) => {
+        if (field.disabled) return false;
+        const value = typeof field.value === 'string' ? field.value.trim() : field.value;
+        return !value;
+      });
+    }
+
+    function showClientValidationModal() {
+      const dialog = modal.show({
+        title: t('validation.selectClientTitle'),
+        content: `
+          <p style="margin-bottom: var(--space-6); color: var(--md-on-surface-variant);">
+            ${t('validation.selectClientMessage')}
+          </p>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-tonal" id="clientValidationCloseBtn">${t('actions.close')}</button>
+          </div>
+        `,
+      });
+
+      dialog.overlay?.querySelector('#clientValidationCloseBtn')?.addEventListener('click', () => {
+        dialog.close();
+      });
+    }
+
     // Form submit
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      const missingField = getFirstMissingRequiredField();
+      if (missingField) {
+        if (missingField.name === 'client_id') {
+          showClientValidationModal();
+        } else {
+          toast.error(t('validation.required'));
+          missingField.focus();
+        }
+        return;
+      }
 
       try {
         const formData = new FormData(form);
@@ -741,13 +783,13 @@ export async function initInvoiceForm(params = {}) {
         router.navigate(section.basePath);
       } catch (error) {
         console.error('Save error:', error);
-        toast.error(error.message || 'Failed to save invoice');
+        toast.error(error.message || t('invoices.saveFailed'));
       }
     });
 
   } catch (error) {
     console.error('Failed to init invoice form:', error);
-    toast.error(error.message || 'Failed to load invoice data');
+    toast.error(error.message || t('invoices.loadFormFailed'));
     const fallbackPath = params.from_delivery_notes ? '/delivery-notes' : getDocumentFormConfig(params).basePath;
     router.navigate(fallbackPath);
   }
@@ -792,7 +834,7 @@ function renderItemRow(item, index, products = []) {
         <input type="text" class="input input-number item-total" value="${(item.total || 0).toFixed(2)}" readonly>
       </td>
       <td>
-        <button type="button" class="btn btn-icon item-delete-btn" title="Remove Item">
+        <button type="button" class="btn btn-icon item-delete-btn" title="${t('actions.remove')}">
           ${icons.trash}
         </button>
       </td>

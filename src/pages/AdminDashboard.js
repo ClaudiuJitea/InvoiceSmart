@@ -214,16 +214,16 @@ export function renderAdminDashboard() {
                     <div class="modal-form-grid">
                         <div class="form-group">
                             <label class="input-label" for="userUsername">${t('admin.form.username')} <span class="required-mark">*</span></label>
-                            <input type="text" id="userUsername" class="input" placeholder="e.g. jdoe" required>
+                            <input type="text" id="userUsername" class="input" placeholder="${t('admin.form.usernamePlaceholder')}" required>
                         </div>
                         <div class="form-group">
                             <label class="input-label" for="userFullName">${t('admin.form.fullName')}</label>
-                            <input type="text" id="userFullName" class="input" placeholder="e.g. John Doe">
+                            <input type="text" id="userFullName" class="input" placeholder="${t('admin.form.fullNamePlaceholder')}">
                         </div>
                         
                         <div class="form-group modal-form-full">
                             <label class="input-label" for="userEmail">${t('admin.form.email')} <span class="required-mark">*</span></label>
-                            <input type="email" id="userEmail" class="input" placeholder="name@company.com" required>
+                            <input type="email" id="userEmail" class="input" placeholder="${t('admin.form.emailPlaceholder')}" required>
                         </div>
                         
                         <div class="form-group">
@@ -439,7 +439,7 @@ async function loadUsers() {
             <tr>
                 <td colspan="6" class="table-error">
                     <p>${t('admin.messages.loadError')}.</p>
-                    <button class="btn btn-outline btn-sm" onclick="window.location.reload()">${t('actions.refresh') || 'Retry'}</button>
+                    <button class="btn btn-outline btn-sm" onclick="window.location.reload()">${t('actions.refresh')}</button>
                 </td>
             </tr>
         `;
@@ -478,7 +478,7 @@ async function loadLogs() {
         tbody.innerHTML = result.logs.map((log) => `
             <tr>
                 <td>${formatDate(log.created_at)}</td>
-                <td>${escapeHtml(log.actor_name || log.username_snapshot || 'System')}</td>
+                <td>${escapeHtml(log.actor_name || log.username_snapshot || t('admin.systemActor'))}</td>
                 <td>
                     <div class="admin-log-cell">
                         <span class="admin-log-action-text">${escapeHtml(formatActionLabel(log.action || '-'))}</span>

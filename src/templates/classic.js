@@ -1,9 +1,8 @@
 // Classic Invoice Template - Traditional Business Style
 import { t } from '../i18n/index.js';
-import { settingsService } from '../db/services/settingsService.js';
 
 export function renderClassicTemplate(invoice) {
-  const settings = settingsService.get() || {};
+  const settings = invoice?.settings || {};
   const isDeliveryNote = invoice.document_type === 'delivery_note';
   const documentTitle = isDeliveryNote
     ? `
@@ -36,14 +35,16 @@ export function renderClassicTemplate(invoice) {
           line-height: 1.5;
         }
         .invoice-classic .header {
-          display: flex;
-          justify-content: space-between;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+          gap: 28px;
+          align-items: start;
           border-bottom: 3px solid ${colors.primary};
           padding-bottom: 24px;
           margin-bottom: 36px;
         }
         .invoice-classic .company-info {
-          max-width: 55%;
+          min-width: 0;
         }
         .invoice-classic .company-name {
           font-family: 'Playfair Display', Georgia, serif;
@@ -59,7 +60,7 @@ export function renderClassicTemplate(invoice) {
           color: ${colors.secondary};
         }
         .invoice-classic .invoice-info {
-          text-align: right;
+          text-align: center;
         }
         .invoice-classic .invoice-title {
           font-family: 'Playfair Display', Georgia, serif;
@@ -72,10 +73,11 @@ export function renderClassicTemplate(invoice) {
           text-transform: uppercase;
           display: flex;
           flex-direction: column;
-          align-items: flex-end;
+          align-items: center;
           gap: 2px;
           max-width: 460px;
-          margin-left: auto;
+          margin-left: 0;
+          text-align: center;
         }
         .invoice-classic .invoice-title .title-line {
           display: block;
@@ -92,9 +94,28 @@ export function renderClassicTemplate(invoice) {
         }
         .invoice-classic .info-row {
           display: flex;
-          justify-content: flex-end;
+          justify-content: center;
           margin-bottom: 5px;
           font-size: 10pt;
+        }
+        .invoice-classic .client-info {
+          min-width: 0;
+          text-align: right;
+        }
+        .invoice-classic .client-label {
+          font-size: 8pt;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 1.4px;
+          margin-bottom: 10px;
+          color: ${colors.primary};
+        }
+        .invoice-classic .client-name {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 14pt;
+          font-weight: 600;
+          color: ${colors.primary};
+          margin-bottom: 8px;
         }
         .invoice-classic .info-label {
           font-weight: 600;
@@ -109,6 +130,11 @@ export function renderClassicTemplate(invoice) {
           grid-template-columns: 1fr 1fr;
           gap: 40px;
           margin-bottom: 36px;
+        }
+        .invoice-classic .parties.single-party {
+          grid-template-columns: minmax(320px, 52%);
+          justify-content: start;
+          gap: 0;
         }
         .invoice-classic .party-box {
           border: 1px solid ${colors.border};
@@ -275,23 +301,10 @@ export function renderClassicTemplate(invoice) {
             <span>${new Date(invoice.due_date).toLocaleDateString()}</span>
           </div>
         </div>
-      </div>
-
-      <div class="parties">
-        <div class="party-box">
-          <div class="party-label">${t('invoice.supplier')} / ${t('invoice.from')}</div>
-          <div class="party-name">${settings.company_name || 'Your Company'}</div>
-          <div class="party-details">
-            ${settings.company_cif ? `CIF: ${settings.company_cif}<br>` : ''}
-            ${settings.company_reg_no ? `Reg: ${settings.company_reg_no}<br>` : ''}
-            ${settings.company_address ? settings.company_address.trim().replace(/,$/, '') + '<br>' : ''}
-            ${[settings.company_city, settings.company_country].filter(Boolean).map(s => s.trim().replace(/,$/, '')).join(', ')}
-          </div>
-        </div>
-        <div class="party-box">
-          <div class="party-label">${t('invoice.client')} / ${t('invoice.to')}</div>
-          <div class="party-name">${invoice.client_name || ''}</div>
-          <div class="party-details">
+        <div class="client-info">
+          <div class="client-label">${t('invoice.client')} / ${t('invoice.to')}</div>
+          <div class="client-name">${invoice.client_name || ''}</div>
+          <div class="company-details">
             ${invoice.client_cif ? `CIF: ${invoice.client_cif}<br>` : ''}
             ${invoice.client_reg_no ? `Reg: ${invoice.client_reg_no}<br>` : ''}
             ${invoice.client_address ? invoice.client_address.trim().replace(/,$/, '') + '<br>' : ''}

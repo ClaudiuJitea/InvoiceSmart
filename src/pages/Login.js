@@ -176,7 +176,7 @@ export function initLogin() {
         const password = document.getElementById('password').value;
 
         if (!username || !password) {
-            showError('Please enter username and password');
+            showError(t('login.missingCredentials'));
             return;
         }
 
@@ -191,7 +191,7 @@ export function initLogin() {
             window.dispatchEvent(new CustomEvent('auth:login'));
             router.navigate('/');
         } catch (error) {
-            showError(error.message || 'Login failed. Please try again.');
+            showError(error.message || t('login.loginFailed'));
         } finally {
             setLoading(false);
         }

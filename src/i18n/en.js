@@ -39,6 +39,8 @@ export default {
         confirm: 'Confirm',
         back: 'Back',
         next: 'Next',
+        retry: 'Retry',
+        refresh: 'Refresh',
     },
 
     // Dashboard
@@ -53,6 +55,7 @@ export default {
         quickActions: 'Quick Actions',
         newInvoice: 'New Invoice',
         newClient: 'New Client',
+        totalIn: 'TOTAL IN',
     },
 
     // Reports
@@ -72,6 +75,24 @@ export default {
         startDate: 'Start Date',
         endDate: 'End Date',
         noCurrencyData: 'No invoices found with this currency',
+        financialReport: 'Financial Report',
+        periodLabel: 'Period:',
+        beginning: 'Beginning',
+        present: 'Present',
+        to: 'to',
+        generatedLabel: 'Generated:',
+        generatedOn: 'Generated on',
+        currencyLabel: 'Currency:',
+        metric: 'Metric',
+        value: 'Value',
+        summarySheet: 'Summary',
+        detailedDataSheet: 'Detailed Data',
+        excelCreateFailed: 'Failed to create Excel file: {error}',
+        preparingPdf: 'Preparing...',
+        executiveReport: 'Executive Report',
+        revenueAnalytics: 'Revenue Analytics',
+        invoiceDetails: 'Invoice Details',
+        pdfGenerationFailed: 'PDF Generation failed: {error}',
     },
 
     // Invoices
@@ -131,6 +152,31 @@ export default {
         preview: 'Preview',
         exportPdf: 'Export PDF',
         selectTemplate: 'Select Template',
+        custom: 'Custom',
+        fetchRate: 'Fetch Rate',
+        fetchFromBnr: 'Fetch from BNR',
+        languageMode: 'Mode',
+        singleLanguage: 'Single Language',
+        dualLanguage: 'Dual Language',
+        primaryLanguage: 'Primary Language',
+        secondaryLanguage: 'Secondary Language',
+        currenciesSame: 'Currencies are the same',
+        rateUpdated: 'Updated rate: 1 {currency} = {rate} {secondaryCurrency}',
+        rateFetchFailed: 'Failed to fetch BNR rate: {error}',
+        notFound: 'Invoice not found',
+        loadPreviewFailed: 'Failed to load preview',
+        loadFormFailed: 'Failed to load invoice data',
+        saveFailed: 'Failed to save invoice',
+        loadingPreview: 'Loading preview...',
+        generateReceiptConfirm: 'Create receipt and mark invoice as paid?',
+        generatingReceipt: 'Generating...',
+        receiptCreated: 'Receipt created!',
+        createReceiptFailed: 'Failed to create receipt',
+        pdfExported: 'PDF exported: {file}',
+        loadError: 'Failed to load invoices',
+        updateStatusFailed: 'Failed to update status',
+        duplicateFailed: 'Failed to duplicate invoice',
+        deleteFailed: 'Failed to delete invoice',
 
         // Empty state
         emptyTitle: 'No invoices yet',
@@ -226,6 +272,9 @@ export default {
         bulkDeleteFailed: 'Failed to delete selected receipts',
         bulkDownloadSuccess: 'ZIP downloaded for {count} receipt(s)',
         bulkDownloadFailed: 'Failed to download selected receipts',
+        fetchFailed: 'Failed to fetch receipts',
+        deleteFailed: 'Failed to delete receipt',
+        printSavePdf: 'Print / Save PDF',
     },
 
     productsServices: {
@@ -277,6 +326,12 @@ export default {
         deleteConfirm: 'Are you sure you want to delete this client?',
         deleteSuccess: 'Client deleted successfully',
         saveSuccess: 'Client saved successfully',
+        saveError: 'Failed to save client',
+        loadError: 'Failed to load clients',
+        deleteError: 'Failed to delete client',
+        unknownClient: 'Unknown Client',
+        cifPlaceholder: 'e.g., RO12345678',
+        regNoPlaceholder: 'e.g., J40/123/2020',
     },
 
     // Settings
@@ -298,6 +353,7 @@ export default {
         // Bank details
         bankDetails: 'Bank Details',
         bankAccount: 'Bank Account (IBAN)',
+        bankAccountPlaceholder: 'IBAN',
         bankSwift: 'SWIFT/BIC',
         bankName: 'Bank Name',
 
@@ -339,6 +395,7 @@ export default {
 
         // Save
         saveSuccess: 'Settings saved successfully',
+        loadError: 'Failed to load settings.',
     },
 
     // Invoice Templates
@@ -388,6 +445,8 @@ export default {
         invalidNumber: 'Invalid number',
         minLength: 'Minimum {min} characters required',
         maxLength: 'Maximum {max} characters allowed',
+        selectClientTitle: 'Client required',
+        selectClientMessage: 'Please select a client before saving the invoice.',
     },
 
     // Login
@@ -411,6 +470,41 @@ export default {
         feature2Desc: 'Keep track of all your clients',
         feature3Title: 'Detailed Reports',
         feature3Desc: 'Insights into your business',
+        missingCredentials: 'Please enter username and password',
+        loginFailed: 'Login failed. Please try again.',
+    },
+
+    register: {
+        brandTitle: 'Start your journey today',
+        brandSubtitle: 'Join thousands of businesses managing their invoices professionally. Get started in just a few minutes.',
+        feature1Title: 'Free to Use',
+        feature1Desc: 'No credit card required',
+        feature2Title: 'Secure & Private',
+        feature2Desc: 'Your data stays with you',
+        feature3Title: 'Easy Setup',
+        feature3Desc: 'Get started in minutes',
+        createAccountTitle: 'Create your account',
+        subtitle: 'Fill in your details to get started',
+        success: 'Account created successfully!',
+        usernameLabel: 'Username',
+        usernamePlaceholder: 'Choose a username',
+        fullNameLabel: 'Full Name',
+        fullNamePlaceholder: 'Your full name',
+        emailLabel: 'Email',
+        emailPlaceholder: 'your@email.com',
+        passwordLabel: 'Password',
+        passwordPlaceholder: 'At least 6 characters',
+        passwordHint: 'Password must be at least 6 characters',
+        confirmPasswordLabel: 'Confirm Password',
+        confirmPasswordPlaceholder: 'Confirm your password',
+        createAccount: 'Create Account',
+        creatingAccount: 'Creating account...',
+        haveAccount: 'Already have an account?',
+        signIn: 'Sign in',
+        requiredFields: 'Please fill in all required fields',
+        passwordMinLength: 'Password must be at least 6 characters',
+        passwordsMismatch: 'Passwords do not match',
+        registerFailed: 'Registration failed. Please try again.',
     },
 
     // General
@@ -478,7 +572,10 @@ export default {
         form: {
             fullName: 'Full Name',
             username: 'Username',
+            usernamePlaceholder: 'e.g. jdoe',
+            fullNamePlaceholder: 'e.g. John Doe',
             email: 'Email Address',
+            emailPlaceholder: 'name@company.com',
             password: 'Password',
             passwordHint: 'At least 6 chars',
             passwordPlaceholder: 'Enter new password',
@@ -491,6 +588,7 @@ export default {
             resetPassword: 'Reset Password',
             deleteUser: 'Delete User',
         },
+        systemActor: 'System',
         messages: {
             deleteConfirm: 'Are you sure you want to delete {name}?',
             deleteWarning: 'This action cannot be undone.',
@@ -525,5 +623,7 @@ export default {
         and: 'and',
         all: 'All',
         none: 'None',
+        popupBlocked: 'Pop-up blocked. Please allow pop-ups.',
+        appLoadFailed: 'Failed to load application',
     },
 };

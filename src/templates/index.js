@@ -23,9 +23,12 @@ export const templates = {
     },
 };
 
-export function renderTemplate(templateId, invoice) {
+export function renderTemplate(templateId, invoice, settings = null) {
     const template = templates[templateId] || templates.modern;
-    return template.render(invoice);
+    return template.render({
+        ...(invoice || {}),
+        settings: settings || invoice?.settings || {},
+    });
 }
 
 export default templates;

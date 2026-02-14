@@ -1,9 +1,8 @@
 // Creative Invoice Template - Green Professional
 import { t, tDual, i18n } from '../i18n/index.js';
-import { settingsService } from '../db/services/settingsService.js';
 
 export function renderCreativeTemplate(invoice) {
-  const settings = settingsService.get() || {};
+  const settings = invoice?.settings || {};
   const isDeliveryNote = invoice.document_type === 'delivery_note';
   const lang = invoice.language || 'en';
   const secLang = invoice.secondary_language || 'ro';

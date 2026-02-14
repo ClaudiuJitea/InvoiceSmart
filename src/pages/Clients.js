@@ -32,7 +32,7 @@ export function renderClients() {
       <div id="clientsListContainer">
         <div class="card card-elevated" style="padding: 40px; text-align: center;">
             <div class="loading-spinner"></div>
-            <p style="margin-top: 10px; color: var(--md-on-surface-variant);">Loading...</p>
+            <p style="margin-top: 10px; color: var(--md-on-surface-variant);">${t('general.loading')}</p>
         </div>
       </div>
     </div>
@@ -56,7 +56,7 @@ export async function initClients() {
       renderClientsList(clients);
     } catch (error) {
       console.error('Failed to load clients:', error);
-      container.innerHTML = `<div class="p-4 text-center text-error">Failed to load clients</div>`;
+      container.innerHTML = `<div class="p-4 text-center text-error">${t('clients.loadError')}</div>`;
     }
   }
 
@@ -155,7 +155,7 @@ export async function initClients() {
               toast.success(t('clients.deleteSuccess'));
               loadClients(); // Reload list instead of full app refresh
             } catch (error) {
-              toast.error('Failed to delete client');
+              toast.error(t('clients.deleteError'));
             }
           },
         });

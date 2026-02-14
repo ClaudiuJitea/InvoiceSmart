@@ -39,6 +39,8 @@ export default {
         confirm: 'Confirmă',
         back: 'Înapoi',
         next: 'Următorul',
+        retry: 'Reîncearcă',
+        refresh: 'Reîncarcă',
     },
 
     // Dashboard
@@ -53,6 +55,7 @@ export default {
         quickActions: 'Acțiuni Rapide',
         newInvoice: 'Factură Nouă',
         newClient: 'Client Nou',
+        totalIn: 'TOTAL ÎN',
     },
 
     // Reports
@@ -72,6 +75,24 @@ export default {
         startDate: 'De la',
         endDate: 'Până la',
         noCurrencyData: 'Nu există facturi cu această monedă',
+        financialReport: 'Raport financiar',
+        periodLabel: 'Perioadă:',
+        beginning: 'Început',
+        present: 'Prezent',
+        to: 'până la',
+        generatedLabel: 'Generat:',
+        generatedOn: 'Generat la',
+        currencyLabel: 'Monedă:',
+        metric: 'Indicator',
+        value: 'Valoare',
+        summarySheet: 'Sumar',
+        detailedDataSheet: 'Date detaliate',
+        excelCreateFailed: 'Nu s-a putut crea fișierul Excel: {error}',
+        preparingPdf: 'Se pregătește...',
+        executiveReport: 'Raport executiv',
+        revenueAnalytics: 'Analiză venituri',
+        invoiceDetails: 'Detalii facturi',
+        pdfGenerationFailed: 'Generarea PDF a eșuat: {error}',
     },
 
     // Invoices
@@ -131,6 +152,31 @@ export default {
         preview: 'Previzualizare',
         exportPdf: 'Exportă PDF',
         selectTemplate: 'Selectează Șablon',
+        custom: 'Personalizat',
+        fetchRate: 'Preia curs',
+        fetchFromBnr: 'Preia din BNR',
+        languageMode: 'Mod',
+        singleLanguage: 'O singură limbă',
+        dualLanguage: 'Două limbi',
+        primaryLanguage: 'Limba principală',
+        secondaryLanguage: 'Limba secundară',
+        currenciesSame: 'Monedele sunt identice',
+        rateUpdated: 'Curs actualizat: 1 {currency} = {rate} {secondaryCurrency}',
+        rateFetchFailed: 'Nu s-a putut prelua cursul BNR: {error}',
+        notFound: 'Factura nu a fost găsită',
+        loadPreviewFailed: 'Nu s-a putut încărca previzualizarea',
+        loadFormFailed: 'Nu s-au putut încărca datele facturii',
+        saveFailed: 'Nu s-a putut salva factura',
+        loadingPreview: 'Se încarcă previzualizarea...',
+        generateReceiptConfirm: 'Generezi chitanța și marchezi factura ca plătită?',
+        generatingReceipt: 'Se generează...',
+        receiptCreated: 'Chitanța a fost creată!',
+        createReceiptFailed: 'Nu s-a putut crea chitanța',
+        pdfExported: 'PDF exportat: {file}',
+        loadError: 'Nu s-au putut încărca facturile',
+        updateStatusFailed: 'Nu s-a putut actualiza statusul',
+        duplicateFailed: 'Nu s-a putut duplica factura',
+        deleteFailed: 'Nu s-a putut șterge factura',
 
         // Empty state
         emptyTitle: 'Nu există facturi',
@@ -226,6 +272,9 @@ export default {
         bulkDeleteFailed: 'Ștergerea selecției a eșuat',
         bulkDownloadSuccess: 'ZIP descărcat pentru {count} chitanță/chitanțe',
         bulkDownloadFailed: 'Descărcarea selecției a eșuat',
+        fetchFailed: 'Nu s-au putut prelua chitanțele',
+        deleteFailed: 'Nu s-a putut șterge chitanța',
+        printSavePdf: 'Printează / Salvează PDF',
     },
 
     productsServices: {
@@ -277,6 +326,12 @@ export default {
         deleteConfirm: 'Ești sigur că vrei să ștergi acest client?',
         deleteSuccess: 'Clientul a fost șters cu succes',
         saveSuccess: 'Clientul a fost salvat cu succes',
+        saveError: 'Nu s-a putut salva clientul',
+        loadError: 'Nu s-au putut încărca clienții',
+        deleteError: 'Nu s-a putut șterge clientul',
+        unknownClient: 'Client necunoscut',
+        cifPlaceholder: 'ex.: RO12345678',
+        regNoPlaceholder: 'ex.: J40/123/2020',
     },
 
     // Settings
@@ -298,6 +353,7 @@ export default {
         // Bank details
         bankDetails: 'Detalii Bancare',
         bankAccount: 'Cont Bancar (IBAN)',
+        bankAccountPlaceholder: 'IBAN',
         bankSwift: 'SWIFT/BIC',
         bankName: 'Banca',
 
@@ -339,6 +395,7 @@ export default {
 
         // Save
         saveSuccess: 'Setările au fost salvate cu succes',
+        loadError: 'Nu s-au putut încărca setările.',
     },
 
     // Invoice Templates
@@ -388,6 +445,8 @@ export default {
         invalidNumber: 'Număr invalid',
         minLength: 'Minim {min} caractere necesare',
         maxLength: 'Maxim {max} caractere permise',
+        selectClientTitle: 'Client obligatoriu',
+        selectClientMessage: 'Te rugăm să selectezi un client înainte de salvarea facturii.',
     },
 
     // Autentificare
@@ -411,6 +470,41 @@ export default {
         feature2Desc: 'Ține evidența tuturor clienților tăi',
         feature3Title: 'Rapoarte Detaliate',
         feature3Desc: 'Informații valoroase despre afacerea ta',
+        missingCredentials: 'Te rugăm să introduci utilizatorul și parola',
+        loginFailed: 'Autentificarea a eșuat. Încearcă din nou.',
+    },
+
+    register: {
+        brandTitle: 'Începe-ți călătoria azi',
+        brandSubtitle: 'Alătură-te miilor de afaceri care își gestionează facturile profesionist. Începi în doar câteva minute.',
+        feature1Title: 'Gratuit',
+        feature1Desc: 'Fără card de credit',
+        feature2Title: 'Sigur & Privat',
+        feature2Desc: 'Datele rămân la tine',
+        feature3Title: 'Configurare rapidă',
+        feature3Desc: 'Începi în câteva minute',
+        createAccountTitle: 'Creează-ți contul',
+        subtitle: 'Completează datele pentru a începe',
+        success: 'Cont creat cu succes!',
+        usernameLabel: 'Utilizator',
+        usernamePlaceholder: 'Alege un utilizator',
+        fullNameLabel: 'Nume complet',
+        fullNamePlaceholder: 'Numele tău complet',
+        emailLabel: 'Email',
+        emailPlaceholder: 'nume@email.com',
+        passwordLabel: 'Parolă',
+        passwordPlaceholder: 'Cel puțin 6 caractere',
+        passwordHint: 'Parola trebuie să aibă cel puțin 6 caractere',
+        confirmPasswordLabel: 'Confirmă parola',
+        confirmPasswordPlaceholder: 'Confirmă parola',
+        createAccount: 'Creează cont',
+        creatingAccount: 'Se creează contul...',
+        haveAccount: 'Ai deja cont?',
+        signIn: 'Autentifică-te',
+        requiredFields: 'Te rugăm să completezi toate câmpurile obligatorii',
+        passwordMinLength: 'Parola trebuie să aibă cel puțin 6 caractere',
+        passwordsMismatch: 'Parolele nu coincid',
+        registerFailed: 'Înregistrarea a eșuat. Încearcă din nou.',
     },
 
     // General
@@ -478,7 +572,10 @@ export default {
         form: {
             fullName: 'Nume Complet',
             username: 'Nume Utilizator',
+            usernamePlaceholder: 'ex.: cjitea',
+            fullNamePlaceholder: 'ex.: Claudiu Jitea',
             email: 'Adresă Email',
+            emailPlaceholder: 'nume@companie.com',
             password: 'Parolă',
             passwordHint: 'Minim 6 caractere',
             passwordPlaceholder: 'Introdu noua parolă',
@@ -491,6 +588,7 @@ export default {
             resetPassword: 'Schimbă Parola',
             deleteUser: 'Șterge Utilizator',
         },
+        systemActor: 'Sistem',
         messages: {
             deleteConfirm: 'Sigur dorești să ștergi utilizatorul {name}?',
             deleteWarning: 'Această acțiune este ireversibilă.',
@@ -525,5 +623,7 @@ export default {
         and: 'și',
         all: 'Toate',
         none: 'Niciuna',
+        popupBlocked: 'Fereastra pop-up este blocată. Permite pop-up-urile.',
+        appLoadFailed: 'Aplicația nu a putut fi încărcată',
     },
 };

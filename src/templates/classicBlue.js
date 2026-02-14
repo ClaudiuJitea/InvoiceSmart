@@ -1,8 +1,6 @@
 // Classic Blue Invoice Template - Professional Blue Style
-import { settingsService } from '../db/services/settingsService.js';
-
 export function renderClassicBlueTemplate(invoice) {
-    const settings = settingsService.get() || {};
+    const settings = invoice?.settings || {};
     const isDeliveryNote = invoice.document_type === 'delivery_note';
     const documentTitle = isDeliveryNote
         ? `

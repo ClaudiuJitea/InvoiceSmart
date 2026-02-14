@@ -15,29 +15,29 @@ export function renderRegister() {
                         ${icons.logo}
                         <span class="auth-brand-name">InvoiceSmart</span>
                     </div>
-                    <h1 class="auth-brand-title">Start your journey today</h1>
-                    <p class="auth-brand-subtitle">Join thousands of businesses managing their invoices professionally. Get started in just a few minutes.</p>
+                    <h1 class="auth-brand-title">${t('register.brandTitle')}</h1>
+                    <p class="auth-brand-subtitle">${t('register.brandSubtitle')}</p>
                     
                     <div class="auth-features">
                         <div class="auth-feature">
                             <div class="auth-feature-icon">${icons.check}</div>
                             <div class="auth-feature-text">
-                                <strong>Free to Use</strong>
-                                <span>No credit card required</span>
+                                <strong>${t('register.feature1Title')}</strong>
+                                <span>${t('register.feature1Desc')}</span>
                             </div>
                         </div>
                         <div class="auth-feature">
                             <div class="auth-feature-icon">${icons.check}</div>
                             <div class="auth-feature-text">
-                                <strong>Secure & Private</strong>
-                                <span>Your data stays with you</span>
+                                <strong>${t('register.feature2Title')}</strong>
+                                <span>${t('register.feature2Desc')}</span>
                             </div>
                         </div>
                         <div class="auth-feature">
                             <div class="auth-feature-icon">${icons.check}</div>
                             <div class="auth-feature-text">
-                                <strong>Easy Setup</strong>
-                                <span>Get started in minutes</span>
+                                <strong>${t('register.feature3Title')}</strong>
+                                <span>${t('register.feature3Desc')}</span>
                             </div>
                         </div>
                     </div>
@@ -53,8 +53,8 @@ export function renderRegister() {
             <div class="auth-form-container">
                 <div class="auth-form-wrapper">
                     <div class="auth-form-header">
-                        <h2 class="auth-form-title">Create your account</h2>
-                        <p class="auth-form-subtitle">Fill in your details to get started</p>
+                        <h2 class="auth-form-title">${t('register.createAccountTitle')}</h2>
+                        <p class="auth-form-subtitle">${t('register.subtitle')}</p>
                     </div>
 
                     <form id="registerForm" class="auth-form">
@@ -65,12 +65,12 @@ export function renderRegister() {
 
                         <div class="auth-alert auth-alert-success" id="registerSuccess" style="display: none;">
                             <span class="auth-alert-icon">${icons.check}</span>
-                            <span class="auth-alert-message">Account created successfully!</span>
+                            <span class="auth-alert-message">${t('register.success')}</span>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label" for="username">Username</label>
+                                <label class="form-label" for="username">${t('register.usernameLabel')}</label>
                                 <div class="input-with-icon">
                                     <span class="input-icon">${icons.user}</span>
                                     <input 
@@ -78,7 +78,7 @@ export function renderRegister() {
                                         id="username" 
                                         name="username" 
                                         class="input input-icon-left" 
-                                        placeholder="Choose a username"
+                                        placeholder="${t('register.usernamePlaceholder')}"
                                         autocomplete="username"
                                         required
                                     >
@@ -86,7 +86,7 @@ export function renderRegister() {
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label" for="fullName">Full Name</label>
+                                <label class="form-label" for="fullName">${t('register.fullNameLabel')}</label>
                                 <div class="input-with-icon">
                                     <span class="input-icon">${icons.user}</span>
                                     <input 
@@ -94,7 +94,7 @@ export function renderRegister() {
                                         id="fullName" 
                                         name="fullName" 
                                         class="input input-icon-left" 
-                                        placeholder="Your full name"
+                                        placeholder="${t('register.fullNamePlaceholder')}"
                                         autocomplete="name"
                                     >
                                 </div>
@@ -102,7 +102,7 @@ export function renderRegister() {
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" for="email">Email</label>
+                            <label class="form-label" for="email">${t('register.emailLabel')}</label>
                             <div class="input-with-icon">
                                 <span class="input-icon">${icons.globe}</span>
                                 <input 
@@ -110,7 +110,7 @@ export function renderRegister() {
                                     id="email" 
                                     name="email" 
                                     class="input input-icon-left" 
-                                    placeholder="your@email.com"
+                                    placeholder="${t('register.emailPlaceholder')}"
                                     autocomplete="email"
                                     required
                                 >
@@ -118,7 +118,7 @@ export function renderRegister() {
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" for="password">Password</label>
+                            <label class="form-label" for="password">${t('register.passwordLabel')}</label>
                             <div class="input-with-icon">
                                 <span class="input-icon">${icons.lock}</span>
                                 <input 
@@ -126,7 +126,7 @@ export function renderRegister() {
                                     id="password" 
                                     name="password" 
                                     class="input input-icon-left" 
-                                    placeholder="At least 6 characters"
+                                    placeholder="${t('register.passwordPlaceholder')}"
                                     autocomplete="new-password"
                                     minlength="6"
                                     required
@@ -135,11 +135,11 @@ export function renderRegister() {
                                     ${icons.eye}
                                 </button>
                             </div>
-                            <span class="form-hint">Password must be at least 6 characters</span>
+                            <span class="form-hint">${t('register.passwordHint')}</span>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" for="confirmPassword">Confirm Password</label>
+                            <label class="form-label" for="confirmPassword">${t('register.confirmPasswordLabel')}</label>
                             <div class="input-with-icon">
                                 <span class="input-icon">${icons.lock}</span>
                                 <input 
@@ -147,7 +147,7 @@ export function renderRegister() {
                                     id="confirmPassword" 
                                     name="confirmPassword" 
                                     class="input input-icon-left" 
-                                    placeholder="Confirm your password"
+                                    placeholder="${t('register.confirmPasswordPlaceholder')}"
                                     autocomplete="new-password"
                                     required
                                 >
@@ -155,18 +155,18 @@ export function renderRegister() {
                         </div>
 
                         <button type="submit" class="btn btn-primary" id="registerBtn">
-                            <span class="btn-text">Create Account</span>
+                            <span class="btn-text">${t('register.createAccount')}</span>
                             <span class="btn-loading" style="display: none;">
                                 <span class="spinner"></span>
-                                Creating account...
+                                ${t('register.creatingAccount')}
                             </span>
                         </button>
                     </form>
 
                     <div class="auth-form-footer">
                         <p class="auth-footer-text">
-                            Already have an account? 
-                            <a href="#/login" class="auth-link">Sign in</a>
+                            ${t('register.haveAccount')} 
+                            <a href="#/login" class="auth-link">${t('register.signIn')}</a>
                         </p>
                     </div>
                 </div>
@@ -208,17 +208,17 @@ export function initRegister() {
 
         // Validation
         if (!username || !email || !password) {
-            showError('Please fill in all required fields');
+            showError(t('register.requiredFields'));
             return;
         }
 
         if (password.length < 6) {
-            showError('Password must be at least 6 characters');
+            showError(t('register.passwordMinLength'));
             return;
         }
 
         if (password !== confirmPassword) {
-            showError('Passwords do not match');
+            showError(t('register.passwordsMismatch'));
             return;
         }
 
@@ -238,7 +238,7 @@ export function initRegister() {
                 router.navigate('/');
             }, 1000);
         } catch (error) {
-            showError(error.message || 'Registration failed. Please try again.');
+            showError(error.message || t('register.registerFailed'));
         } finally {
             setLoading(false);
         }

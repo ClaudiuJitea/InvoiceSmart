@@ -2,6 +2,7 @@
 import { t } from '../i18n/index.js';
 import { icons } from '../components/icons.js';
 import { invoiceService } from '../db/services/invoiceService.js';
+import { settingsService } from '../db/services/settingsService.js';
 import { toast } from '../components/common/Toast.js';
 import { confirm } from '../components/common/Modal.js';
 import { router } from '../router.js';
@@ -49,7 +50,7 @@ export function renderInvoices(params = {}) {
       <div id="invoicesListContainer">
         <div class="card card-elevated" style="padding: 40px; text-align: center;">
             <div class="loading-spinner"></div>
-            <p style="margin-top: 10px; color: var(--md-on-surface-variant);">Loading...</p>
+            <p style="margin-top: 10px; color: var(--md-on-surface-variant);">${t('general.loading')}</p>
         </div>
       </div>
     </div>
@@ -62,6 +63,7 @@ export async function initInvoices(params = {}) {
   const headerActions = document.getElementById('invoicesHeaderActions');
 
   let currentInvoices = [];
+  let currentSettings = {};
   const selectedInvoiceIds = new Set();
   const filters = {
     invoiceNumber: '',
@@ -468,7 +470,7 @@ export async function initInvoices(params = {}) {
 
   async function buildInvoicePdfBlob(invoice) {
     const tempDocument = document.createElement('div');
-    tempDocument.innerHTML = renderTemplate(invoice.template || 'modern', invoice);
+    tempDocument.innerHTML = renderTemplate(invoice.template || 'modern', invoice, currentSettings);
     return exportToPdfBlob(tempDocument);
   }
 
@@ -667,7 +669,7 @@ export async function initInvoices(params = {}) {
           toast.success(section.saveSuccess);
           loadInvoices();
         } catch (error) {
-          toast.error('Failed to update status');
+          toast.error(t('invoices.updateStatusFailed'));
         }
       });
     });
@@ -687,7 +689,7 @@ export async function initInvoices(params = {}) {
             loadInvoices();
           }
         } catch (error) {
-          toast.error('Failed to duplicate invoice');
+          toast.error(t('invoices.duplicateFailed'));
         }
       });
     });
@@ -708,7 +710,7 @@ export async function initInvoices(params = {}) {
               toast.success(section.deleteSuccess);
               loadInvoices();
             } catch (error) {
-              toast.error('Failed to delete invoice');
+              toast.error(t('invoices.deleteFailed'));
             }
           },
         });
@@ -720,12 +722,17 @@ export async function initInvoices(params = {}) {
     if (!container) return;
 
     try {
-      currentInvoices = await invoiceService.getAll({ document_type: section.documentType });
+      const [invoices, settings] = await Promise.all([
+        invoiceService.getAll({ document_type: section.documentType }),
+        settingsService.get(),
+      ]);
+      currentInvoices = invoices;
+      currentSettings = settings || {};
       syncSelection();
       renderInvoicesList(getFilteredInvoices());
     } catch (error) {
       console.error('Failed to load invoices:', error);
-      container.innerHTML = `<div class="p-4 text-center text-error">Failed to load invoices</div>`;
+      container.innerHTML = `<div class="p-4 text-center text-error">${t('invoices.loadError')}</div>`;
     }
   }
 

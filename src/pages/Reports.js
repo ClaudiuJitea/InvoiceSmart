@@ -69,7 +69,7 @@ export function renderReports() {
       </div>
 
        <!-- Filters Bar -->
-      <div class="card card-outlined" style="margin-bottom: var(--space-6);">
+      <div class="card card-outlined reports-filters-card" style="margin-bottom: var(--space-6);">
         <div class="grid grid-cols-4" style="gap: var(--space-4); align-items: flex-end;">
             <div class="input-group" style="margin-bottom: 0;">
                 <label class="input-label">${t('reports.startDate')}</label>
@@ -159,7 +159,7 @@ export function renderReports() {
                 <h2 class="card-title">${t('reports.topClients')}</h2>
               </div>
               <div class="card-content" id="topClientsTable">
-                 <div class="text-center p-4 text-muted">Loading...</div>
+                 <div class="text-center p-4 text-muted">${t('general.loading')}</div>
               </div>
             </div>
           </div>
@@ -527,7 +527,7 @@ async function exportExcel() {
 
     try {
         btn.disabled = true;
-        btn.innerHTML = `Loading...`;
+        btn.innerHTML = t('general.loading');
 
         const XLSX = await loadSheetJs();
         const settings = await settingsService.get();
@@ -581,25 +581,25 @@ async function exportExcel() {
         // --- Summary Sheet ---
         const summaryData = [
             [{ v: settings.company_name, s: styles.title }],
-            [{ v: "Financial Report", s: { font: { bold: true, sz: 14 } } }],
+            [{ v: t('reports.financialReport'), s: { font: { bold: true, sz: 14 } } }],
             [],
-            [{ v: "Period:", s: { font: { bold: true } } }, `${currentFilters.startDate || 'Beginning'} to ${currentFilters.endDate || 'Present'}`],
-            [{ v: "Generated:", s: { font: { bold: true } } }, new Date().toLocaleString()],
-            [{ v: "Currency:", s: { font: { bold: true } } }, currentFilters.currency],
+            [{ v: t('reports.periodLabel'), s: { font: { bold: true } } }, `${currentFilters.startDate || t('reports.beginning')} ${t('reports.to')} ${currentFilters.endDate || t('reports.present')}`],
+            [{ v: t('reports.generatedLabel'), s: { font: { bold: true } } }, new Date().toLocaleString()],
+            [{ v: t('reports.currencyLabel'), s: { font: { bold: true } } }, currentFilters.currency],
             [],
-            [{ v: "Metric", s: styles.header }, { v: "Value", s: styles.header }],
-            [{ v: "Total Revenue", s: styles.cell }, { v: latestData.overview.totalRevenue, s: styles.currency }],
-            [{ v: "Outstanding", s: styles.cell }, { v: latestData.overview.outstanding, s: styles.currency }],
-            [{ v: "Overdue", s: styles.cell }, { v: latestData.overview.overdue, s: styles.currency }]
+            [{ v: t('reports.metric'), s: styles.header }, { v: t('reports.value'), s: styles.header }],
+            [{ v: t('reports.totalRevenue'), s: styles.cell }, { v: latestData.overview.totalRevenue, s: styles.currency }],
+            [{ v: t('reports.outstanding'), s: styles.cell }, { v: latestData.overview.outstanding, s: styles.currency }],
+            [{ v: t('reports.overdue'), s: styles.cell }, { v: latestData.overview.overdue, s: styles.currency }]
         ];
 
         const summaryWs = XLSX.utils.aoa_to_sheet([]);
         XLSX.utils.sheet_add_aoa(summaryWs, summaryData, { origin: "A1" });
         summaryWs['!cols'] = [{ wch: 20 }, { wch: 25 }];
-        XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
+        XLSX.utils.book_append_sheet(wb, summaryWs, t('reports.summarySheet'));
 
         // --- Details Sheet ---
-        const headers = ["Invoice #", "Date", "Client", "Status", "Amount", "Currency"];
+        const headers = [t('invoices.invoiceNumber'), t('invoices.date'), t('invoices.client'), t('invoices.status'), t('receipts.amount'), t('invoices.currency')];
         const rows = invoices.map(inv => [
             { v: inv.invoice_number, s: styles.cell },
             { v: inv.issue_date, s: styles.cell },
@@ -625,13 +625,13 @@ async function exportExcel() {
             { wch: 10 }  // Currency
         ];
 
-        XLSX.utils.book_append_sheet(wb, detailWs, "Detailed Data");
+        XLSX.utils.book_append_sheet(wb, detailWs, t('reports.detailedDataSheet'));
 
         XLSX.writeFile(wb, `InvoiceSmart_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
 
     } catch (e) {
         console.error("Excel Export failed", e);
-        alert("Failed to create Excel file: " + e.message);
+        alert(t('reports.excelCreateFailed', { error: e.message }));
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -652,7 +652,7 @@ async function exportPdf() {
 
     try {
         btn.disabled = true;
-        btn.innerHTML = `Preparing...`;
+        btn.innerHTML = t('reports.preparingPdf');
 
         // await loadAutoTable(); // Not needed with npm import
 
@@ -689,11 +689,11 @@ async function exportPdf() {
         // Title
         pdf.setFontSize(22);
         pdf.setTextColor(30, 58, 95); // #1E3A5F
-        pdf.text("Executive Report", margin, yPos + 8);
+        pdf.text(t('reports.executiveReport'), margin, yPos + 8);
 
         pdf.setFontSize(10);
         pdf.setTextColor(100);
-        pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth - margin, yPos + 8, { align: 'right' });
+        pdf.text(`${t('reports.generatedOn')}: ${new Date().toLocaleDateString()}`, pageWidth - margin, yPos + 8, { align: 'right' });
 
         yPos += 20;
 
@@ -712,9 +712,9 @@ async function exportPdf() {
 
         // --- Summary Stats Section ---
         const stats = [
-            { label: "Total Revenue", value: latestData.overview.totalRevenue, color: [30, 58, 95] },
-            { label: "Outstanding", value: latestData.overview.outstanding, color: [255, 152, 0] },
-            { label: "Overdue", value: latestData.overview.overdue, color: [211, 47, 47] }
+            { label: t('reports.totalRevenue'), value: latestData.overview.totalRevenue, color: [30, 58, 95] },
+            { label: t('reports.outstanding'), value: latestData.overview.outstanding, color: [255, 152, 0] },
+            { label: t('reports.overdue'), value: latestData.overview.overdue, color: [211, 47, 47] }
         ];
 
         const cardWidth = (pageWidth - (margin * 2) - 10) / 3;
@@ -744,7 +744,7 @@ async function exportPdf() {
         pdf.setFont("helvetica", "bold");
         pdf.setFontSize(12);
         pdf.setTextColor(30, 58, 95);
-        pdf.text("Revenue Analytics", margin, yPos);
+        pdf.text(t('reports.revenueAnalytics'), margin, yPos);
         yPos += 7;
 
         // Calculate Revenue Dimensions (Full Width, maintain aspect ratio)
@@ -767,7 +767,7 @@ async function exportPdf() {
             pdf.setFont("helvetica", "bold");
             pdf.setFontSize(12);
             pdf.setTextColor(30, 58, 95);
-            pdf.text("Status Distribution", margin, yPos);
+            pdf.text(t('reports.statusDistribution'), margin, yPos);
             yPos += 7;
 
             // Calculate Status Dimensions (Target Height ~80mm, maintain aspect ratio)
@@ -793,15 +793,15 @@ async function exportPdf() {
         pdf.setFont("helvetica", "bold");
         pdf.setFontSize(12);
         pdf.setTextColor(30, 58, 95);
-        pdf.text("Invoice Details", margin, yPos);
+        pdf.text(t('reports.invoiceDetails'), margin, yPos);
         yPos += 5;
 
         const columns = [
             { header: '#', dataKey: 'invoice_number' },
-            { header: 'Date', dataKey: 'issue_date' },
-            { header: 'Client', dataKey: 'client_name' },
-            { header: 'Status', dataKey: 'status' },
-            { header: 'Total', dataKey: 'total' },
+            { header: t('invoices.date'), dataKey: 'issue_date' },
+            { header: t('invoices.client'), dataKey: 'client_name' },
+            { header: t('invoices.status'), dataKey: 'status' },
+            { header: t('invoices.total'), dataKey: 'total' },
         ];
 
         // Format data for table
@@ -852,7 +852,7 @@ async function exportPdf() {
 
     } catch (e) {
         console.error("PDF Export failed", e);
-        alert("PDF Generation failed: " + e.message);
+        alert(t('reports.pdfGenerationFailed', { error: e.message }));
     } finally {
         if (btn) {
             btn.disabled = false;

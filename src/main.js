@@ -7,7 +7,7 @@ import './styles/app.css';
 import './styles/auth.css';
 
 import { router } from './router.js';
-import { i18n } from './i18n/index.js';
+import { i18n, t } from './i18n/index.js';
 import { settingsService } from './db/services/settingsService.js';
 import { authService } from './db/services/authService.js';
 
@@ -348,7 +348,7 @@ async function init() {
             <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: Inter, sans-serif;">
                 <div style="text-align: center;">
                     <div style="width: 48px; height: 48px; border: 3px solid #E8ECF0; border-top-color: #1E3A5F; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
-                    <p style="color: #5A6169; font-weight: 500;">Loading...</p>
+                    <p style="color: #5A6169; font-weight: 500;">${t('general.loading')}</p>
                 </div>
             </div>
             <style>
@@ -392,10 +392,10 @@ async function init() {
     document.getElementById('app').innerHTML = `
             <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: Inter, sans-serif;">
                 <div style="text-align: center; padding: 20px;">
-                    <h2 style="color: #D32F2F; margin-bottom: 16px; font-family: Playfair Display, Georgia, serif;">Failed to load application</h2>
+                    <h2 style="color: #D32F2F; margin-bottom: 16px; font-family: Playfair Display, Georgia, serif;">${t('general.appLoadFailed')}</h2>
                     <p style="color: #5A6169; margin-bottom: 16px;">${error.message}</p>
                     <button onclick="location.reload()" style="padding: 12px 24px; background: linear-gradient(135deg, #1E3A5F 0%, #2A4F7C 100%); color: white; border: none; border-radius: 9999px; cursor: pointer; font-family: Inter, sans-serif; font-weight: 500; box-shadow: 0 2px 8px rgba(30, 58, 95, 0.2);">
-                        Retry
+                        ${t('actions.retry')}
                     </button>
                 </div>
             </div>

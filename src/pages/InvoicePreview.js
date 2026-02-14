@@ -23,12 +23,12 @@ function getPreviewConfig(params = {}) {
 
 function getReceiptButtonContent(mode = 'generate') {
   if (mode === 'view') {
-    return `${icons.receipt} View Receipt`;
+    return `${icons.receipt} ${t('receipts.viewReceipt')}`;
   }
   if (mode === 'loading') {
-    return `${icons.receipt} Generating...`;
+    return `${icons.receipt} ${t('invoices.generatingReceipt')}`;
   }
-  return `${icons.receipt} Generate Receipt`;
+  return `${icons.receipt} ${t('receipts.generateReceipt')}`;
 }
 
 function confirmReceiptGeneration() {
@@ -43,16 +43,16 @@ function confirmReceiptGeneration() {
     const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <p style="margin-bottom: var(--space-6); color: var(--md-on-surface-variant);">
-        Create receipt and mark invoice as paid?
+        ${t('invoices.generateReceiptConfirm')}
       </p>
       <div class="modal-actions">
         <button class="btn btn-text cancel-btn">${t('actions.cancel')}</button>
-        <button class="btn btn-filled confirm-btn">Generate Receipt</button>
+        <button class="btn btn-filled confirm-btn">${t('receipts.generateReceipt')}</button>
       </div>
     `;
 
     const dialog = modal.show({
-      title: 'Generate Receipt',
+      title: t('receipts.generateReceipt'),
       content: wrapper,
       onClose: () => finish(false),
     });
@@ -74,7 +74,7 @@ export function renderInvoicePreview(params = {}) {
     <div class="page-container" id="previewContainer">
       <div class="card card-elevated" style="padding: 40px; text-align: center;">
         <div class="loading-spinner"></div>
-        <p style="margin-top: 10px; color: var(--md-on-surface-variant);">Loading preview...</p>
+        <p style="margin-top: 10px; color: var(--md-on-surface-variant);">${t('invoices.loadingPreview')}</p>
       </div>
     </div>
   `;
@@ -106,7 +106,7 @@ export async function initInvoicePreview(params = {}) {
       container.innerHTML = `
         <div class="empty-state">
           <h3>${t('general.error')}</h3>
-          <p>Invoice not found</p>
+          <p>${t('invoices.notFound')}</p>
           <a href="#${section.basePath}" class="btn btn-filled">${t('actions.back')}</a>
         </div>
       `;
@@ -114,7 +114,7 @@ export async function initInvoicePreview(params = {}) {
     }
 
     currentTemplate = invoice.template || 'modern';
-    const templateHtml = renderTemplate(currentTemplate, invoice);
+    const templateHtml = renderTemplate(currentTemplate, invoice, settingsResponse);
 
     container.innerHTML = `
       <div class="page-header-row">
@@ -177,7 +177,7 @@ export async function initInvoicePreview(params = {}) {
 
   } catch (error) {
     console.error('Failed to load invoice preview:', error);
-    container.innerHTML = `<div class="p-4 text-center text-error">Failed to load preview</div>`;
+    container.innerHTML = `<div class="p-4 text-center text-error">${t('invoices.loadPreviewFailed')}</div>`;
   }
 }
 
@@ -208,13 +208,13 @@ function attachpreviewListeners(invoice, settings, existingReceipt) {
             });
             if (!res.ok) throw new Error('Failed to create receipt');
             receipt = await res.json();
-            toast.success('Receipt created!');
+            toast.success(t('invoices.receiptCreated'));
             // Update button state (reload not strictly necessary if we just use the new receipt)
             existingReceipt = receipt;
             receiptBtn.innerHTML = getReceiptButtonContent('view');
           } catch (e) {
             console.error(e);
-            toast.error('Failed to create receipt');
+            toast.error(t('invoices.createReceiptFailed'));
             receiptBtn.disabled = false;
             receiptBtn.innerHTML = getReceiptButtonContent('generate');
             return;
@@ -230,14 +230,14 @@ function attachpreviewListeners(invoice, settings, existingReceipt) {
       const receiptHtml = renderReceiptTemplate(receipt, { ...invoice, template: currentTemplate || invoice.template }, settings);
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
-        toast.error('Pop-up blocked. Please allow pop-ups.');
+        toast.error(t('general.popupBlocked'));
         return;
       }
       printWindow.document.write(`
             <!DOCTYPE html>
             <html>
             <head>
-              <title>Receipt ${receipt.receipt_number}</title>
+              <title>${t('receipts.title')} ${receipt.receipt_number}</title>
               <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
               <style>
                 @page { size: A6 landscape; margin: 4mm; }
@@ -308,7 +308,7 @@ function attachpreviewListeners(invoice, settings, existingReceipt) {
         trigger.classList.remove('open');
 
         // Render new template
-        invoiceDocument.innerHTML = renderTemplate(currentTemplate, invoice);
+        invoiceDocument.innerHTML = renderTemplate(currentTemplate, invoice, settings);
         invoice.template = currentTemplate;
 
         // Save preference
@@ -332,7 +332,7 @@ function attachpreviewListeners(invoice, settings, existingReceipt) {
     printBtn.addEventListener('click', () => {
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
-        toast.error('Pop-up blocked. Please allow pop-ups.');
+        toast.error(t('general.popupBlocked'));
         return;
       }
       printWindow.document.write(`
@@ -376,7 +376,7 @@ function attachpreviewListeners(invoice, settings, existingReceipt) {
 
         await exportToPdf(invoiceDocument, invoice.invoice_number);
 
-        toast.success(`PDF exported: ${invoice.invoice_number}.pdf`);
+        toast.success(t('invoices.pdfExported', { file: `${invoice.invoice_number}.pdf` }));
       } catch (error) {
         console.error('PDF export error:', error);
         toast.error(t('general.error'));
