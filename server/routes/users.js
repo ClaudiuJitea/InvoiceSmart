@@ -11,6 +11,13 @@ const router = express.Router();
 router.use(authenticateToken);
 router.use(requireAdmin);
 
+function normalizeTimestampInput(value) {
+    if (typeof value !== 'string' || !value.trim()) return null;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toISOString().slice(0, 19).replace('T', ' ');
+}
+
 // Get all users with pagination and search
 router.get('/', async (req, res) => {
     try {
@@ -67,7 +74,7 @@ router.get('/', async (req, res) => {
 // Get audit logs (admin only)
 router.get('/logs', async (req, res) => {
     try {
-        const { page = 1, limit = 20, search = '', user_id = '' } = req.query;
+        const { page = 1, limit = 20, search = '', user_id = '', start_time = '', end_time = '' } = req.query;
         const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 200);
         const safePage = Math.max(parseInt(page, 10) || 1, 1);
         const offset = (safePage - 1) * safeLimit;
@@ -87,8 +94,38 @@ router.get('/logs', async (req, res) => {
         }
 
         if (user_id) {
+            const userId = parseInt(user_id, 10);
+            if (Number.isNaN(userId)) {
+                return res.status(400).json({ error: 'Invalid user_id' });
+            }
             whereClause += ' AND al.user_id = ?';
-            params.push(parseInt(user_id, 10));
+            params.push(userId);
+        }
+
+        if (start_time) {
+            const normalizedStart = normalizeTimestampInput(start_time);
+            if (!normalizedStart) {
+                return res.status(400).json({ error: 'Invalid start_time' });
+            }
+            whereClause += ' AND al.created_at >= ?';
+            params.push(normalizedStart);
+        }
+
+        if (end_time) {
+            const normalizedEnd = normalizeTimestampInput(end_time);
+            if (!normalizedEnd) {
+                return res.status(400).json({ error: 'Invalid end_time' });
+            }
+            whereClause += ' AND al.created_at <= ?';
+            params.push(normalizedEnd);
+        }
+
+        if (start_time && end_time) {
+            const normalizedStart = normalizeTimestampInput(start_time);
+            const normalizedEnd = normalizeTimestampInput(end_time);
+            if (normalizedStart && normalizedEnd && normalizedStart > normalizedEnd) {
+                return res.status(400).json({ error: 'start_time must be before end_time' });
+            }
         }
 
         const totalRow = await db.get(
@@ -132,6 +169,30 @@ router.get('/logs', async (req, res) => {
     } catch (error) {
         console.error('Get audit logs error:', error);
         res.status(500).json({ error: 'Failed to get audit logs' });
+    }
+});
+
+router.get('/logs/actors', async (req, res) => {
+    try {
+        const db = await getDb();
+        const actors = await db.all(
+            `SELECT
+                al.user_id,
+                COALESCE(u.full_name, u.username, al.username_snapshot, 'System') as actor_name
+             FROM audit_logs al
+             LEFT JOIN users u ON u.id = al.user_id
+             WHERE al.user_id IS NOT NULL
+               AND al.action <> 'api.mutation'
+               AND al.action NOT LIKE 'auth.%'
+               AND al.action NOT LIKE 'settings.%'
+             GROUP BY al.user_id
+             ORDER BY actor_name ASC`
+        );
+
+        res.json({ actors });
+    } catch (error) {
+        console.error('Get audit log actors error:', error);
+        res.status(500).json({ error: 'Failed to get audit log actors' });
     }
 });
 

@@ -131,6 +131,28 @@
     gap: var(--space-1);
 }
 
+.sidebar-nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.sidebar-nav-group-clients {
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--md-outline-variant);
+}
+
+.sidebar-nav-group-secondary {
+    margin-top: auto;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--md-outline-variant);
+}
+
+.sidebar-nav-group-products {
+    margin-top: var(--space-2);
+}
+
 .sidebar-nav-item {
     display: flex;
     align-items: center;
@@ -392,6 +414,30 @@
     height: 20px;
 }
 
+.products-header-actions {
+    align-items: center;
+}
+
+.products-search-container .search-input {
+    height: 44px;
+}
+
+.products-add-btn {
+    height: 44px;
+}
+
+.clients-header-actions {
+    align-items: center;
+}
+
+.clients-search-container .search-input {
+    height: 44px;
+}
+
+.clients-add-btn {
+    height: 44px;
+}
+
 /* Dashboard specific */
 .stats-grid {
     display: grid;
@@ -612,6 +658,11 @@
     border-radius: var(--radius-md);
 }
 
+.table-wrapper.allow-overflow,
+.table-container.allow-overflow {
+    overflow: visible;
+}
+
 .invoice-items-table th {
     text-align: left;
     padding: var(--space-3) var(--space-3);
@@ -696,6 +747,37 @@
 
 .invoice-items-table .item-description {
     min-width: 250px;
+}
+
+.invoice-items-table .item-product-picker {
+    margin-bottom: var(--space-2);
+}
+
+.invoice-items-table .item-product-picker .input {
+    height: 34px;
+    font-size: var(--text-label-md);
+    background-color: var(--md-surface-container-low);
+}
+
+.invoice-items-table .item-product-picker .custom-select-trigger,
+.invoice-items-table td .custom-select-trigger {
+    height: 38px;
+    padding: 0 var(--space-3);
+    border-width: 1px;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-body-md);
+}
+
+.invoice-items-table td .custom-select-options {
+    top: calc(100% + 4px);
+    border-width: 1px;
+    border-radius: var(--radius-md);
+    z-index: 160;
+}
+
+.invoice-items-table td .custom-option {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-body-md);
 }
 
 .item-delete-btn {
@@ -829,6 +911,12 @@
     justify-content: center;
     padding: var(--space-3) 0;
     gap: 0;
+}
+
+.sidebar-collapsed .sidebar-nav-group-clients,
+.sidebar-collapsed .sidebar-nav-group-secondary {
+    margin-top: var(--space-2);
+    padding-top: var(--space-2);
 }
 
 .sidebar-collapsed .sidebar-nav-item span.sidebar-nav-icon {

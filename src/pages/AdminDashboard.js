@@ -11,6 +11,10 @@ let searchQuery = '';
 let roleFilter = '';
 let currentLogsPage = 1;
 let logsSearchQuery = '';
+let logsUserFilter = '';
+let logsStartTime = '';
+let logsEndTime = '';
+let logActors = [];
 
 export function renderAdminDashboard() {
     return `
@@ -141,6 +145,34 @@ export function renderAdminDashboard() {
                             class="search-input"
                             placeholder="${t('admin.logsSearchPlaceholder')}"
                             value="${logsSearchQuery}"
+                        >
+                    </div>
+                    <div class="admin-filter-group">
+                        <select id="logsUserFilter" class="input admin-filter-select">
+                            <option value="">${t('admin.logsAllUsers')}</option>
+                            ${logActors.map((actor) => `
+                                <option value="${actor.user_id}" ${String(logsUserFilter) === String(actor.user_id) ? 'selected' : ''}>
+                                    ${escapeHtml(actor.actor_name)}
+                                </option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div class="admin-filter-group">
+                        <input
+                            type="datetime-local"
+                            id="logsStartTime"
+                            class="input admin-filter-select"
+                            value="${logsStartTime}"
+                            title="${t('admin.logsFromTime')}"
+                        >
+                    </div>
+                    <div class="admin-filter-group">
+                        <input
+                            type="datetime-local"
+                            id="logsEndTime"
+                            class="input admin-filter-select"
+                            value="${logsEndTime}"
+                            title="${t('admin.logsToTime')}"
                         >
                     </div>
                 </div>
@@ -283,6 +315,7 @@ export async function initAdminDashboard() {
     // Load initial data
     await loadStats();
     await loadUsers();
+    await loadLogActors();
     await loadLogs();
 
     // Setup event listeners
@@ -292,6 +325,26 @@ export async function initAdminDashboard() {
     document.querySelectorAll('.admin-dashboard select').forEach(el => {
         new CustomSelect(el);
     });
+}
+
+async function loadLogActors() {
+    const logsUserSelect = document.getElementById('logsUserFilter');
+    if (!logsUserSelect) return;
+
+    try {
+        const result = await userService.getLogActors();
+        logActors = result.actors || [];
+        logsUserSelect.innerHTML = `
+            <option value="">${t('admin.logsAllUsers')}</option>
+            ${logActors.map((actor) => `
+                <option value="${actor.user_id}" ${String(logsUserFilter) === String(actor.user_id) ? 'selected' : ''}>
+                    ${escapeHtml(actor.actor_name)}
+                </option>
+            `).join('')}
+        `;
+    } catch (error) {
+        console.error('Failed to load log actors:', error);
+    }
 }
 
 async function loadStats() {
@@ -402,6 +455,9 @@ async function loadLogs() {
             page: currentLogsPage,
             limit: 20,
             search: logsSearchQuery,
+            userId: logsUserFilter,
+            startTime: logsStartTime,
+            endTime: logsEndTime,
         });
 
         if (!result.logs || result.logs.length === 0) {
@@ -571,6 +627,24 @@ function setupEventListeners() {
             currentLogsPage = 1;
             loadLogs();
         }, 300);
+    });
+
+    document.getElementById('logsUserFilter')?.addEventListener('change', (e) => {
+        logsUserFilter = e.target.value;
+        currentLogsPage = 1;
+        loadLogs();
+    });
+
+    document.getElementById('logsStartTime')?.addEventListener('change', (e) => {
+        logsStartTime = e.target.value;
+        currentLogsPage = 1;
+        loadLogs();
+    });
+
+    document.getElementById('logsEndTime')?.addEventListener('change', (e) => {
+        logsEndTime = e.target.value;
+        currentLogsPage = 1;
+        loadLogs();
     });
 
     // User form submission
@@ -817,6 +891,9 @@ function formatActionLabel(action) {
         'client.delete': 'admin.actionLabels.clientDelete',
         'receipt.create': 'admin.actionLabels.receiptCreate',
         'receipt.delete': 'admin.actionLabels.receiptDelete',
+        'product.create': 'admin.actionLabels.productCreate',
+        'product.update': 'admin.actionLabels.productUpdate',
+        'product.delete': 'admin.actionLabels.productDelete',
         'admin.user.create': 'admin.actionLabels.userCreate',
         'admin.user.update': 'admin.actionLabels.userUpdate',
         'admin.user.delete': 'admin.actionLabels.userDelete',

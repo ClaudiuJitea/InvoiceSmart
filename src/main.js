@@ -24,6 +24,7 @@ import { renderInvoicePreview, initInvoicePreview } from './pages/InvoicePreview
 import { renderSettings, initSettings } from './pages/Settings.js';
 import { renderReports, initReports } from './pages/Reports.js';
 import { renderReceipts, initReceipts } from './pages/Receipts.js';
+import { renderProductsServices, initProductsServices } from './pages/ProductsServices.js';
 import { renderLogin, initLogin } from './pages/Login.js';
 import { renderRegister, initRegister } from './pages/Register.js';
 import { renderAdminDashboard, initAdminDashboard } from './pages/AdminDashboard.js';
@@ -102,6 +103,8 @@ function renderPage() {
       return renderReports();
     case 'receipts':
       return renderReceipts();
+    case 'productsServices':
+      return renderProductsServices();
     case 'admin':
       return renderAdminDashboard();
     default:
@@ -144,6 +147,9 @@ function initPage() {
       break;
     case 'receipts':
       initReceipts();
+      break;
+    case 'productsServices':
+      initProductsServices();
       break;
     case 'admin':
       initAdminDashboard();
@@ -295,6 +301,11 @@ function setupRoutes() {
     })
     .on('/receipts', () => {
       currentPage = 'receipts';
+      currentParams = {};
+      renderApp();
+    })
+    .on('/products-services', () => {
+      currentPage = 'productsServices';
       currentParams = {};
       renderApp();
     })

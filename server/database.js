@@ -105,6 +105,25 @@ async function initDb(db) {
     );
   `);
 
+  // Products & Services catalog
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS products (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      producer TEXT,
+      category TEXT,
+      product_code TEXT,
+      unit TEXT DEFAULT 'pcs',
+      unit_price REAL DEFAULT 0,
+      tax_rate REAL DEFAULT 0,
+      stock_quantity REAL DEFAULT 0,
+      notes TEXT,
+      is_active INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
   // Invoices
   await db.exec(`
     CREATE TABLE IF NOT EXISTS invoices (
@@ -202,6 +221,9 @@ async function initDb(db) {
   await db.exec(`
     CREATE INDEX IF NOT EXISTS idx_invoices_client ON invoices(client_id);
     CREATE INDEX IF NOT EXISTS idx_invoices_date ON invoices(issue_date);
+    CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
+    CREATE INDEX IF NOT EXISTS idx_products_code ON products(product_code);
+    CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
     CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_items(invoice_id);
     CREATE INDEX IF NOT EXISTS idx_invoice_delivery_notes_invoice ON invoice_delivery_notes(invoice_id);
     CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);

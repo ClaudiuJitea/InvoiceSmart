@@ -208,6 +208,11 @@ export function renderCreativeTemplate(invoice) {
             padding: 0;
             border-bottom: 1px solid #eee;
         }
+        @media print {
+            .invoice-creative .items-table .filler-row {
+                display: none;
+            }
+        }
 
         /* Totals */
         .invoice-creative .totals-section {

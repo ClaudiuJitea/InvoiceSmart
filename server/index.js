@@ -9,6 +9,7 @@ import statsRoutes from './routes/stats.js';
 import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
 import receiptsRoutes from './routes/receipts.js';
+import productsRoutes from './routes/products.js';
 import { optionalAuth } from './middleware/auth.js';
 
 const app = express();
@@ -25,6 +26,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/clients', clientsRoutes);
 app.use('/api/invoices', invoicesRoutes);
 app.use('/api/receipts', receiptsRoutes);
+app.use('/api/products', productsRoutes);
 app.use('/api/stats', statsRoutes);
 
 // Initialize DB

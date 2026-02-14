@@ -18,7 +18,12 @@ export function renderModernTemplate(invoice) {
     }
     return i18n.get(key, lang);
   };
-  const documentTitle = isDeliveryNote ? 'AVIZ DE INSOTIRE A MARFII / DELIVERY NOTE' : text('invoice.invoice');
+  const documentTitle = isDeliveryNote
+    ? `
+      <span class="title-line title-line-primary">AVIZ DE INSOTIRE A MARFII</span>
+      <span class="title-line title-line-secondary">DELIVERY NOTE</span>
+    `
+    : text('invoice.invoice');
   const headerLabel = (key) => {
     if (mode === 'dual') {
       return `
@@ -78,13 +83,32 @@ export function renderModernTemplate(invoice) {
         }
         .invoice-modern .invoice-title {
           font-family: 'Playfair Display', Georgia, serif;
-          font-size: 32pt;
+          font-size: 24pt;
           font-weight: 600;
           color: ${colors.primary};
-          margin-bottom: 10px;
-          line-height: 1;
+          margin-bottom: 8px;
+          line-height: 1.12;
           margin-top: 0;
-          letter-spacing: -0.02em;
+          letter-spacing: 0.5px;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 2px;
+          max-width: 520px;
+          margin-left: auto;
+        }
+        .invoice-modern .invoice-title .title-line {
+          display: block;
+        }
+        .invoice-modern .invoice-title .title-line-primary {
+          font-size: 12pt;
+          letter-spacing: 1.4px;
+          font-weight: 700;
+        }
+        .invoice-modern .invoice-title .title-line-secondary {
+          font-size: 19pt;
+          letter-spacing: 1.8px;
+          font-weight: 600;
         }
         .invoice-modern .invoice-number {
           font-size: 12pt;
@@ -224,6 +248,11 @@ export function renderModernTemplate(invoice) {
           height: ${fillerHeight}px;
           padding: 0;
           border-bottom: 1px solid ${colors.border};
+        }
+        @media print {
+          .invoice-modern .items-table .filler-row {
+            display: none;
+          }
         }
         .invoice-modern .totals {
           display: flex;

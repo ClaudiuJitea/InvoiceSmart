@@ -4,7 +4,12 @@ import { settingsService } from '../db/services/settingsService.js';
 export function renderClassicBlueTemplate(invoice) {
     const settings = settingsService.get() || {};
     const isDeliveryNote = invoice.document_type === 'delivery_note';
-    const documentTitle = isDeliveryNote ? 'AVIZ DE INSOTIRE A MARFII<br>DELIVERY NOTE' : 'FACTURA';
+    const documentTitle = isDeliveryNote
+        ? `
+            <span class="title-line title-line-primary">AVIZ DE INSOTIRE A MARFII</span>
+            <span class="title-line title-line-secondary">DELIVERY NOTE</span>
+        `
+        : 'FACTURA';
     const items = invoice.items || [];
     // Classic Blue color palette
     const colors = {
@@ -18,7 +23,7 @@ export function renderClassicBlueTemplate(invoice) {
     const totalSecondary = Number(invoice.total_secondary);
     const hasSecondaryTotal = Number.isFinite(totalSecondary) && totalSecondary > 0 && primaryCurrency !== secondaryCurrency;
     const formatAmount = (value) => Number(value || 0).toFixed(2);
-    const minVisibleRows = 12;
+    const minVisibleRows = 0;
     const fillerHeight = Math.max(0, (minVisibleRows - items.length) * 30);
 
     return `
@@ -52,13 +57,32 @@ export function renderClassicBlueTemplate(invoice) {
             text-align: right;
         }
         .invoice-classic-blue .invoice-title {
-            font-size: 24pt;
+            font-size: 20pt;
             font-weight: bold;
             text-transform: uppercase;
             color: ${colors.primary};
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             margin-top: 0;
-            line-height: 1;
+            line-height: 1.15;
+            letter-spacing: 0.6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        .invoice-classic-blue .invoice-title .title-line {
+            display: block;
+            white-space: nowrap;
+        }
+        .invoice-classic-blue .invoice-title .title-line-primary {
+            font-size: 11.5pt;
+            letter-spacing: 1.2px;
+            font-weight: 700;
+        }
+        .invoice-classic-blue .invoice-title .title-line-secondary {
+            font-size: 17pt;
+            letter-spacing: 1.8px;
+            font-weight: 700;
         }
         .invoice-classic-blue .invoice-subtitle-row {
             font-size: 10pt;
@@ -110,6 +134,11 @@ export function renderClassicBlueTemplate(invoice) {
         .invoice-classic-blue .items-table .filler-row td {
             height: ${fillerHeight}px;
             padding: 0;
+        }
+        @media print {
+            .invoice-classic-blue .items-table .filler-row {
+                display: none;
+            }
         }
         
         /* Footer/Totals */

@@ -343,7 +343,13 @@ function attachpreviewListeners(invoice, settings, existingReceipt) {
               <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
               <style>
                 @page { size: A4 portrait; margin: 0; }
-                body { margin: 0; padding: 20mm; font-family: 'Roboto', sans-serif; }
+                * { box-sizing: border-box; }
+                body { margin: 0; padding: 12mm; font-family: 'Roboto', sans-serif; }
+                .invoice-template {
+                  width: 100%;
+                  max-width: 186mm;
+                  margin: 0 auto;
+                }
                 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
               </style>
             </head>

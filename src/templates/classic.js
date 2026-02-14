@@ -5,7 +5,12 @@ import { settingsService } from '../db/services/settingsService.js';
 export function renderClassicTemplate(invoice) {
   const settings = settingsService.get() || {};
   const isDeliveryNote = invoice.document_type === 'delivery_note';
-  const documentTitle = isDeliveryNote ? 'AVIZ DE INSOTIRE A MARFII / DELIVERY NOTE' : t('invoice.invoice');
+  const documentTitle = isDeliveryNote
+    ? `
+      <span class="title-line title-line-primary">AVIZ DE INSOTIRE A MARFII</span>
+      <span class="title-line title-line-secondary">DELIVERY NOTE</span>
+    `
+    : t('invoice.invoice');
   const items = invoice.items || [];
   const minVisibleRows = 12;
   const fillerHeight = Math.max(0, (minVisibleRows - items.length) * 34);
@@ -58,12 +63,32 @@ export function renderClassicTemplate(invoice) {
         }
         .invoice-classic .invoice-title {
           font-family: 'Playfair Display', Georgia, serif;
-          font-size: 28pt;
+          font-size: 22pt;
           font-weight: 600;
           color: ${colors.primary};
-          letter-spacing: 3px;
-          margin-bottom: 18px;
+          letter-spacing: 1.2px;
+          line-height: 1.15;
+          margin-bottom: 16px;
           text-transform: uppercase;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 2px;
+          max-width: 460px;
+          margin-left: auto;
+        }
+        .invoice-classic .invoice-title .title-line {
+          display: block;
+        }
+        .invoice-classic .invoice-title .title-line-primary {
+          font-size: 12pt;
+          letter-spacing: 1.8px;
+          font-weight: 700;
+        }
+        .invoice-classic .invoice-title .title-line-secondary {
+          font-size: 18pt;
+          letter-spacing: 2.2px;
+          font-weight: 600;
         }
         .invoice-classic .info-row {
           display: flex;
@@ -139,6 +164,11 @@ export function renderClassicTemplate(invoice) {
         .invoice-classic .items-table .filler-row td {
           height: ${fillerHeight}px;
           padding: 0;
+        }
+        @media print {
+          .invoice-classic .items-table .filler-row {
+            display: none;
+          }
         }
         .invoice-classic .totals {
           display: flex;

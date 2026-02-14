@@ -42,8 +42,14 @@ export async function initReceipts() {
   let settings = {};
   const selectedReceiptIds = new Set();
   const filters = {
-    query: '',
+    receiptNumber: '',
+    invoiceNumber: '',
+    client: '',
     currency: 'all',
+    dateFrom: '',
+    dateTo: '',
+    amountMin: '',
+    amountMax: '',
   };
 
   let isBulkDeleteRunning = false;
@@ -51,20 +57,47 @@ export async function initReceipts() {
   let currencyFilterCustomSelect = null;
 
   function hasActiveFilters() {
-    return filters.query.trim() !== '' || filters.currency !== 'all';
+    return (
+      filters.receiptNumber.trim() !== '' ||
+      filters.invoiceNumber.trim() !== '' ||
+      filters.client.trim() !== '' ||
+      filters.currency !== 'all' ||
+      filters.dateFrom !== '' ||
+      filters.dateTo !== '' ||
+      filters.amountMin !== '' ||
+      filters.amountMax !== ''
+    );
   }
 
   function matchesFilters(receipt) {
     const invoice = invoicesById[receipt.invoice_id] || {};
-    const query = filters.query.trim().toLowerCase();
     const receiptNumber = String(receipt.receipt_number || '').toLowerCase();
     const invoiceNumber = String(invoice.invoice_number || '').toLowerCase();
     const clientName = String(invoice.client_name || '').toLowerCase();
+    const issueDate = String(receipt.issue_date || '').slice(0, 10);
+    const amount = Number(receipt.amount || 0);
+    const amountMin = filters.amountMin !== '' ? Number(filters.amountMin) : null;
+    const amountMax = filters.amountMax !== '' ? Number(filters.amountMax) : null;
 
-    const matchesQuery = !query || receiptNumber.includes(query) || invoiceNumber.includes(query) || clientName.includes(query);
+    const matchesReceiptNumber = !filters.receiptNumber.trim() || receiptNumber.includes(filters.receiptNumber.trim().toLowerCase());
+    const matchesInvoiceNumber = !filters.invoiceNumber.trim() || invoiceNumber.includes(filters.invoiceNumber.trim().toLowerCase());
+    const matchesClient = !filters.client.trim() || clientName.includes(filters.client.trim().toLowerCase());
     const matchesCurrency = filters.currency === 'all' || receipt.currency === filters.currency;
+    const matchesDateFrom = !filters.dateFrom || (issueDate && issueDate >= filters.dateFrom);
+    const matchesDateTo = !filters.dateTo || (issueDate && issueDate <= filters.dateTo);
+    const matchesAmountMin = amountMin === null || (!Number.isNaN(amountMin) && amount >= amountMin);
+    const matchesAmountMax = amountMax === null || (!Number.isNaN(amountMax) && amount <= amountMax);
 
-    return matchesQuery && matchesCurrency;
+    return (
+      matchesReceiptNumber &&
+      matchesInvoiceNumber &&
+      matchesClient &&
+      matchesCurrency &&
+      matchesDateFrom &&
+      matchesDateTo &&
+      matchesAmountMin &&
+      matchesAmountMax
+    );
   }
 
   function getFilteredReceipts() {
@@ -216,14 +249,34 @@ export async function initReceipts() {
     container.innerHTML = `
       <div class="invoices-filters-card card card-elevated">
         <div class="invoices-filters-bar">
-          <div class="invoices-filter-group invoices-filter-search-group">
-            <label class="invoices-filter-label" for="receiptSearchInput">${t('actions.search')}</label>
+          <div class="invoices-filter-group">
+            <label class="invoices-filter-label" for="receiptNumberFilterInput">${t('receipts.receiptNumber')}</label>
             <input
-              id="receiptSearchInput"
+              id="receiptNumberFilterInput"
               class="invoices-filter-input"
               type="text"
-              placeholder="${t('receipts.searchPlaceholder')}"
-              value="${escapeHtml(filters.query)}"
+              placeholder="${t('receipts.filterByReceiptNumber')}"
+              value="${escapeHtml(filters.receiptNumber)}"
+            >
+          </div>
+          <div class="invoices-filter-group">
+            <label class="invoices-filter-label" for="receiptInvoiceNumberFilterInput">${t('receipts.invoiceNumber')}</label>
+            <input
+              id="receiptInvoiceNumberFilterInput"
+              class="invoices-filter-input"
+              type="text"
+              placeholder="${t('receipts.filterByInvoiceNumber')}"
+              value="${escapeHtml(filters.invoiceNumber)}"
+            >
+          </div>
+          <div class="invoices-filter-group">
+            <label class="invoices-filter-label" for="receiptClientFilterInput">${t('receipts.client')}</label>
+            <input
+              id="receiptClientFilterInput"
+              class="invoices-filter-input"
+              type="text"
+              placeholder="${t('receipts.filterByClient')}"
+              value="${escapeHtml(filters.client)}"
             >
           </div>
           <div class="invoices-filter-group invoices-filter-status-group">
@@ -232,6 +285,48 @@ export async function initReceipts() {
               <option value="all" ${filters.currency === 'all' ? 'selected' : ''}>${t('receipts.filterCurrencyAll')}</option>
               ${currencies.map((currency) => `<option value="${currency}" ${filters.currency === currency ? 'selected' : ''}>${currency}</option>`).join('')}
             </select>
+          </div>
+          <div class="invoices-filter-group">
+            <label class="invoices-filter-label" for="receiptAmountMinFilter">${t('receipts.amountMin')}</label>
+            <input
+              id="receiptAmountMinFilter"
+              class="invoices-filter-input"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value="${escapeHtml(filters.amountMin)}"
+            >
+          </div>
+          <div class="invoices-filter-group">
+            <label class="invoices-filter-label" for="receiptAmountMaxFilter">${t('receipts.amountMax')}</label>
+            <input
+              id="receiptAmountMaxFilter"
+              class="invoices-filter-input"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value="${escapeHtml(filters.amountMax)}"
+            >
+          </div>
+          <div class="invoices-filter-group">
+            <label class="invoices-filter-label" for="receiptDateFromFilter">${t('receipts.dateFrom')}</label>
+            <input
+              id="receiptDateFromFilter"
+              class="invoices-filter-input"
+              type="date"
+              value="${filters.dateFrom}"
+            >
+          </div>
+          <div class="invoices-filter-group">
+            <label class="invoices-filter-label" for="receiptDateToFilter">${t('receipts.dateTo')}</label>
+            <input
+              id="receiptDateToFilter"
+              class="invoices-filter-input"
+              type="date"
+              value="${filters.dateTo}"
+            >
           </div>
           ${hasActiveFilters() ? `
             <button class="btn btn-text btn-sm invoices-clear-filters" id="clearReceiptFiltersBtn" type="button">
@@ -399,16 +494,32 @@ export async function initReceipts() {
   }
 
   function attachEventListeners(filteredReceipts, allFilteredSelected) {
-    const searchInput = container.querySelector('#receiptSearchInput');
+    const receiptNumberFilterInput = container.querySelector('#receiptNumberFilterInput');
+    const receiptInvoiceNumberFilterInput = container.querySelector('#receiptInvoiceNumberFilterInput');
+    const receiptClientFilterInput = container.querySelector('#receiptClientFilterInput');
     const currencyFilter = container.querySelector('#receiptCurrencyFilter');
+    const amountMinFilter = container.querySelector('#receiptAmountMinFilter');
+    const amountMaxFilter = container.querySelector('#receiptAmountMaxFilter');
+    const dateFromFilter = container.querySelector('#receiptDateFromFilter');
+    const dateToFilter = container.querySelector('#receiptDateToFilter');
     const clearFiltersBtn = container.querySelector('#clearReceiptFiltersBtn');
 
     if (currencyFilter) {
       currencyFilterCustomSelect = new CustomSelect(currencyFilter);
     }
 
-    searchInput?.addEventListener('input', () => {
-      filters.query = searchInput.value;
+    receiptNumberFilterInput?.addEventListener('input', () => {
+      filters.receiptNumber = receiptNumberFilterInput.value;
+      renderReceiptsList(getFilteredReceipts());
+    });
+
+    receiptInvoiceNumberFilterInput?.addEventListener('input', () => {
+      filters.invoiceNumber = receiptInvoiceNumberFilterInput.value;
+      renderReceiptsList(getFilteredReceipts());
+    });
+
+    receiptClientFilterInput?.addEventListener('input', () => {
+      filters.client = receiptClientFilterInput.value;
       renderReceiptsList(getFilteredReceipts());
     });
 
@@ -417,9 +528,35 @@ export async function initReceipts() {
       renderReceiptsList(getFilteredReceipts());
     });
 
+    amountMinFilter?.addEventListener('input', () => {
+      filters.amountMin = amountMinFilter.value;
+      renderReceiptsList(getFilteredReceipts());
+    });
+
+    amountMaxFilter?.addEventListener('input', () => {
+      filters.amountMax = amountMaxFilter.value;
+      renderReceiptsList(getFilteredReceipts());
+    });
+
+    dateFromFilter?.addEventListener('change', () => {
+      filters.dateFrom = dateFromFilter.value;
+      renderReceiptsList(getFilteredReceipts());
+    });
+
+    dateToFilter?.addEventListener('change', () => {
+      filters.dateTo = dateToFilter.value;
+      renderReceiptsList(getFilteredReceipts());
+    });
+
     clearFiltersBtn?.addEventListener('click', () => {
-      filters.query = '';
+      filters.receiptNumber = '';
+      filters.invoiceNumber = '';
+      filters.client = '';
       filters.currency = 'all';
+      filters.dateFrom = '';
+      filters.dateTo = '';
+      filters.amountMin = '';
+      filters.amountMax = '';
       renderReceiptsList(getFilteredReceipts());
     });
 

@@ -10,19 +10,29 @@ export function renderSidebar() {
   const isLoggedIn = authService.isLoggedIn();
   const isAdmin = authService.isAdmin();
 
-  const navItems = [
+  const primaryNavItems = [
     { path: '/', icon: icons.dashboard, label: 'nav.dashboard' },
     { path: '/reports', icon: icons.chart, label: 'nav.reports' },
     { path: '/invoices', icon: icons.invoice, label: 'nav.invoices' },
     { path: '/delivery-notes', icon: icons.file, label: 'nav.deliveryNotes' },
     { path: '/receipts', icon: icons.receipt, label: 'nav.receipts' },
+  ];
+
+  const clientsNavItems = [
     { path: '/clients', icon: icons.clients, label: 'nav.clients' },
+  ];
+
+  const productsNavItems = [
+    { path: '/products-services', icon: icons.box, label: 'nav.productsServices' },
+  ];
+
+  const secondaryNavItems = [
     { path: '/settings', icon: icons.settings, label: 'nav.settings' },
   ];
 
   // Add admin dashboard if user is admin
   if (isAdmin) {
-    navItems.push({ path: '/admin', icon: icons.shield, label: 'nav.admin' });
+    secondaryNavItems.push({ path: '/admin', icon: icons.shield, label: 'nav.admin' });
   }
 
   const locales = i18n.getLocales();
@@ -47,13 +57,18 @@ export function renderSidebar() {
             </div>
 
             <nav class="sidebar-nav">
-                ${navItems.map(item => `
-                    <a href="#${item.path}" 
-                       class="sidebar-nav-item ${currentPath === item.path || (item.path !== '/' && currentPath.startsWith(item.path)) ? 'active' : ''}">
-                        <span class="sidebar-nav-icon">${item.icon}</span>
-                        <span class="sidebar-nav-label">${t(item.label)}</span>
-                    </a>
-                `).join('')}
+                <div class="sidebar-nav-group sidebar-nav-group-primary">
+                    ${primaryNavItems.map((item) => renderNavItem(item, currentPath)).join('')}
+                </div>
+                <div class="sidebar-nav-group sidebar-nav-group-clients">
+                    ${clientsNavItems.map((item) => renderNavItem(item, currentPath)).join('')}
+                </div>
+                <div class="sidebar-nav-group sidebar-nav-group-products">
+                    ${productsNavItems.map((item) => renderNavItem(item, currentPath)).join('')}
+                </div>
+                <div class="sidebar-nav-group sidebar-nav-group-secondary">
+                    ${secondaryNavItems.map((item) => renderNavItem(item, currentPath)).join('')}
+                </div>
             </nav>
 
             <div class="sidebar-footer">
@@ -96,6 +111,16 @@ export function renderSidebar() {
         </div>
     </aside>
     `;
+}
+
+function renderNavItem(item, currentPath) {
+  const isActive = currentPath === item.path || (item.path !== '/' && currentPath.startsWith(item.path));
+  return `
+    <a href="#${item.path}" class="sidebar-nav-item ${isActive ? 'active' : ''}">
+      <span class="sidebar-nav-icon">${item.icon}</span>
+      <span class="sidebar-nav-label">${t(item.label)}</span>
+    </a>
+  `;
 }
 
 export function initSidebar() {

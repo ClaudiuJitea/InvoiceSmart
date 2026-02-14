@@ -3,6 +3,7 @@ import { t } from '../i18n/index.js';
 import { icons } from '../components/icons.js';
 import { invoiceService } from '../db/services/invoiceService.js';
 import { clientService } from '../db/services/clientService.js';
+import { productService } from '../db/services/productService.js';
 import { settingsService } from '../db/services/settingsService.js';
 import { bnrService } from '../services/bnrService.js';
 import { toast } from '../components/common/Toast.js';
@@ -15,6 +16,7 @@ import {
 } from '../utils/seriesTemplates.js';
 
 let invoiceItems = [];
+let catalogProducts = [];
 let relatedDeliveryNoteIds = [];
 let relatedDeliveryNoteNumbers = [];
 
@@ -71,7 +73,7 @@ export async function initInvoiceForm(params = {}) {
       : [];
 
     // Fetch all required data in parallel
-    const [clients, settings, invoice, nextNumber, draftFromDeliveryNotes] = await Promise.all([
+    const [clients, settings, invoice, nextNumber, draftFromDeliveryNotes, products] = await Promise.all([
       clientService.getAll(),
       settingsService.get(),
       isEdit ? invoiceService.getById(parseInt(params.id)) : Promise.resolve(null),
@@ -79,6 +81,7 @@ export async function initInvoiceForm(params = {}) {
       fromDeliveryNoteIds.length > 0
         ? invoiceService.buildDraftFromDeliveryNotes(fromDeliveryNoteIds)
         : Promise.resolve(null),
+      productService.getAll({ activeOnly: true }).catch(() => []),
     ]);
 
     if (isEdit && !invoice) {
@@ -120,6 +123,7 @@ export async function initInvoiceForm(params = {}) {
     }
 
     const draftInvoice = draftFromDeliveryNotes?.draft_invoice || {};
+    catalogProducts = Array.isArray(products) ? products : [];
 
     // Initialize items
     if (invoice && invoice.items) {
@@ -304,7 +308,7 @@ export async function initInvoiceForm(params = {}) {
                 </tr>
               </thead>
               <tbody id="itemsBody">
-                ${invoiceItems.map((item, index) => renderItemRow(item, index)).join('')}
+                ${invoiceItems.map((item, index) => renderItemRow(item, index, catalogProducts)).join('')}
               </tbody>
             </table>
           </div>
@@ -418,6 +422,18 @@ export async function initInvoiceForm(params = {}) {
     const seriesTemplateSelect = document.getElementById('seriesTemplateSelect');
     const seriesInput = document.getElementById('seriesInput');
     const invoiceNumberInput = document.getElementById('invoiceNumberInput');
+    const itemCustomSelects = [];
+
+    const destroyItemCustomSelects = () => {
+      itemCustomSelects.forEach((instance) => instance.destroy());
+      itemCustomSelects.length = 0;
+    };
+
+    const initItemCustomSelects = () => {
+      itemsBody.querySelectorAll('.item-product-select, .item-unit').forEach((selectEl) => {
+        itemCustomSelects.push(new CustomSelect(selectEl));
+      });
+    };
 
     const updateInvoiceNumberFromTemplate = () => {
       if (!seriesTemplateSelect || !seriesInput || !invoiceNumberInput) return;
@@ -470,7 +486,10 @@ export async function initInvoiceForm(params = {}) {
     }
 
     function updateItemFromRow(index, row) {
+      const productSelect = row.querySelector('.item-product-select');
+      const productId = productSelect ? parseInt(productSelect.value, 10) : null;
       invoiceItems[index] = {
+        product_id: Number.isInteger(productId) ? productId : null,
         description: row.querySelector('.item-description').value,
         unit: row.querySelector('.item-unit').value,
         quantity: parseFloat(row.querySelector('.item-quantity').value) || 0,
@@ -482,16 +501,55 @@ export async function initInvoiceForm(params = {}) {
     }
 
     function rebuildItemsTable() {
-      itemsBody.innerHTML = invoiceItems.map((item, index) => renderItemRow(item, index)).join('');
+      destroyItemCustomSelects();
+      itemsBody.innerHTML = invoiceItems.map((item, index) => renderItemRow(item, index, catalogProducts)).join('');
       attachItemListeners();
       calculateTotals();
     }
 
+    function applyProductToRow(index, row) {
+      const select = row.querySelector('.item-product-select');
+      if (!select) return;
+
+      const productId = parseInt(select.value, 10);
+      if (!Number.isInteger(productId)) {
+        updateItemFromRow(index, row);
+        return;
+      }
+
+      const product = catalogProducts.find((p) => p.id === productId);
+      if (!product) {
+        updateItemFromRow(index, row);
+        return;
+      }
+
+      const descriptionInput = row.querySelector('.item-description');
+      const unitInput = row.querySelector('.item-unit');
+      const quantityInput = row.querySelector('.item-quantity');
+      const priceInput = row.querySelector('.item-price');
+      const taxInput = row.querySelector('.item-tax');
+
+      descriptionInput.value = product.name || '';
+      unitInput.value = product.unit || 'pcs';
+
+      const currentQty = parseFloat(quantityInput.value) || 0;
+      quantityInput.value = currentQty > 0 ? String(currentQty) : '1';
+      priceInput.value = String(Number(product.unit_price || 0));
+      taxInput.value = String(Number(product.tax_rate || 0));
+
+      updateItemFromRow(index, row);
+    }
+
     function attachItemListeners() {
+      initItemCustomSelects();
       itemsBody.querySelectorAll('tr').forEach((row, index) => {
         row.querySelectorAll('.item-description, .item-unit, .item-quantity, .item-price, .item-tax').forEach(input => {
           input.addEventListener('input', () => updateItemFromRow(index, row));
           input.addEventListener('change', () => updateItemFromRow(index, row));
+        });
+
+        row.querySelector('.item-product-select')?.addEventListener('change', () => {
+          applyProductToRow(index, row);
         });
 
         row.querySelector('.item-delete-btn').addEventListener('click', () => {
@@ -607,7 +665,7 @@ export async function initInvoiceForm(params = {}) {
     // Add item button
     addItemBtn.addEventListener('click', () => {
       const defaultTaxRate = parseFloat(form.querySelector('[name="tax_rate"]').value) || 0;
-      invoiceItems.push({ description: '', unit: 'hrs', quantity: 1, unit_price: 0, tax_rate: defaultTaxRate, total: 0 });
+      invoiceItems.push({ product_id: null, description: '', unit: 'hrs', quantity: 1, unit_price: 0, tax_rate: defaultTaxRate, total: 0 });
       rebuildItemsTable();
     });
 
@@ -695,10 +753,22 @@ export async function initInvoiceForm(params = {}) {
   }
 }
 
-function renderItemRow(item, index) {
+function renderItemRow(item, index, products = []) {
+  const options = products.map((product) => `
+    <option value="${product.id}" ${Number(item.product_id) === Number(product.id) ? 'selected' : ''}>
+      ${escapeHtml(product.name)}${product.product_code ? ` (${escapeHtml(product.product_code)})` : ''}
+    </option>
+  `).join('');
+
   return `
     <tr data-index="${index}">
       <td>
+        <div class="item-product-picker">
+          <select class="input item-product-select" data-searchable="true" data-search-placeholder="${t('actions.search')}...">
+            <option value="">${t('invoices.selectProductServicePlaceholder')}</option>
+            ${options}
+          </select>
+        </div>
         <input type="text" class="input item-description" value="${item.description || ''}" placeholder="${t('invoices.itemDescription')}">
       </td>
       <td>
@@ -728,4 +798,12 @@ function renderItemRow(item, index) {
       </td>
     </tr>
   `;
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
 }

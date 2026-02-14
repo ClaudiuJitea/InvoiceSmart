@@ -5,8 +5,12 @@ export class CustomSelect {
         this.container = null;
         this.trigger = null;
         this.optionsContainer = null;
+        this.optionsList = null;
+        this.searchInput = null;
+        this.isSearchable = false;
         this.labelSpan = null;
         this.isOpen = false;
+        this.overflowWrapper = null;
         this.handleTriggerClick = null;
         this.handleDocumentClick = null;
         this.handleSelectChange = null;
@@ -15,6 +19,8 @@ export class CustomSelect {
     }
 
     init() {
+        this.isSearchable = this.select.dataset.searchable === 'true';
+
         // Hide original select
         this.select.style.display = 'none';
 
@@ -43,6 +49,24 @@ export class CustomSelect {
         // Create options container
         this.optionsContainer = document.createElement('div');
         this.optionsContainer.classList.add('custom-select-options');
+
+        if (this.isSearchable) {
+            const searchWrapper = document.createElement('div');
+            searchWrapper.classList.add('custom-select-search');
+
+            this.searchInput = document.createElement('input');
+            this.searchInput.type = 'text';
+            this.searchInput.classList.add('custom-select-search-input');
+            this.searchInput.placeholder = this.select.dataset.searchPlaceholder || 'Search...';
+            this.searchInput.addEventListener('input', () => this.filterOptions(this.searchInput.value));
+
+            searchWrapper.appendChild(this.searchInput);
+            this.optionsContainer.appendChild(searchWrapper);
+        }
+
+        this.optionsList = document.createElement('div');
+        this.optionsList.classList.add('custom-select-options-list');
+        this.optionsContainer.appendChild(this.optionsList);
 
         this.renderOptions();
 
@@ -76,13 +100,21 @@ export class CustomSelect {
     }
 
     renderOptions() {
-        this.optionsContainer.innerHTML = '';
+        if (!this.optionsList) return;
+        this.optionsList.innerHTML = '';
 
         Array.from(this.select.options).forEach(opt => {
+            // Hide the placeholder option from the dropdown list when searchable.
+            // It stays visible as the trigger label when nothing is selected.
+            if (this.isSearchable && opt.value === '') {
+                return;
+            }
+
             const optionDiv = document.createElement('div');
             optionDiv.classList.add('custom-option');
             optionDiv.textContent = opt.textContent;
             optionDiv.dataset.value = opt.value;
+            optionDiv.dataset.label = (opt.textContent || '').toLowerCase();
 
             if (opt.selected) {
                 optionDiv.classList.add('selected');
@@ -93,7 +125,16 @@ export class CustomSelect {
                 this.selectOption(opt.value);
             });
 
-            this.optionsContainer.appendChild(optionDiv);
+            this.optionsList.appendChild(optionDiv);
+        });
+    }
+
+    filterOptions(query) {
+        if (!this.optionsList) return;
+        const q = String(query || '').trim().toLowerCase();
+        this.optionsList.querySelectorAll('.custom-option').forEach((optionEl) => {
+            const label = optionEl.dataset.label || '';
+            optionEl.style.display = !q || label.includes(q) ? '' : 'none';
         });
     }
 
@@ -131,14 +172,29 @@ export class CustomSelect {
             }
         });
 
+        // Prevent clipping when select is inside scroll/overflow wrappers (e.g. invoice items table)
+        this.overflowWrapper = this.select.closest('.table-wrapper, .table-container');
+        if (this.overflowWrapper) {
+            this.overflowWrapper.classList.add('allow-overflow');
+        }
+
         this.container.classList.add('open');
         this.trigger.classList.add('open');
         this.isOpen = true;
+        if (this.searchInput) {
+            this.searchInput.value = '';
+            this.filterOptions('');
+            setTimeout(() => this.searchInput?.focus(), 0);
+        }
     }
 
     close() {
         this.container.classList.remove('open');
         this.trigger.classList.remove('open');
+        if (this.overflowWrapper) {
+            this.overflowWrapper.classList.remove('allow-overflow');
+            this.overflowWrapper = null;
+        }
         this.isOpen = false;
     }
 

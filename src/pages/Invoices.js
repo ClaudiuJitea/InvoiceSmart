@@ -64,8 +64,13 @@ export async function initInvoices(params = {}) {
   let currentInvoices = [];
   const selectedInvoiceIds = new Set();
   const filters = {
-    query: '',
+    invoiceNumber: '',
+    client: '',
     status: 'all',
+    dateFrom: '',
+    dateTo: '',
+    totalMin: '',
+    totalMax: '',
   };
 
   let isBulkDeleteRunning = false;
@@ -73,18 +78,44 @@ export async function initInvoices(params = {}) {
   let statusFilterCustomSelect = null;
 
   function hasActiveFilters() {
-    return filters.query.trim() !== '' || filters.status !== 'all';
+    return (
+      filters.invoiceNumber.trim() !== '' ||
+      filters.client.trim() !== '' ||
+      filters.status !== 'all' ||
+      filters.dateFrom !== '' ||
+      filters.dateTo !== '' ||
+      filters.totalMin !== '' ||
+      filters.totalMax !== ''
+    );
   }
 
   function matchesFilters(invoice) {
-    const query = filters.query.trim().toLowerCase();
     const invoiceNumber = String(invoice.invoice_number || '').toLowerCase();
     const clientName = String(invoice.client_name || '').toLowerCase();
+    const invoiceNumberFilter = filters.invoiceNumber.trim().toLowerCase();
+    const clientFilter = filters.client.trim().toLowerCase();
+    const invoiceDate = String(invoice.issue_date || '').slice(0, 10);
+    const invoiceTotal = Number(invoice.total || 0);
+    const totalMin = filters.totalMin !== '' ? Number(filters.totalMin) : null;
+    const totalMax = filters.totalMax !== '' ? Number(filters.totalMax) : null;
 
-    const matchesQuery = !query || invoiceNumber.includes(query) || clientName.includes(query);
+    const matchesInvoiceNumber = !invoiceNumberFilter || invoiceNumber.includes(invoiceNumberFilter);
+    const matchesClient = !clientFilter || clientName.includes(clientFilter);
     const matchesStatus = filters.status === 'all' || invoice.status === filters.status;
+    const matchesDateFrom = !filters.dateFrom || (invoiceDate && invoiceDate >= filters.dateFrom);
+    const matchesDateTo = !filters.dateTo || (invoiceDate && invoiceDate <= filters.dateTo);
+    const matchesTotalMin = totalMin === null || (!Number.isNaN(totalMin) && invoiceTotal >= totalMin);
+    const matchesTotalMax = totalMax === null || (!Number.isNaN(totalMax) && invoiceTotal <= totalMax);
 
-    return matchesQuery && matchesStatus;
+    return (
+      matchesInvoiceNumber &&
+      matchesClient &&
+      matchesStatus &&
+      matchesDateFrom &&
+      matchesDateTo &&
+      matchesTotalMin &&
+      matchesTotalMax
+    );
   }
 
   function getFilteredInvoices() {
@@ -252,13 +283,23 @@ export async function initInvoices(params = {}) {
       <div class="invoices-filters-card card card-elevated">
         <div class="invoices-filters-bar">
           <div class="invoices-filter-group invoices-filter-search-group">
-            <label class="invoices-filter-label" for="invoiceSearchInput">${t('actions.search')}</label>
+            <label class="invoices-filter-label" for="invoiceNumberFilterInput">${t('invoices.invoiceNumber')}</label>
             <input
-              id="invoiceSearchInput"
+              id="invoiceNumberFilterInput"
               class="invoices-filter-input"
               type="text"
-              placeholder="${section.searchPlaceholder}"
-              value="${escapeHtml(filters.query)}"
+              placeholder="${t('invoices.filterByNumber')}"
+              value="${escapeHtml(filters.invoiceNumber)}"
+            >
+          </div>
+          <div class="invoices-filter-group invoices-filter-search-group">
+            <label class="invoices-filter-label" for="invoiceClientFilterInput">${t('invoices.client')}</label>
+            <input
+              id="invoiceClientFilterInput"
+              class="invoices-filter-input"
+              type="text"
+              placeholder="${t('invoices.filterByClient')}"
+              value="${escapeHtml(filters.client)}"
             >
           </div>
           <div class="invoices-filter-group invoices-filter-status-group">
@@ -271,6 +312,50 @@ export async function initInvoices(params = {}) {
               <option value="overdue" ${filters.status === 'overdue' ? 'selected' : ''}>${t('invoices.statusOverdue')}</option>
               <option value="cancelled" ${filters.status === 'cancelled' ? 'selected' : ''}>${t('invoices.statusCancelled')}</option>
             </select>
+          </div>
+          <div class="invoices-filter-group invoices-filter-pair">
+            <label class="invoices-filter-label">${t('invoices.total')}</label>
+            <div class="invoices-filter-pair-inputs">
+              <input
+                id="invoiceTotalMinFilter"
+                class="invoices-filter-input"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="${t('invoices.totalMin')}"
+                value="${escapeHtml(filters.totalMin)}"
+                aria-label="${t('invoices.totalMin')}"
+              >
+              <input
+                id="invoiceTotalMaxFilter"
+                class="invoices-filter-input"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="${t('invoices.totalMax')}"
+                value="${escapeHtml(filters.totalMax)}"
+                aria-label="${t('invoices.totalMax')}"
+              >
+            </div>
+          </div>
+          <div class="invoices-filter-group invoices-filter-pair">
+            <label class="invoices-filter-label">${t('invoices.date')}</label>
+            <div class="invoices-filter-pair-inputs">
+              <input
+                id="invoiceDateFromFilter"
+                class="invoices-filter-input"
+                type="date"
+                value="${filters.dateFrom}"
+                aria-label="${t('invoices.dateFrom')}"
+              >
+              <input
+                id="invoiceDateToFilter"
+                class="invoices-filter-input"
+                type="date"
+                value="${filters.dateTo}"
+                aria-label="${t('invoices.dateTo')}"
+              >
+            </div>
           </div>
           ${hasActiveFilters() ? `
             <button class="btn btn-text btn-sm invoices-clear-filters" id="clearInvoiceFiltersBtn" type="button">
@@ -485,16 +570,26 @@ export async function initInvoices(params = {}) {
   }
 
   function attachEventListeners(filteredInvoices, allFilteredSelected) {
-    const searchInput = container.querySelector('#invoiceSearchInput');
+    const invoiceNumberFilterInput = container.querySelector('#invoiceNumberFilterInput');
+    const invoiceClientFilterInput = container.querySelector('#invoiceClientFilterInput');
     const statusFilter = container.querySelector('#invoiceStatusFilter');
+    const dateFromFilter = container.querySelector('#invoiceDateFromFilter');
+    const dateToFilter = container.querySelector('#invoiceDateToFilter');
+    const totalMinFilter = container.querySelector('#invoiceTotalMinFilter');
+    const totalMaxFilter = container.querySelector('#invoiceTotalMaxFilter');
     const clearFiltersBtn = container.querySelector('#clearInvoiceFiltersBtn');
 
     if (statusFilter) {
       statusFilterCustomSelect = new CustomSelect(statusFilter);
     }
 
-    searchInput?.addEventListener('input', () => {
-      filters.query = searchInput.value;
+    invoiceNumberFilterInput?.addEventListener('input', () => {
+      filters.invoiceNumber = invoiceNumberFilterInput.value;
+      renderInvoicesList(getFilteredInvoices());
+    });
+
+    invoiceClientFilterInput?.addEventListener('input', () => {
+      filters.client = invoiceClientFilterInput.value;
       renderInvoicesList(getFilteredInvoices());
     });
 
@@ -503,9 +598,34 @@ export async function initInvoices(params = {}) {
       renderInvoicesList(getFilteredInvoices());
     });
 
+    dateFromFilter?.addEventListener('change', () => {
+      filters.dateFrom = dateFromFilter.value;
+      renderInvoicesList(getFilteredInvoices());
+    });
+
+    dateToFilter?.addEventListener('change', () => {
+      filters.dateTo = dateToFilter.value;
+      renderInvoicesList(getFilteredInvoices());
+    });
+
+    totalMinFilter?.addEventListener('input', () => {
+      filters.totalMin = totalMinFilter.value;
+      renderInvoicesList(getFilteredInvoices());
+    });
+
+    totalMaxFilter?.addEventListener('input', () => {
+      filters.totalMax = totalMaxFilter.value;
+      renderInvoicesList(getFilteredInvoices());
+    });
+
     clearFiltersBtn?.addEventListener('click', () => {
-      filters.query = '';
+      filters.invoiceNumber = '';
+      filters.client = '';
       filters.status = 'all';
+      filters.dateFrom = '';
+      filters.dateTo = '';
+      filters.totalMin = '';
+      filters.totalMax = '';
       renderInvoicesList(getFilteredInvoices());
     });
 

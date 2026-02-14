@@ -16,8 +16,8 @@ export function renderClients() {
           <h1 class="page-title">${t('clients.title')}</h1>
           <p class="page-subtitle">${t('clients.subtitle')}</p>
         </div>
-        <div class="page-header-actions">
-          <div class="search-container" id="clientSearchContainer">
+        <div class="page-header-actions clients-header-actions">
+          <div class="search-container clients-search-container" id="clientSearchContainer">
             <span class="search-icon">${icons.search}</span>
             <input type="text" 
                    class="search-input" 
@@ -69,7 +69,7 @@ export async function initClients() {
 
     if (headerActions) {
       headerActions.innerHTML = showHeaderTools ? `
-        <a href="#/clients/new" class="btn btn-filled">
+        <a href="#/clients/new" class="btn btn-filled clients-add-btn">
           ${icons.plus}
           ${t('clients.newClient')}
         </a>
