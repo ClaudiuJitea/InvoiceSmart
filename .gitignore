@@ -29,6 +29,7 @@ dist-ssr
 *.sqlite3
 *.db-shm
 *.db-wal
+server/data/
 
 # Environment variables
 .env

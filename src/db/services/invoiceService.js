@@ -15,7 +15,10 @@ export const invoiceService = {
     const response = await fetch(`/api/invoices?${params.toString()}`, {
       headers: this.getAuthHeader(),
     }); // Higher limit for "all"
-    if (!response.ok) throw new Error('Failed to fetch invoices');
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.details || data.error || 'Failed to fetch invoices');
+    }
     return response.json();
   },
 

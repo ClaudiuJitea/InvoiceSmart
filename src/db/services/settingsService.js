@@ -51,6 +51,120 @@ export const settingsService = {
         return response.json();
     },
 
+    async getDatabaseConfig() {
+        const response = await fetch('/api/settings/database', {
+            headers: this.getAuthHeader(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch database configuration');
+        }
+
+        return response.json();
+    },
+
+    async testDatabaseConfig(config) {
+        const response = await fetch('/api/settings/database/test', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...this.getAuthHeader(),
+            },
+            body: JSON.stringify(config),
+        });
+
+        let data = null;
+        try {
+            data = await response.json();
+        } catch {
+            data = { error: 'Invalid response from server' };
+        }
+        if (!response.ok) {
+            const provider = config?.provider || 'unknown';
+            const message = data.error || 'Failed to test database connection';
+            console.error('Database test failed', {
+                status: response.status,
+                provider,
+                message,
+            });
+            throw new Error(`[${response.status}] ${message}`);
+        }
+
+        return data;
+    },
+
+    async updateDatabaseConfig(config) {
+        const response = await fetch('/api/settings/database', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                ...this.getAuthHeader(),
+            },
+            body: JSON.stringify(config),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to update database configuration');
+        }
+
+        return data;
+    },
+
+    async exportSqliteSnapshot(source) {
+        const response = await fetch('/api/settings/database/export', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...this.getAuthHeader(),
+            },
+            body: JSON.stringify({ source }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to export SQLite snapshot');
+        }
+
+        return data.snapshot;
+    },
+
+    async importSnapshot({ provider, providerConfig, snapshot, mode = 'replace' }) {
+        const response = await fetch('/api/settings/database/import', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...this.getAuthHeader(),
+            },
+            body: JSON.stringify({ provider, providerConfig, snapshot, mode }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to import snapshot');
+        }
+
+        return data;
+    },
+
+    async migrateSqliteToProvider({ source, provider, providerConfig, mode = 'replace' }) {
+        const response = await fetch('/api/settings/database/migrate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...this.getAuthHeader(),
+            },
+            body: JSON.stringify({ source, provider, providerConfig, mode }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to migrate SQLite data');
+        }
+
+        return data;
+    },
+
     // Update single setting (Client-side helper, calls update)
     async updateOne(key, value) {
         // First get current settings

@@ -1,5 +1,5 @@
 import express from 'express';
-import { getDb } from '../database.js';
+import { getActiveDatabaseConfig, getDb } from '../database.js';
 
 const router = express.Router();
 
@@ -121,6 +121,7 @@ router.get('/available-currencies', async (req, res) => {
 router.get('/monthly-revenue', async (req, res) => {
     try {
         const db = await getDb();
+        const provider = getActiveDatabaseConfig().provider;
         const filters = req.query;
         const params = [];
 
@@ -150,14 +151,20 @@ router.get('/monthly-revenue', async (req, res) => {
             params.push(startStr);
         }
 
+        const monthExpression = provider === 'postgres' || provider === 'supabase'
+            ? `TO_CHAR(i.issue_date, 'YYYY-MM')`
+            : provider === 'mysql' || provider === 'mariadb'
+                ? `DATE_FORMAT(i.issue_date, '%Y-%m')`
+                : `strftime('%Y-%m', i.issue_date)`;
+
         const results = await db.all(`
       SELECT 
-        strftime('%Y-%m', i.issue_date) as month,
+        ${monthExpression} as month,
         SUM(${valueExpression}) as revenue
       FROM invoices i
       ${finalWhere} AND i.status = 'paid'
-      GROUP BY strftime('%Y-%m', i.issue_date)
-      ORDER BY month ASC
+      GROUP BY 1
+      ORDER BY 1 ASC
     `, params);
 
         // Fill in missing months
@@ -183,7 +190,10 @@ router.get('/monthly-revenue', async (req, res) => {
         res.json(data);
     } catch (error) {
         console.error('Error fetching monthly revenue:', error);
-        res.status(500).json({ error: 'Failed to fetch monthly revenue' });
+        res.status(500).json({
+            error: 'Failed to fetch monthly revenue',
+            details: error.message || String(error),
+        });
     }
 });
 

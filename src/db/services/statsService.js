@@ -16,7 +16,10 @@ export const statsService = {
   async getMonthlyRevenue(filters = {}) {
     const q = new URLSearchParams(cleanFilters(filters)).toString();
     const response = await fetch(`/api/stats/monthly-revenue?${q}`);
-    if (!response.ok) throw new Error('Failed to fetch monthly revenue');
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.details || data.error || 'Failed to fetch monthly revenue');
+    }
     return response.json();
   },
 

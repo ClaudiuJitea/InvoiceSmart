@@ -1,5 +1,5 @@
 import express from 'express';
-import { getDb } from '../database.js';
+import { getActiveDatabaseConfig, getDb } from '../database.js';
 import { buildRequestAuditContext, logAuditEvent } from '../auditLogger.js';
 
 const router = express.Router();
@@ -83,6 +83,7 @@ async function validateDeliveryNotesForInvoice(db, deliveryNoteIds, currentInvoi
 router.get('/', async (req, res) => {
     try {
         const db = await getDb();
+        const provider = getActiveDatabaseConfig().provider;
         const limit = req.query.limit ? parseInt(req.query.limit) : 50;
         const documentType = req.query.document_type ? String(req.query.document_type) : null;
 
@@ -96,27 +97,32 @@ router.get('/', async (req, res) => {
         const whereClause = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : '';
         params.push(limit);
 
+        const linkedInvoiceAggExpr = provider === 'postgres' || provider === 'supabase'
+            ? `STRING_AGG(inv.invoice_number::text, ', ')`
+            : provider === 'mysql' || provider === 'mariadb'
+                ? `GROUP_CONCAT(inv.invoice_number SEPARATOR ', ')`
+                : `GROUP_CONCAT(inv.invoice_number, ', ')`;
+
         const invoices = await db.all(`
       SELECT 
         i.*,
         c.name as client_name,
         c.cif as client_cif,
         CASE
-          WHEN i.document_type = 'delivery_note' AND EXISTS (
-            SELECT 1
-            FROM invoice_delivery_notes rel
-            WHERE rel.delivery_note_id = i.id
-          ) THEN 1
+          WHEN i.document_type = 'delivery_note' AND linked.delivery_note_id IS NOT NULL THEN 1
           ELSE 0
         END as is_invoiced,
-        (
-          SELECT GROUP_CONCAT(inv.invoice_number, ', ')
-          FROM invoice_delivery_notes rel
-          JOIN invoices inv ON inv.id = rel.invoice_id
-          WHERE rel.delivery_note_id = i.id
-        ) as linked_invoice_numbers
+        linked.linked_invoice_numbers as linked_invoice_numbers
       FROM invoices i
       LEFT JOIN clients c ON i.client_id = c.id
+      LEFT JOIN (
+        SELECT
+          rel.delivery_note_id,
+          ${linkedInvoiceAggExpr} as linked_invoice_numbers
+        FROM invoice_delivery_notes rel
+        JOIN invoices inv ON inv.id = rel.invoice_id
+        GROUP BY rel.delivery_note_id
+      ) linked ON linked.delivery_note_id = i.id
       ${whereClause}
       ORDER BY i.issue_date DESC, i.id DESC
       LIMIT ?
@@ -125,7 +131,10 @@ router.get('/', async (req, res) => {
         res.json(invoices);
     } catch (error) {
         console.error('Error fetching invoices:', error);
-        res.status(500).json({ error: 'Failed to fetch invoices' });
+        res.status(500).json({
+            error: 'Failed to fetch invoices',
+            details: error.message || String(error),
+        });
     }
 });
 
