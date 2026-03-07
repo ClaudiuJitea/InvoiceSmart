@@ -32,6 +32,7 @@ import { renderAdminDashboard, initAdminDashboard } from './pages/AdminDashboard
 // App state
 let currentPage = null;
 let currentParams = {};
+const FORCE_LOGIN_ON_STARTUP = true;
 
 // Auth pages (no sidebar)
 const authPages = ['login', 'register'];
@@ -355,6 +356,11 @@ async function init() {
                 @keyframes spin { to { transform: rotate(360deg); } }
             </style>
         `;
+
+    // Optional hard reset: always require credentials after app restart.
+    if (FORCE_LOGIN_ON_STARTUP) {
+      authService.clearAuth();
+    }
 
     // Validate token if exists
     if (authService.isLoggedIn()) {
