@@ -8,6 +8,10 @@ MYSQL_USER=${MYSQL_USER:-"user"}
 MYSQL_PASSWORD=${MYSQL_PASSWORD:-"user_password"}
 MYSQL_PORT=${MYSQL_PORT:-3306}
 MYSQL_IMAGE=${MYSQL_IMAGE:-"mysql:8.0"}
+APP_ADMIN_USERNAME=${ADMIN_USERNAME:-"admin"}
+APP_ADMIN_PASSWORD=${ADMIN_PASSWORD:-"admin123"}
+APP_DEFAULT_USER_USERNAME=${DEFAULT_USER_USERNAME:-""}
+APP_DEFAULT_USER_PASSWORD=${DEFAULT_USER_PASSWORD:-""}
 
 # Colors for output
 RED='\033[0;31m'
@@ -25,6 +29,31 @@ warn() {
 
 error() {
     echo -e "${RED}[ERROR]${NC} $1"
+}
+
+print_login_info() {
+    echo ""
+    log "Deployment summary"
+    echo "MySQL:"
+    echo "  Host: 127.0.0.1"
+    echo "  Port: ${MYSQL_PORT}"
+    echo "  Database: ${MYSQL_DATABASE}"
+    echo "  Root user: root"
+    echo "  Root password: ${MYSQL_ROOT_PASSWORD}"
+    echo "  App DB user: ${MYSQL_USER}"
+    echo "  App DB password: ${MYSQL_PASSWORD}"
+    echo ""
+    echo "InvoiceSmart login:"
+    echo "  Admin username: ${APP_ADMIN_USERNAME}"
+    echo "  Admin password: ${APP_ADMIN_PASSWORD}"
+
+    if [ -n "${APP_DEFAULT_USER_USERNAME}" ] && [ -n "${APP_DEFAULT_USER_PASSWORD}" ]; then
+        echo "  User username: ${APP_DEFAULT_USER_USERNAME}"
+        echo "  User password: ${APP_DEFAULT_USER_PASSWORD}"
+    else
+        echo "  User account: create one from Register page (no default user is seeded)"
+    fi
+    echo ""
 }
 
 # Check if docker is installed
@@ -56,10 +85,12 @@ deploy() {
     if [ "$(docker ps -aq -f name=^/${CONTAINER_NAME}$)" ]; then
         if [ "$(docker ps -q -f name=^/${CONTAINER_NAME}$)" ]; then
             warn "Container '$CONTAINER_NAME' is already running."
+            print_login_info
         else
             log "Starting existing container '$CONTAINER_NAME'..."
             docker start "$CONTAINER_NAME"
             wait_for_mysql
+            print_login_info
         fi
     else
         log "Deploying new MySQL container '$CONTAINER_NAME'..."
@@ -74,6 +105,7 @@ deploy() {
         if [ $? -eq 0 ]; then
             log "Container created successfully."
             wait_for_mysql
+            print_login_info
         else
             error "Failed to create container."
             exit 1

@@ -78,6 +78,35 @@ npm run dev:full
 ```
 *Starts both backend (`:3000`) and frontend (`:5173`) together.*
 
+### 5. Optional MySQL Container Helper
+Use the included script to deploy/manage a local MySQL container:
+
+```bash
+./manage-mysql.sh deploy
+```
+
+Supported commands:
+
+```bash
+./manage-mysql.sh {deploy|start|stop|restart|delete|status}
+```
+
+You can override defaults with env vars, for example:
+
+```bash
+MYSQL_ROOT_PASSWORD=strong_root_pass \
+MYSQL_USER=invoicesmart_user \
+MYSQL_PASSWORD=strong_user_pass \
+MYSQL_DATABASE=invoicesmart \
+MYSQL_PORT=3306 \
+./manage-mysql.sh deploy
+```
+
+At the end of `deploy`, the script prints:
+- MySQL connection credentials
+- InvoiceSmart admin login info
+- Default user login info (if `DEFAULT_USER_USERNAME` and `DEFAULT_USER_PASSWORD` are set)
+
 ---
 
 ## Project Structure
@@ -107,6 +136,15 @@ InvoiceSmart/
 3.  **Clients**: Register clients for quick invoice generation.
 4.  **Billing**: Create invoices using the dynamic form with BNR integration.
 5.  **Templates**: Choose and preview templates before downloading PDFs.
+
+---
+
+## Default Login Credentials
+
+- Admin username: `admin`
+- Admin password: `admin123`
+- Admin values come from server env (`ADMIN_USERNAME`, `ADMIN_PASSWORD`)
+- Standard user: no default seeded user; create one from `#/register` (or provide `DEFAULT_USER_USERNAME` + `DEFAULT_USER_PASSWORD` when using `manage-mysql.sh`)
 
 ---
 
