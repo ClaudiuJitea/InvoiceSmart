@@ -43,6 +43,39 @@ export default {
         refresh: 'Refresh',
     },
 
+    ai: {
+        settingsTitle: 'AI Document Extraction',
+        settingsHint: 'Use OpenRouter to read scanned PDFs and images, then map the extracted data into your forms.',
+        provider: 'Provider',
+        enableExtraction: 'Enable Extraction',
+        enableExtractionHelp: 'Allow AI-assisted document imports',
+        apiKey: 'OpenRouter API Key',
+        apiKeyKeepCurrent: 'Saved key will be kept if left blank',
+        model: 'Model',
+        defaultModel: 'Default starter model',
+        refreshModels: 'Refresh Models',
+        saveAiSettings: 'Save AI Settings',
+        testConnection: 'Test Connection',
+        modelsRefreshed: 'AI models refreshed',
+        modelsRefreshFailed: 'Failed to refresh AI models',
+        saveSuccess: 'AI settings saved',
+        saveFailed: 'Failed to save AI settings',
+        testSuccess: 'OpenRouter connection successful',
+        testSuccessModelFallback: 'OpenRouter key is valid, but the selected model was not found in the current model list',
+        testFailed: 'AI connection test failed',
+        statusConfigured: 'API key saved and ready',
+        statusMissingKey: 'API key not saved yet',
+        statusDisabled: 'AI extraction is disabled',
+        autoExtractCompany: 'Company Autofill',
+        autoExtractCompanyHelp: 'Allow uploaded documents to fill company settings fields',
+        companyImportHint: 'Upload a scanned PDF or image to extract company identity and bank details.',
+        extractCompany: 'Extract Company Details',
+        extractClient: 'Extract Client Details',
+        extractSuccess: 'Document data extracted successfully',
+        extractSuccessWithWarnings: 'Document data extracted with notes:',
+        extractFailed: 'Failed to extract document data',
+    },
+
     // Dashboard
     dashboard: {
         title: 'Dashboard',
@@ -436,6 +469,7 @@ export default {
 
         // Save
         saveSuccess: 'Settings saved successfully',
+        saveError: 'Failed to save settings',
         loadError: 'Failed to load settings.',
     },
 

@@ -4,6 +4,17 @@ import { icons } from '../components/icons.js';
 import { clientService } from '../db/services/clientService.js';
 import { toast } from '../components/common/Toast.js';
 import { router } from '../router.js';
+import { aiService } from '../services/aiService.js';
+
+function applyClientExtractedFields(form, fields = {}) {
+  Object.entries(fields).forEach(([key, value]) => {
+    if (typeof value !== 'string' || !value.trim()) return;
+    const input = form.elements.namedItem(key);
+    if (input && 'value' in input) {
+      input.value = value.trim();
+    }
+  });
+}
 
 export function renderClientForm(params = {}) {
   return `
@@ -37,6 +48,12 @@ export async function initClientForm(params = {}) {
             ${icons.arrowLeft} ${t('actions.back')}
           </a>
           <h1 class="page-title">${title}</h1>
+        </div>
+        <div class="page-header-actions">
+          <button type="button" class="btn btn-tonal" id="extractClientDocumentBtn">
+            ${icons.file} ${t('ai.extractClient')}
+          </button>
+          <input type="file" id="clientAiFileInput" accept=".pdf,image/png,image/jpeg,image/webp" style="display:none;">
         </div>
       </div>
 
@@ -125,6 +142,27 @@ export async function initClientForm(params = {}) {
 
     const form = document.getElementById('clientForm');
     if (form) {
+      const clientAiFileInput = document.getElementById('clientAiFileInput');
+      document.getElementById('extractClientDocumentBtn')?.addEventListener('click', () => {
+        clientAiFileInput?.click();
+      });
+
+      clientAiFileInput?.addEventListener('change', async () => {
+        const file = clientAiFileInput.files?.[0];
+        if (!file) return;
+
+        try {
+          const result = await aiService.extractClientFromFile(file);
+          applyClientExtractedFields(form, result.fields);
+          toast.success(result.warnings?.length ? `${t('ai.extractSuccessWithWarnings')} ${result.warnings.join(' ')}` : t('ai.extractSuccess'));
+        } catch (error) {
+          console.error('Failed to extract client data:', error);
+          toast.error(error.message || t('ai.extractFailed'));
+        } finally {
+          clientAiFileInput.value = '';
+        }
+      });
+
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
 

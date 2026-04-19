@@ -5,6 +5,7 @@ import { settingsService } from '../db/services/settingsService.js';
 import { toast } from '../components/common/Toast.js';
 import { CustomSelect } from '../components/common/CustomSelect.js';
 import { modal, confirm } from '../components/common/Modal.js';
+import { aiService } from '../services/aiService.js';
 import {
   createSeriesTemplate,
   formatSeriesNumber,
@@ -14,6 +15,70 @@ import {
 
 const DOCUMENT_TYPES = ['invoice', 'quote', 'receipt', 'delivery_note'];
 const DATABASE_PROVIDERS = ['sqlite', 'postgres', 'mysql', 'mariadb', 'supabase'];
+const DEFAULT_AI_MODEL = 'google/gemma-4-26b-a4b-it';
+
+function normalizeAiConfigForUi(config = {}) {
+  const openrouter = config.openrouter || {};
+  return {
+    enabled: Boolean(config.enabled),
+    autoExtractCompany: config.autoExtractCompany !== false,
+    provider: 'openrouter',
+    openrouter: {
+      model: String(openrouter.model || DEFAULT_AI_MODEL),
+      apiKey: '',
+      hasApiKey: Boolean(openrouter.hasApiKey || openrouter.apiKey),
+    },
+  };
+}
+
+function mergeAiModels(aiConfig, models = []) {
+  const deduped = new Map();
+  const seedModels = [
+    {
+      id: aiConfig?.openrouter?.model || DEFAULT_AI_MODEL,
+      name: aiConfig?.openrouter?.model || DEFAULT_AI_MODEL,
+      description: '',
+    },
+    {
+      id: DEFAULT_AI_MODEL,
+      name: DEFAULT_AI_MODEL,
+      description: '',
+    },
+    ...models,
+  ];
+
+  seedModels.forEach((model) => {
+    const id = String(model?.id || '').trim();
+    if (!id || deduped.has(id)) return;
+    deduped.set(id, {
+      id,
+      name: String(model?.name || id),
+      description: String(model?.description || ''),
+    });
+  });
+
+  return Array.from(deduped.values()).sort((a, b) => {
+    if (a.id === aiConfig?.openrouter?.model) return -1;
+    if (b.id === aiConfig?.openrouter?.model) return 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function mergeNonEmptyFields(base, patch) {
+  const next = { ...base };
+  Object.entries(patch || {}).forEach(([key, value]) => {
+    if (typeof value === 'string' && value.trim()) {
+      next[key] = value.trim();
+    }
+  });
+  return next;
+}
+
+function getAiStatusText(aiConfig) {
+  if (!aiConfig?.enabled) return t('ai.statusDisabled');
+  if (aiConfig?.openrouter?.hasApiKey) return t('ai.statusConfigured');
+  return t('ai.statusMissingKey');
+}
 
 function isSqlProvider(provider) {
   return provider === 'postgres' || provider === 'mysql' || provider === 'mariadb' || provider === 'supabase';
@@ -361,17 +426,35 @@ function openDatabaseMigrationWizard({ databaseConfig, onDatabaseConfigUpdated }
   });
 }
 
-function renderSettingsForm(settings, locales) {
+function renderSettingsForm(settings, locales, aiConfig, aiModels) {
   const templates = normalizeSeriesTemplates(settings || {});
   const dbConfig = settings.database_config || { provider: 'sqlite' };
   const activeProvider = dbConfig.provider || 'sqlite';
   const providerConfig = dbConfig[activeProvider] || {};
+  const modelOptions = mergeAiModels(aiConfig, aiModels);
 
   return `
     <form id="settingsForm" class="card card-elevated">
       <!-- Company Details -->
       <div class="form-section">
-        <h3 class="form-section-title">${t('settings.companyDetails')}</h3>
+        <div class="form-section-header">
+          <div>
+            <h3 class="form-section-title">${t('settings.companyDetails')}</h3>
+            <p class="document-series-subtitle">${t('ai.companyImportHint')}</p>
+          </div>
+          <div class="form-section-actions">
+            <button
+              type="button"
+              class="btn btn-tonal"
+              id="extractCompanyFromDocumentBtn"
+              ${!aiConfig.enabled || !aiConfig.autoExtractCompany ? 'disabled' : ''}
+            >
+              ${icons.file}
+              ${t('ai.extractCompany')}
+            </button>
+            <input type="file" id="companyAiFileInput" accept=".pdf,image/png,image/jpeg,image/webp" style="display:none;">
+          </div>
+        </div>
         <div class="form-row">
           <div class="input-group">
             <label class="input-label">${t('settings.companyName')}</label>
@@ -434,6 +517,96 @@ function renderSettingsForm(settings, locales) {
             <label class="input-label">${t('settings.bankName')}</label>
             <input type="text" class="input" name="company_bank_name" value="${escapeHtml(settings.company_bank_name || '')}">
           </div>
+        </div>
+      </div>
+
+      <!-- AI Settings -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <div>
+            <h3 class="form-section-title">${t('ai.settingsTitle')}</h3>
+            <p class="document-series-subtitle">${t('ai.settingsHint')}</p>
+          </div>
+          <div class="form-section-actions">
+            <button type="button" class="btn btn-tonal" id="refreshAiModelsBtn">
+              ${icons.refresh}
+              ${t('ai.refreshModels')}
+            </button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="input-group">
+            <label class="input-label">${t('ai.provider')}</label>
+            <select class="input select" name="ai_provider">
+              <option value="openrouter" selected>OpenRouter</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="ai_enabled">${t('ai.enableExtraction')}</label>
+            <label class="series-default-toggle" for="ai_enabled">
+              <span class="toggle-switch">
+                <input id="ai_enabled" type="checkbox" name="ai_enabled" ${aiConfig.enabled ? 'checked' : ''}>
+              </span>
+              <span>${t('ai.enableExtractionHelp')}</span>
+            </label>
+            <small class="text-muted" style="display:block; margin-top: 8px;">${getAiStatusText(aiConfig)}</small>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="input-group">
+            <label class="input-label">${t('ai.apiKey')}</label>
+            <input
+              type="password"
+              class="input"
+              name="ai_openrouter_api_key"
+              value=""
+              placeholder="${aiConfig.openrouter.hasApiKey ? t('ai.apiKeyKeepCurrent') : 'sk-or-...'}"
+            >
+          </div>
+          <div class="input-group">
+            <label class="input-label">${t('ai.model')}</label>
+            <select class="input select" name="ai_openrouter_model" data-searchable="true">
+              ${modelOptions.map((model) => `
+                <option value="${escapeHtml(model.id)}" ${aiConfig.openrouter.model === model.id ? 'selected' : ''}>
+                  ${escapeHtml(model.name)}
+                </option>
+              `).join('')}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="input-group">
+            <label class="input-label" for="ai_auto_extract_company">${t('ai.autoExtractCompany')}</label>
+            <label class="series-default-toggle" for="ai_auto_extract_company">
+              <span class="toggle-switch">
+                <input
+                  id="ai_auto_extract_company"
+                  type="checkbox"
+                  name="ai_auto_extract_company"
+                  ${aiConfig.autoExtractCompany ? 'checked' : ''}
+                >
+              </span>
+              <span>${t('ai.autoExtractCompanyHelp')}</span>
+            </label>
+          </div>
+          <div class="input-group">
+            <label class="input-label">${t('ai.defaultModel')}</label>
+            <div class="input input-readonly">${escapeHtml(DEFAULT_AI_MODEL)}</div>
+          </div>
+        </div>
+
+        <div class="form-actions" style="margin-top: 16px; flex-wrap: wrap;">
+          <button type="button" class="btn btn-filled" id="testAiConnectionBtn">
+            ${icons.check}
+            ${t('ai.testConnection')}
+          </button>
+          <button type="button" class="btn btn-tonal" id="saveAiConfigBtn">
+            ${icons.settings}
+            ${t('ai.saveAiSettings')}
+          </button>
         </div>
       </div>
 
@@ -785,15 +958,26 @@ export async function initSettings() {
   if (!container) return;
 
   try {
-    const [settings, locales, databaseConfig] = await Promise.all([
+    const [settings, locales, databaseConfig, aiConfig] = await Promise.all([
       settingsService.get(),
       Promise.resolve(i18n.getLocales()),
       settingsService.getDatabaseConfig(),
+      aiService.getConfig().catch(() => normalizeAiConfigForUi()),
     ]);
 
     let draftSettings = { ...settings };
     let templatesState = normalizeSeriesTemplates(settings || {});
     let databaseConfigState = { ...databaseConfig };
+    let aiConfigState = normalizeAiConfigForUi(aiConfig);
+    let aiModelsState = mergeAiModels(aiConfigState, []);
+
+    if (aiConfigState.openrouter.hasApiKey) {
+      try {
+        aiModelsState = mergeAiModels(aiConfigState, await aiService.listModels());
+      } catch (error) {
+        console.warn('Failed to preload AI models:', error);
+      }
+    }
 
     const buildDatabaseConfigFromForm = (form, currentConfig) => {
       const formData = new FormData(form);
@@ -829,6 +1013,33 @@ export async function initSettings() {
       return nextConfig;
     };
 
+    const buildAiConfigFromForm = (form, currentConfig) => {
+      const formData = new FormData(form);
+      return {
+        ...currentConfig,
+        enabled: formData.get('ai_enabled') === 'on',
+        autoExtractCompany: formData.get('ai_auto_extract_company') === 'on',
+        provider: 'openrouter',
+        openrouter: {
+          ...(currentConfig.openrouter || {}),
+          model: String(formData.get('ai_openrouter_model') || DEFAULT_AI_MODEL),
+          apiKey: String(formData.get('ai_openrouter_api_key') || ''),
+        },
+      };
+    };
+
+    const saveAiConfigFromForm = async (form, { showToast = true, rerender = true } = {}) => {
+      const nextAiConfig = buildAiConfigFromForm(form, aiConfigState);
+      aiConfigState = await aiService.updateConfig(nextAiConfig);
+      if (showToast) {
+        toast.success(t('ai.saveSuccess'));
+      }
+      if (rerender) {
+        renderForm();
+      }
+      return aiConfigState;
+    };
+
     const collectCurrentFormState = (form) => {
       if (!form) return;
       const formData = new FormData(form);
@@ -851,6 +1062,7 @@ export async function initSettings() {
         language: formData.get('language'),
       };
       databaseConfigState = buildDatabaseConfigFromForm(form, databaseConfigState);
+      aiConfigState = buildAiConfigFromForm(form, aiConfigState);
     };
 
     const renderForm = () => {
@@ -861,7 +1073,7 @@ export async function initSettings() {
         ...draftSettings,
         document_series_templates: templatesState,
         database_config: databaseConfigState,
-      }, locales);
+      }, locales, aiConfigState, aiModelsState);
 
       const form = document.getElementById('settingsForm');
       if (!form) return;
@@ -873,6 +1085,60 @@ export async function initSettings() {
       document.getElementById('dbProviderSelect')?.addEventListener('change', () => {
         collectCurrentFormState(form);
         renderForm();
+      });
+
+      document.getElementById('testAiConnectionBtn')?.addEventListener('click', async () => {
+        collectCurrentFormState(form);
+        try {
+          const result = await aiService.testConfig(aiConfigState);
+          const modelMessage = result.modelFound ? t('ai.testSuccess') : t('ai.testSuccessModelFallback');
+          toast.success(`${modelMessage}: ${result.model}`);
+        } catch (error) {
+          toast.error(`${t('ai.testFailed')}: ${error.message}`);
+        }
+      });
+
+      document.getElementById('saveAiConfigBtn')?.addEventListener('click', async () => {
+        collectCurrentFormState(form);
+        try {
+          await saveAiConfigFromForm(form);
+        } catch (error) {
+          toast.error(`${t('ai.saveFailed')}: ${error.message}`);
+        }
+      });
+
+      document.getElementById('refreshAiModelsBtn')?.addEventListener('click', async () => {
+        collectCurrentFormState(form);
+        try {
+          await saveAiConfigFromForm(form, { showToast: false, rerender: false });
+          aiModelsState = mergeAiModels(aiConfigState, await aiService.listModels());
+          toast.success(t('ai.modelsRefreshed'));
+          renderForm();
+        } catch (error) {
+          toast.error(error.message || t('ai.modelsRefreshFailed'));
+        }
+      });
+
+      const companyAiFileInput = document.getElementById('companyAiFileInput');
+      document.getElementById('extractCompanyFromDocumentBtn')?.addEventListener('click', () => {
+        companyAiFileInput?.click();
+      });
+
+      companyAiFileInput?.addEventListener('change', async () => {
+        const file = companyAiFileInput.files?.[0];
+        if (!file) return;
+
+        try {
+          collectCurrentFormState(form);
+          const result = await aiService.extractCompanyFromFile(file);
+          draftSettings = mergeNonEmptyFields(draftSettings, result.fields);
+          toast.success(result.warnings?.length ? `${t('ai.extractSuccessWithWarnings')} ${result.warnings.join(' ')}` : t('ai.extractSuccess'));
+          renderForm();
+        } catch (error) {
+          toast.error(error.message || t('ai.extractFailed'));
+        } finally {
+          companyAiFileInput.value = '';
+        }
       });
 
       document.getElementById('testDatabaseConnectionBtn')?.addEventListener('click', async () => {
@@ -982,36 +1248,42 @@ export async function initSettings() {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const formData = new FormData(form);
-        const data = {
-          ...draftSettings,
-          company_name: formData.get('company_name'),
-          company_cif: formData.get('company_cif'),
-          company_reg_no: formData.get('company_reg_no'),
-          company_address: formData.get('company_address'),
-          company_city: formData.get('company_city'),
-          company_country: formData.get('company_country'),
-          company_email: formData.get('company_email'),
-          company_phone: formData.get('company_phone'),
-          company_bank_account: formData.get('company_bank_account'),
-          company_swift: formData.get('company_swift'),
-          company_bank_name: formData.get('company_bank_name'),
-          default_currency: formData.get('default_currency'),
-          secondary_currency: formData.get('secondary_currency'),
-          default_payment_terms: parseInt(formData.get('default_payment_terms'), 10) || 30,
-          language: formData.get('language'),
-          document_series_templates: templatesState,
-        };
+        try {
+          const formData = new FormData(form);
+          const data = {
+            ...draftSettings,
+            company_name: formData.get('company_name'),
+            company_cif: formData.get('company_cif'),
+            company_reg_no: formData.get('company_reg_no'),
+            company_address: formData.get('company_address'),
+            company_city: formData.get('company_city'),
+            company_country: formData.get('company_country'),
+            company_email: formData.get('company_email'),
+            company_phone: formData.get('company_phone'),
+            company_bank_account: formData.get('company_bank_account'),
+            company_swift: formData.get('company_swift'),
+            company_bank_name: formData.get('company_bank_name'),
+            default_currency: formData.get('default_currency'),
+            secondary_currency: formData.get('secondary_currency'),
+            default_payment_terms: parseInt(formData.get('default_payment_terms'), 10) || 30,
+            language: formData.get('language'),
+            document_series_templates: templatesState,
+          };
 
-        await settingsService.update(data);
-        draftSettings = { ...data };
+          await saveAiConfigFromForm(form, { showToast: false, rerender: false });
+          await settingsService.update(data);
+          draftSettings = { ...data };
 
-        if (data.language !== i18n.locale) {
-          i18n.locale = data.language;
+          if (data.language !== i18n.locale) {
+            i18n.locale = data.language;
+          }
+
+          toast.success(t('settings.saveSuccess'));
+          window.dispatchEvent(new CustomEvent('app:refresh'));
+        } catch (error) {
+          console.error('Failed to save settings:', error);
+          toast.error(error.message || t('settings.saveError'));
         }
-
-        toast.success(t('settings.saveSuccess'));
-        window.dispatchEvent(new CustomEvent('app:refresh'));
       });
     };
 

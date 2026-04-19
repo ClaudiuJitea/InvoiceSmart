@@ -21,11 +21,14 @@
 
 *   **Material You UI** – A minimalist, responsive interface with smooth transitions and premium typography.
 *   **Secure Authentication** – User authentication system with JWT-protected routes and BCrypt password encryption.
+*   **AI Document Extraction** – Import scanned PDFs or images and extract company or client data directly into forms using OpenRouter.
 *   **Bilingual Intelligence** – Generate invoices in English, Romanian, or both side-by-side.
 *   **Pro Exchange Rates** – Integration with the National Bank of Romania (BNR) for real-time currency conversions.
-*   **Advanced Analytics** – Dashboard with revenue charts, client statistics, and performance tracking.
+*   **Advanced Analytics** – Dashboard with revenue charts, client statistics, performance tracking, and themed report cards.
 *   **Premium Templates** – Multiple high-end invoice designs (Modern, Classic, Blue, Creative).
-*   **Robust Architecture** – Express.js backend with persistent SQLite storage.
+*   **Operational Documents** – Invoices, delivery notes, receipts, client management, and reusable document numbering templates.
+*   **Flexible Storage** – SQLite by default, with PostgreSQL, MySQL, MariaDB, and Supabase configuration support.
+*   **Robust Architecture** – Express.js backend with authenticated API routes and persistent local or external storage.
 *   **Responsive Design** – Optimized for desktop, tablet, and mobile browsers.
 
 ---
@@ -36,9 +39,9 @@
 | :--- | :--- |
 | **Frontend** | Vanilla JS (ES6+), Vite, Material Design 3 |
 | **Backend** | Node.js, Express.js, JWT Authentication |
-| **Database** | SQLite3 (Persistent storage) |
+| **Database** | SQLite3, PostgreSQL, MySQL, MariaDB, Supabase |
 | **PDF Engine** | jsPDF, html2canvas |
-| **Integrations** | BNR Exchange Rate API |
+| **Integrations** | BNR Exchange Rate API, OpenRouter |
 
 ---
 
@@ -107,6 +110,30 @@ At the end of `deploy`, the script prints:
 - InvoiceSmart admin login info
 - Default user login info (if `DEFAULT_USER_USERNAME` and `DEFAULT_USER_PASSWORD` are set)
 
+### 6. AI Document Extraction Setup
+AI extraction is configured from the application UI and runs through authenticated backend routes.
+
+1. Log in to InvoiceSmart.
+2. Open `Settings`.
+3. In `AI Document Extraction`, enable extraction.
+4. Enter your OpenRouter API key.
+5. Keep the default model `google/gemma-4-26b-a4b-it` or choose another model from the refreshed list.
+6. Use `Save AI Settings`, then `Test Connection`.
+
+Current extraction entry points:
+- `Settings` → `Extract Company Details`
+- `Clients` → `New Client` / `Edit Client` → `Extract Client Details`
+
+Supported upload types:
+- PDF
+- PNG
+- JPEG
+- WebP
+
+Notes:
+- AI endpoints require authentication, so `401 Unauthorized` responses indicate the user is not logged in or the token is missing/expired.
+- The API key is stored server-side and is intentionally not shown again after save.
+
 ---
 
 ## Project Structure
@@ -132,10 +159,11 @@ InvoiceSmart/
 ## Usage Guide
 
 1.  **Onboarding**: Create an account to access your personal dashboard.
-2.  **Setup**: Configure your business profile in Settings.
-3.  **Clients**: Register clients for quick invoice generation.
-4.  **Billing**: Create invoices using the dynamic form with BNR integration.
-5.  **Templates**: Choose and preview templates before downloading PDFs.
+2.  **Setup**: Configure your business profile in Settings, including bank details, document series, database provider, and optional AI extraction.
+3.  **Clients**: Register clients manually or import their details from scanned documents.
+4.  **Billing**: Create invoices, delivery notes, and receipts using the dynamic forms with BNR integration.
+5.  **Reports**: Review dashboard and reports data for revenue, status distribution, and top clients.
+6.  **Templates**: Choose and preview templates before downloading PDFs.
 
 ---
 

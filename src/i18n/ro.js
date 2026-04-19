@@ -43,6 +43,39 @@ export default {
         refresh: 'Reîncarcă',
     },
 
+    ai: {
+        settingsTitle: 'Extragere Documente cu AI',
+        settingsHint: 'Folosește OpenRouter pentru a citi PDF-uri scanate și imagini, apoi completează automat câmpurile din formulare.',
+        provider: 'Provider',
+        enableExtraction: 'Activează Extragerea',
+        enableExtractionHelp: 'Permite importuri asistate de AI din documente',
+        apiKey: 'Cheie API OpenRouter',
+        apiKeyKeepCurrent: 'Cheia salvată rămâne neschimbată dacă lași câmpul gol',
+        model: 'Model',
+        defaultModel: 'Model implicit de pornire',
+        refreshModels: 'Actualizează Modelele',
+        saveAiSettings: 'Salvează Setările AI',
+        testConnection: 'Testează Conexiunea',
+        modelsRefreshed: 'Modelele AI au fost actualizate',
+        modelsRefreshFailed: 'Actualizarea modelelor AI a eșuat',
+        saveSuccess: 'Setările AI au fost salvate',
+        saveFailed: 'Salvarea setărilor AI a eșuat',
+        testSuccess: 'Conexiunea OpenRouter a reușit',
+        testSuccessModelFallback: 'Cheia OpenRouter este validă, dar modelul selectat nu a fost găsit în lista curentă',
+        testFailed: 'Testul conexiunii AI a eșuat',
+        statusConfigured: 'Cheia API este salvată și gata de utilizare',
+        statusMissingKey: 'Cheia API nu este încă salvată',
+        statusDisabled: 'Extragerea AI este dezactivată',
+        autoExtractCompany: 'Autocompletare Companie',
+        autoExtractCompanyHelp: 'Permite completarea automată a datelor companiei din documente încărcate',
+        companyImportHint: 'Încarcă un PDF scanat sau o imagine pentru a extrage datele companiei și cele bancare.',
+        extractCompany: 'Extrage Datele Companiei',
+        extractClient: 'Extrage Datele Clientului',
+        extractSuccess: 'Datele au fost extrase cu succes',
+        extractSuccessWithWarnings: 'Datele au fost extrase cu observații:',
+        extractFailed: 'Extragerea datelor din document a eșuat',
+    },
+
     // Dashboard
     dashboard: {
         title: 'Panou Principal',
@@ -436,6 +469,7 @@ export default {
 
         // Save
         saveSuccess: 'Setările au fost salvate cu succes',
+        saveError: 'Salvarea setărilor a eșuat',
         loadError: 'Nu s-au putut încărca setările.',
     },
 
