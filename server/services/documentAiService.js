@@ -31,6 +31,19 @@ const CLIENT_FIELD_KEYS = [
   'notes',
 ];
 
+const INVOICE_FIELD_KEYS = [
+  'invoice_number',
+  'series',
+  'issue_date',
+  'due_date',
+  'currency',
+  'secondary_currency',
+  'exchange_rate',
+  'tax_rate',
+  'payment_method',
+  'notes',
+];
+
 function assertAiEnabled(config) {
   if (!config.enabled) {
     throw new Error('AI document extraction is disabled in settings');
@@ -42,7 +55,10 @@ function assertAiEnabled(config) {
 }
 
 function sanitizeString(value) {
-  return typeof value === 'string' ? value.trim() : '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  return '';
 }
 
 function sanitizeWarnings(warnings) {
@@ -50,12 +66,79 @@ function sanitizeWarnings(warnings) {
   return warnings.map((warning) => sanitizeString(warning)).filter(Boolean).slice(0, 8);
 }
 
-function normalizeExtractedFields(fields, keys) {
+function sanitizeConfidence(value, hasValue = false) {
+  const normalized = sanitizeString(value).toLowerCase();
+  if (['high', 'medium', 'low'].includes(normalized)) return normalized;
+  return hasValue ? 'medium' : 'low';
+}
+
+function normalizeFieldReview(fields, keys) {
+  const review = {};
+  for (const key of keys) {
+    const raw = fields?.[key];
+    const isObject = raw && typeof raw === 'object' && !Array.isArray(raw);
+    const value = sanitizeString(isObject ? raw.value : raw);
+
+    review[key] = {
+      value,
+      confidence: sanitizeConfidence(isObject ? raw.confidence : '', Boolean(value)),
+      note: sanitizeString(isObject ? raw.note : ''),
+    };
+  }
+  return review;
+}
+
+function normalizeExtractedFields(fieldReview, keys) {
   const normalized = {};
   for (const key of keys) {
-    normalized[key] = sanitizeString(fields?.[key] ?? '');
+    normalized[key] = sanitizeString(fieldReview?.[key]?.value ?? '');
   }
   return normalized;
+}
+
+function sanitizeNumber(value, fallback = null) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+
+  const normalized = sanitizeString(value)
+    .replace(/\s+/g, '')
+    .replace(/,/g, '.')
+    .replace(/[^0-9.-]/g, '');
+
+  if (!normalized) return fallback;
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizeInvoiceItems(items) {
+  if (!Array.isArray(items)) return [];
+
+  return items
+    .map((item) => {
+      const description = sanitizeString(item?.description);
+      const unit = sanitizeString(item?.unit) || 'pcs';
+      const quantity = sanitizeNumber(item?.quantity, description ? 1 : 0);
+      const unitPrice = sanitizeNumber(item?.unit_price, 0);
+      const taxRate = sanitizeNumber(item?.tax_rate, 0);
+      const note = sanitizeString(item?.note);
+      const confidence = sanitizeConfidence(item?.confidence, Boolean(description));
+
+      if (!description) {
+        return null;
+      }
+
+      return {
+        description,
+        unit,
+        quantity: quantity == null ? 0 : quantity,
+        unit_price: unitPrice == null ? 0 : unitPrice,
+        tax_rate: taxRate == null ? 0 : taxRate,
+        confidence,
+        note,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 100);
 }
 
 function getTargetConfig(target) {
@@ -67,13 +150,42 @@ function getTargetConfig(target) {
         'Extract the business identity, contact details, and bank details from the uploaded document.',
         'The document may be a scanned PDF, invoice, registration certificate, or bank document.',
         'Return only JSON with this shape:',
-        '{"fields":{"company_name":"","company_cif":"","company_reg_no":"","company_address":"","company_city":"","company_country":"","company_email":"","company_phone":"","company_bank_account":"","company_swift":"","company_bank_name":""},"warnings":[]}',
+        '{"fields":{"company_name":{"value":"","confidence":"low","note":""},"company_cif":{"value":"","confidence":"low","note":""},"company_reg_no":{"value":"","confidence":"low","note":""},"company_address":{"value":"","confidence":"low","note":""},"company_city":{"value":"","confidence":"low","note":""},"company_country":{"value":"","confidence":"low","note":""},"company_email":{"value":"","confidence":"low","note":""},"company_phone":{"value":"","confidence":"low","note":""},"company_bank_account":{"value":"","confidence":"low","note":""},"company_swift":{"value":"","confidence":"low","note":""},"company_bank_name":{"value":"","confidence":"low","note":""}},"warnings":[]}',
         'Rules:',
         '- Use empty strings when a field is missing or unclear.',
         '- Do not invent values.',
         '- Put the full street address into company_address.',
         '- Extract city and country separately when possible.',
         '- Preserve original capitalization where it is clear.',
+        '- confidence must be one of: low, medium, high.',
+        '- note should briefly explain uncertainty or formatting concerns when needed.',
+      ].join('\n'),
+    };
+  }
+
+  if (target === 'invoice') {
+    return {
+      name: 'invoice_document',
+      keys: INVOICE_FIELD_KEYS,
+      prompt: [
+        'Extract the full invoice data from the uploaded document.',
+        'The document may be a digital PDF, scanned PDF, photo, screenshot, or mobile scan of an invoice.',
+        'Return only JSON with this shape:',
+        '{"fields":{"invoice_number":{"value":"","confidence":"low","note":""},"series":{"value":"","confidence":"low","note":""},"issue_date":{"value":"","confidence":"low","note":""},"due_date":{"value":"","confidence":"low","note":""},"currency":{"value":"","confidence":"low","note":""},"secondary_currency":{"value":"","confidence":"low","note":""},"exchange_rate":{"value":"","confidence":"low","note":""},"tax_rate":{"value":"","confidence":"low","note":""},"payment_method":{"value":"","confidence":"low","note":""},"notes":{"value":"","confidence":"low","note":""}},"client":{"name":{"value":"","confidence":"low","note":""},"cif":{"value":"","confidence":"low","note":""},"reg_no":{"value":"","confidence":"low","note":""},"address":{"value":"","confidence":"low","note":""},"city":{"value":"","confidence":"low","note":""},"country":{"value":"","confidence":"low","note":""},"email":{"value":"","confidence":"low","note":""},"phone":{"value":"","confidence":"low","note":""},"bank_account":{"value":"","confidence":"low","note":""},"bank_name":{"value":"","confidence":"low","note":""},"notes":{"value":"","confidence":"low","note":""}},"items":[{"description":"","unit":"","quantity":"","unit_price":"","tax_rate":"","confidence":"low","note":""}],"warnings":[]}',
+        'Rules:',
+        '- Use empty strings when a field is missing or unclear.',
+        '- Do not invent values.',
+        '- Dates must be in ISO format YYYY-MM-DD.',
+        '- currency and secondary_currency must be uppercase 3-letter currency codes when visible.',
+        '- exchange_rate and tax_rate should be numeric values without symbols when visible.',
+        '- series should contain only the invoice series or prefix if it is shown or can be derived clearly from invoice_number.',
+        '- invoice_number should preserve the printed invoice number as shown on the document.',
+        '- Put only useful invoice-level notes into notes; do not repeat the line items there.',
+        '- Extract the billed customer into client.',
+        '- Extract one entry per invoice line into items.',
+        '- quantity, unit_price, and tax_rate may be numbers or numeric strings.',
+        '- confidence must be one of: low, medium, high.',
+        '- note should briefly explain uncertainty or formatting concerns when needed.',
       ].join('\n'),
     };
   }
@@ -85,12 +197,14 @@ function getTargetConfig(target) {
       'Extract the customer or company contact details from the uploaded document.',
       'The document may be a scanned PDF, invoice, contract, registration certificate, or business card.',
       'Return only JSON with this shape:',
-      '{"fields":{"name":"","cif":"","reg_no":"","address":"","city":"","country":"","email":"","phone":"","bank_account":"","bank_name":"","notes":""},"warnings":[]}',
+      '{"fields":{"name":{"value":"","confidence":"low","note":""},"cif":{"value":"","confidence":"low","note":""},"reg_no":{"value":"","confidence":"low","note":""},"address":{"value":"","confidence":"low","note":""},"city":{"value":"","confidence":"low","note":""},"country":{"value":"","confidence":"low","note":""},"email":{"value":"","confidence":"low","note":""},"phone":{"value":"","confidence":"low","note":""},"bank_account":{"value":"","confidence":"low","note":""},"bank_name":{"value":"","confidence":"low","note":""},"notes":{"value":"","confidence":"low","note":""}},"warnings":[]}',
       'Rules:',
       '- Use empty strings when a field is missing or unclear.',
       '- Do not invent values.',
       '- Prefer the legal company name for name.',
       '- Use notes only for short useful context that does not fit the other fields.',
+      '- confidence must be one of: low, medium, high.',
+      '- note should briefly explain uncertainty or formatting concerns when needed.',
     ].join('\n'),
   };
 }
@@ -305,17 +419,37 @@ export async function extractDocumentFields({ target, file }) {
         type: 'json_object',
       },
       temperature: 0.1,
-      max_tokens: 900,
+      max_tokens: target === 'invoice' ? 1800 : 900,
       stream: false,
     },
   });
 
   const rawContent = extractMessageContent(response?.choices?.[0]?.message?.content);
   const parsed = parseJsonObject(rawContent);
+  const warnings = sanitizeWarnings(parsed?.warnings);
+
+  if (target === 'invoice') {
+    const review = normalizeFieldReview(parsed?.fields || parsed, targetConfig.keys);
+    const clientReview = normalizeFieldReview(parsed?.client, CLIENT_FIELD_KEYS);
+    const items = normalizeInvoiceItems(parsed?.items);
+
+    return {
+      model: config.openrouter.model,
+      fields: normalizeExtractedFields(review, targetConfig.keys),
+      review,
+      client: normalizeExtractedFields(clientReview, CLIENT_FIELD_KEYS),
+      clientReview,
+      items,
+      warnings,
+    };
+  }
+
+  const review = normalizeFieldReview(parsed?.fields || parsed, targetConfig.keys);
 
   return {
     model: config.openrouter.model,
-    fields: normalizeExtractedFields(parsed?.fields || parsed, targetConfig.keys),
-    warnings: sanitizeWarnings(parsed?.warnings),
+    fields: normalizeExtractedFields(review, targetConfig.keys),
+    review,
+    warnings,
   };
 }

@@ -94,4 +94,17 @@ router.post('/extract/client', async (req, res) => {
   }
 });
 
+router.post('/extract/invoice', async (req, res) => {
+  try {
+    const result = await extractDocumentFields({
+      target: 'invoice',
+      file: req.body?.file,
+    });
+    res.json(result);
+  } catch (error) {
+    console.error('Error extracting invoice details:', error);
+    res.status(400).json({ error: error.message || 'Failed to extract invoice details' });
+  }
+});
+
 export default router;

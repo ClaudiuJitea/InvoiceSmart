@@ -2,9 +2,27 @@ import { authService } from '../db/services/authService.js';
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp'];
+const AUTH_ERRORS = new Set([
+  'Access token required',
+  'User not found',
+  'Token expired',
+  'Invalid token',
+  'Authentication required',
+]);
 
 function getAuthHeader() {
   return authService.getAuthHeader();
+}
+
+function handleAuthFailureIfNeeded(response, data) {
+  const message = String(data?.error || '');
+  const isAuthFailure = response.status === 401 || response.status === 403 || AUTH_ERRORS.has(message);
+
+  if (isAuthFailure) {
+    authService.clearAuth();
+    window.dispatchEvent(new CustomEvent('auth:logout'));
+    throw new Error('Your session has expired. Please sign in again.');
+  }
 }
 
 function readFileAsDataUrl(file) {
@@ -47,6 +65,7 @@ async function postJson(path, body) {
   });
 
   const data = await response.json().catch(() => ({}));
+  handleAuthFailureIfNeeded(response, data);
   if (!response.ok) {
     throw new Error(data.error || 'AI request failed');
   }
@@ -59,6 +78,7 @@ export const aiService = {
       headers: getAuthHeader(),
     });
     const data = await response.json().catch(() => ({}));
+    handleAuthFailureIfNeeded(response, data);
     if (!response.ok) {
       throw new Error(data.error || 'Failed to fetch AI configuration');
     }
@@ -75,6 +95,7 @@ export const aiService = {
       body: JSON.stringify(config),
     });
     const data = await response.json().catch(() => ({}));
+    handleAuthFailureIfNeeded(response, data);
     if (!response.ok) {
       throw new Error(data.error || 'Failed to update AI configuration');
     }
@@ -91,6 +112,7 @@ export const aiService = {
       body: JSON.stringify(config),
     });
     const data = await response.json().catch(() => ({}));
+    handleAuthFailureIfNeeded(response, data);
     if (!response.ok) {
       throw new Error(data.error || 'Failed to test AI configuration');
     }
@@ -102,6 +124,7 @@ export const aiService = {
       headers: getAuthHeader(),
     });
     const data = await response.json().catch(() => ({}));
+    handleAuthFailureIfNeeded(response, data);
     if (!response.ok) {
       throw new Error(data.error || 'Failed to fetch AI models');
     }
@@ -116,6 +139,12 @@ export const aiService = {
 
   async extractClientFromFile(file) {
     return postJson('/api/ai/extract/client', {
+      file: await buildFilePayload(file),
+    });
+  },
+
+  async extractInvoiceFromFile(file) {
+    return postJson('/api/ai/extract/invoice', {
       file: await buildFilePayload(file),
     });
   },

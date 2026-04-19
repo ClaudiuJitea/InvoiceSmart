@@ -375,6 +375,66 @@
     gap: var(--space-2);
 }
 
+.header-action-dropdown {
+    position: relative;
+}
+
+.header-action-dropdown summary {
+    list-style: none;
+}
+
+.header-action-dropdown summary::-webkit-details-marker {
+    display: none;
+}
+
+.header-action-dropdown summary svg:last-child {
+    width: 18px;
+    height: 18px;
+}
+
+.header-action-dropdown[data-disabled="true"] {
+    pointer-events: none;
+}
+
+.header-action-dropdown .is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.header-action-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 156px;
+    padding: var(--space-2);
+    border-radius: var(--radius-lg);
+    background: var(--md-surface);
+    border: 1px solid var(--md-outline-variant);
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    z-index: 20;
+}
+
+.header-action-menu-btn {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--md-on-surface);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.header-action-menu-btn:hover {
+    background: var(--md-surface-container);
+    color: var(--md-primary);
+}
+
 /* Search Input */
 .search-container {
     position: relative;
@@ -428,6 +488,15 @@
 
 .clients-header-actions {
     align-items: center;
+    row-gap: var(--space-3);
+}
+
+.clients-header-tools {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: var(--space-2);
 }
 
 .clients-search-container .search-input {
@@ -436,6 +505,38 @@
 
 .clients-add-btn {
     height: 44px;
+}
+
+@media (max-width: 900px) {
+    .clients-header-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .clients-search-container {
+        flex: 1 1 100%;
+        max-width: none;
+    }
+
+    .clients-header-tools {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 640px) {
+    .clients-header-tools {
+        justify-content: stretch;
+    }
+
+    .clients-header-tools > * {
+        flex: 1 1 100%;
+    }
+
+    .clients-header-tools .btn,
+    .clients-header-tools .header-action-dropdown summary {
+        width: 100%;
+    }
 }
 
 /* Dashboard specific */
@@ -700,10 +801,147 @@
     cursor: default;
 }
 
+.settings-backup-note {
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    background: var(--md-surface-container-low);
+    color: var(--md-on-surface-variant);
+}
+
+.extraction-review {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.extraction-review-warnings {
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    background: var(--md-warning-container);
+    color: var(--md-on-warning-container);
+}
+
+.extraction-review-warnings ul {
+    margin: var(--space-2) 0 0 var(--space-5);
+}
+
+.extraction-review-table-wrap {
+    max-height: 52vh;
+    overflow: auto;
+}
+
+.extraction-review-label {
+    font-weight: 600;
+    color: var(--md-on-surface);
+}
+
+.extraction-review-current {
+    color: var(--md-on-surface-variant);
+    word-break: break-word;
+}
+
+.extraction-review-extracted {
+    color: var(--md-on-surface);
+    font-weight: 500;
+    word-break: break-word;
+}
+
+.extraction-review-note {
+    margin-top: var(--space-1);
+    font-size: var(--text-body-sm);
+    color: var(--md-on-surface-variant);
+}
+
+.invoice-import-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.invoice-import-section-header {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    align-items: flex-start;
+}
+
+.invoice-import-meta {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    color: var(--md-on-surface-variant);
+    font-size: var(--text-body-sm);
+}
+
+.invoice-import-client-card {
+    padding: var(--space-4);
+    border: 1px solid var(--md-outline-variant);
+    border-radius: var(--radius-lg);
+    background: var(--md-surface-container-low);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.invoice-import-client-head {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    align-items: flex-start;
+}
+
+.invoice-import-client-name {
+    font-weight: 700;
+    color: var(--md-on-surface);
+}
+
+.invoice-import-client-meta,
+.invoice-import-helper {
+    color: var(--md-on-surface-variant);
+    font-size: var(--text-body-sm);
+}
+
+.invoice-import-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    color: var(--md-on-surface);
+}
+
+.invoice-import-checkbox input {
+    margin-top: 2px;
+}
+
+.invoice-import-review {
+    max-height: calc(100vh - 180px);
+}
+
+.invoice-import-review-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    overflow-y: auto;
+    padding-right: var(--space-1);
+}
+
+.invoice-import-review-actions {
+    margin-top: auto;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--md-outline-variant);
+    background: var(--md-surface-container-low);
+    position: sticky;
+    bottom: 0;
+}
+
 @media (max-width: 720px) {
     .form-section-header {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .invoice-import-section-header,
+    .invoice-import-client-head {
+        flex-direction: column;
     }
 }
 

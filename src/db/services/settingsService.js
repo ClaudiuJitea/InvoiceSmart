@@ -7,6 +7,27 @@ import {
     syncLegacyInvoiceSeries,
 } from '../../utils/seriesTemplates.js';
 
+function parseSeriesTemplateNumber(template, formattedValue) {
+    const value = String(formattedValue || '').trim();
+    if (!template || !value) return null;
+
+    const prefix = String(template.prefix || '');
+    const separator = template.separator == null ? '-' : String(template.separator);
+    const expectedPrefix = `${prefix}${separator}`;
+
+    if (!value.startsWith(expectedPrefix)) {
+        return null;
+    }
+
+    const suffix = value.slice(expectedPrefix.length).trim();
+    if (!/^\d+$/.test(suffix)) {
+        return null;
+    }
+
+    const parsed = parseInt(suffix, 10);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
 export const settingsService = {
     getAuthHeader() {
         return authService.getAuthHeader();
@@ -112,18 +133,32 @@ export const settingsService = {
     },
 
     async exportSqliteSnapshot(source) {
+        return this.exportDatabaseSnapshot({
+            provider: 'sqlite',
+            providerConfig: {
+                filePath: source?.sqliteFilePath || 'invoices.db',
+            },
+            source,
+        });
+    },
+
+    async exportDatabaseSnapshot({ provider, providerConfig, source } = {}) {
         const response = await fetch('/api/settings/database/export', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 ...this.getAuthHeader(),
             },
-            body: JSON.stringify({ source }),
+            body: JSON.stringify({
+                provider,
+                providerConfig,
+                source,
+            }),
         });
 
         const data = await response.json();
         if (!response.ok) {
-            throw new Error(data.error || 'Failed to export SQLite snapshot');
+            throw new Error(data.error || 'Failed to export database snapshot');
         }
 
         return data.snapshot;
@@ -205,6 +240,37 @@ export const settingsService = {
             series: targetTemplate.prefix,
             number: usedNumber,
             formatted: formatSeriesNumber(targetTemplate, usedNumber),
+        };
+    },
+
+    async registerSeriesTemplateUsage(templateId, formattedValue) {
+        const settings = await this.get();
+        const templates = normalizeSeriesTemplates(settings);
+
+        const fallbackTemplate = getDefaultSeriesTemplate(templates, 'invoice');
+        const targetTemplateId = templateId || fallbackTemplate?.id;
+        const targetTemplate = templates.find((template) => template.id === targetTemplateId);
+
+        if (!targetTemplate) {
+            throw new Error('Series template not found');
+        }
+
+        const parsedNumber = parseSeriesTemplateNumber(targetTemplate, formattedValue);
+        if (parsedNumber !== null) {
+            targetTemplate.next_number = Math.max(targetTemplate.next_number, parsedNumber + 1);
+        } else {
+            targetTemplate.next_number += 1;
+        }
+
+        await this.update({
+            ...settings,
+            document_series_templates: templates,
+        });
+
+        return {
+            templateId: targetTemplate.id,
+            series: targetTemplate.prefix,
+            nextNumber: targetTemplate.next_number,
         };
     },
 };

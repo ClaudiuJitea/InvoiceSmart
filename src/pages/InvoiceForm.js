@@ -6,8 +6,10 @@ import { clientService } from '../db/services/clientService.js';
 import { productService } from '../db/services/productService.js';
 import { settingsService } from '../db/services/settingsService.js';
 import { bnrService } from '../services/bnrService.js';
+import { aiService } from '../services/aiService.js';
 import { toast } from '../components/common/Toast.js';
 import modal from '../components/common/Modal.js';
+import { openInvoiceImportReviewModal } from '../components/common/InvoiceImportReviewModal.js';
 import { CustomSelect } from '../components/common/CustomSelect.js';
 import { router } from '../router.js';
 import {
@@ -20,6 +22,91 @@ let invoiceItems = [];
 let catalogProducts = [];
 let relatedDeliveryNoteIds = [];
 let relatedDeliveryNoteNumbers = [];
+
+const INVOICE_IMPORT_FIELD_LABEL_KEYS = {
+  invoice_number: 'invoices.invoiceNumber',
+  series: 'invoices.series',
+  issue_date: 'invoices.issueDate',
+  due_date: 'invoices.dueDate',
+  currency: 'invoices.currency',
+  secondary_currency: 'settings.secondaryCurrency',
+  exchange_rate: 'invoices.exchangeRate',
+  tax_rate: 'invoices.taxRate',
+  payment_method: 'invoices.paymentMethod',
+  notes: 'invoices.notes',
+};
+
+function normalizeClientMatchValue(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function normalizeClientCif(value) {
+  return normalizeClientMatchValue(value).replace(/^ro/, '');
+}
+
+function countMeaningfulInvoiceItems(items = []) {
+  return items.filter((item) => {
+    const description = String(item?.description || '').trim();
+    return description || Number(item?.quantity || 0) > 0 || Number(item?.unit_price || 0) > 0;
+  }).length;
+}
+
+function findBestClientMatch(extractedClient = {}, clients = []) {
+  const extractedCif = normalizeClientCif(extractedClient.cif);
+  if (extractedCif) {
+    const cifMatch = clients.find((client) => normalizeClientCif(client.cif) === extractedCif);
+    if (cifMatch) {
+      return {
+        matchedClient: cifMatch,
+        matchReasonKey: 'ai.matchedByCif',
+        extractedClient,
+      };
+    }
+  }
+
+  const extractedName = normalizeClientMatchValue(extractedClient.name);
+  if (!extractedName) {
+    return {
+      matchedClient: null,
+      matchReasonKey: '',
+      extractedClient,
+    };
+  }
+
+  const exactMatches = clients.filter((client) => normalizeClientMatchValue(client.name) === extractedName);
+  if (exactMatches.length === 1) {
+    return {
+      matchedClient: exactMatches[0],
+      matchReasonKey: 'ai.matchedByName',
+      extractedClient,
+    };
+  }
+
+  if (extractedName.length >= 8) {
+    const partialMatches = clients.filter((client) => {
+      const normalizedName = normalizeClientMatchValue(client.name);
+      return normalizedName && (normalizedName.includes(extractedName) || extractedName.includes(normalizedName));
+    });
+
+    if (partialMatches.length === 1) {
+      return {
+        matchedClient: partialMatches[0],
+        matchReasonKey: 'ai.matchedByName',
+        extractedClient,
+      };
+    }
+  }
+
+  return {
+    matchedClient: null,
+    matchReasonKey: '',
+    extractedClient,
+  };
+}
 
 function getDocumentFormConfig(params = {}) {
   const isDeliveryNote = params?.document_type === 'delivery_note';
@@ -94,14 +181,23 @@ export async function initInvoiceForm(params = {}) {
     // Initialize state
     const title = isEdit ? section.editTitle : section.newTitle;
     document.getElementById('formPageTitle').textContent = title;
-
-    if (isEdit) {
-      document.getElementById('formPageActions').innerHTML = `
-            <a href="#${section.basePath}/${params.id}/preview" class="btn btn-tonal">
-              ${icons.eye}
-              ${section.isDeliveryNote ? t('deliveryNotes.preview') : t('invoices.preview')}
-            </a>
-          `;
+    const pageActions = document.getElementById('formPageActions');
+    if (pageActions) {
+      pageActions.innerHTML = `
+        ${isEdit ? `
+          <a href="#${section.basePath}/${params.id}/preview" class="btn btn-tonal">
+            ${icons.eye}
+            ${section.isDeliveryNote ? t('deliveryNotes.preview') : t('invoices.preview')}
+          </a>
+        ` : ''}
+        ${section.documentType === 'invoice' ? `
+          <button type="button" class="btn btn-tonal" id="extractInvoiceDocumentBtn">
+            ${icons.upload}
+            ${t('ai.importInvoice')}
+          </button>
+          <input type="file" id="invoiceAiFileInput" accept=".pdf,image/png,image/jpeg,image/webp" style="display:none;">
+        ` : ''}
+      `;
     }
 
     relatedDeliveryNoteIds = [];
@@ -423,6 +519,7 @@ export async function initInvoiceForm(params = {}) {
     const seriesTemplateSelect = document.getElementById('seriesTemplateSelect');
     const seriesInput = document.getElementById('seriesInput');
     const invoiceNumberInput = document.getElementById('invoiceNumberInput');
+    const clientSelect = form.querySelector('[name="client_id"]');
     const itemCustomSelects = [];
 
     const destroyItemCustomSelects = () => {
@@ -446,6 +543,84 @@ export async function initInvoiceForm(params = {}) {
       if (!isEdit) {
         invoiceNumberInput.value = formatSeriesNumber(selectedSeriesTemplate);
       }
+    };
+
+    const setSelectValue = (selectElement, value) => {
+      if (!selectElement) return;
+      selectElement.value = String(value ?? '');
+      selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
+    const getInvoiceImportCurrentValues = () => ({
+      invoice_number: invoiceNumberInput?.value || '',
+      series: seriesInput?.value || '',
+      issue_date: issueDateInput?.value || '',
+      due_date: dueDateInput?.value || '',
+      currency: form.querySelector('[name="currency"]')?.value || '',
+      secondary_currency: form.querySelector('[name="secondary_currency"]')?.value || '',
+      exchange_rate: form.querySelector('[name="exchange_rate"]')?.value || '',
+      tax_rate: form.querySelector('[name="tax_rate"]')?.value || '',
+      payment_method: form.querySelector('[name="payment_method"]')?.value || '',
+      notes: form.querySelector('[name="notes"]')?.value || '',
+    });
+
+    const applyImportedInvoiceFields = (selectedFields = {}) => {
+      const importedSeries = String(selectedFields.series || '').trim();
+      const importedInvoiceNumber = String(selectedFields.invoice_number || '').trim();
+
+      if (importedSeries && seriesTemplateSelect && !isEdit) {
+        const matchingTemplate = invoiceSeriesTemplates.find((template) => template.prefix === importedSeries);
+        if (matchingTemplate) {
+          setSelectValue(seriesTemplateSelect, matchingTemplate.id);
+        }
+      }
+
+      Object.entries(selectedFields).forEach(([key, value]) => {
+        const normalizedValue = typeof value === 'string' ? value.trim() : value;
+        if (!normalizedValue) return;
+
+        if (key === 'invoice_number' && invoiceNumberInput) {
+          invoiceNumberInput.value = normalizedValue;
+          return;
+        }
+
+        if (key === 'series' && seriesInput) {
+          seriesInput.value = normalizedValue;
+          return;
+        }
+
+        const input = form.elements.namedItem(key);
+        if (input && 'value' in input) {
+          input.value = normalizedValue;
+          if (['currency', 'secondary_currency', 'client_id'].includes(key)) {
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+      });
+
+      checkPaymentTerms();
+      calculateTotals();
+    };
+
+    const applyImportedItems = (items = []) => {
+      const defaultTaxRate = parseFloat(form.querySelector('[name="tax_rate"]').value) || 0;
+      const normalizedItems = Array.isArray(items)
+        ? items
+          .map((item) => ({
+            product_id: null,
+            description: String(item?.description || '').trim(),
+            unit: String(item?.unit || 'pcs').trim() || 'pcs',
+            quantity: Number(item?.quantity ?? 1) || 1,
+            unit_price: Number(item?.unit_price ?? 0) || 0,
+            tax_rate: Number(item?.tax_rate ?? defaultTaxRate) || 0,
+            total: 0,
+          }))
+          .filter((item) => item.description)
+        : [];
+
+      if (normalizedItems.length === 0) return;
+      invoiceItems = normalizedItems;
+      rebuildItemsTable();
     };
 
     function calculateTotals() {
@@ -584,12 +759,17 @@ export async function initInvoiceForm(params = {}) {
 
       const diffTime = dueDate - issueDate;
       const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      const previousValue = paymentTermsSelect.value;
 
       const options = Array.from(paymentTermsSelect.options).map(o => o.value);
       if (options.includes(diffDays.toString())) {
         paymentTermsSelect.value = diffDays.toString();
       } else {
         paymentTermsSelect.value = 'custom';
+      }
+
+      if (paymentTermsSelect.value !== previousValue) {
+        paymentTermsSelect.dispatchEvent(new Event('change', { bubbles: true }));
       }
     }
 
@@ -666,6 +846,61 @@ export async function initInvoiceForm(params = {}) {
       seriesTemplateSelect.addEventListener('change', updateInvoiceNumberFromTemplate);
       updateInvoiceNumberFromTemplate();
     }
+
+    const invoiceAiFileInput = document.getElementById('invoiceAiFileInput');
+    const extractInvoiceDocumentBtn = document.getElementById('extractInvoiceDocumentBtn');
+    const invoiceImportButtonLabel = extractInvoiceDocumentBtn?.innerHTML || '';
+
+    extractInvoiceDocumentBtn?.addEventListener('click', () => {
+      invoiceAiFileInput?.click();
+    });
+
+    invoiceAiFileInput?.addEventListener('change', async () => {
+      const file = invoiceAiFileInput.files?.[0];
+      if (!file) return;
+
+      try {
+        if (extractInvoiceDocumentBtn) {
+          extractInvoiceDocumentBtn.disabled = true;
+          extractInvoiceDocumentBtn.textContent = t('ai.extractingInvoice');
+        }
+
+        const result = await aiService.extractInvoiceFromFile(file);
+        const clientMatch = findBestClientMatch(result.client || {}, clients);
+
+        openInvoiceImportReviewModal({
+          title: t('ai.reviewInvoiceTitle'),
+          fieldLabels: Object.fromEntries(
+            Object.entries(INVOICE_IMPORT_FIELD_LABEL_KEYS).map(([key, labelKey]) => [key, t(labelKey)])
+          ),
+          currentValues: getInvoiceImportCurrentValues(),
+          review: result.review || {},
+          warnings: result.warnings || [],
+          clientMatch,
+          items: result.items || [],
+          currentItemCount: countMeaningfulInvoiceItems(invoiceItems),
+          onApply: ({ selectedFields, applyItems, applyClient }) => {
+            applyImportedInvoiceFields(selectedFields);
+            if (applyItems) {
+              applyImportedItems(result.items || []);
+            }
+            if (applyClient && clientMatch.matchedClient?.id) {
+              setSelectValue(clientSelect, clientMatch.matchedClient.id);
+            }
+            toast.success(result.warnings?.length ? `${t('ai.extractSuccessWithWarnings')} ${result.warnings.join(' ')}` : t('ai.extractSuccess'));
+          },
+        });
+      } catch (error) {
+        console.error('Failed to extract invoice data:', error);
+        toast.error(error.message || t('ai.extractFailed'));
+      } finally {
+        if (extractInvoiceDocumentBtn) {
+          extractInvoiceDocumentBtn.disabled = false;
+          extractInvoiceDocumentBtn.innerHTML = invoiceImportButtonLabel;
+        }
+        invoiceAiFileInput.value = '';
+      }
+    });
 
     // Add item button
     addItemBtn.addEventListener('click', () => {
@@ -776,7 +1011,10 @@ export async function initInvoiceForm(params = {}) {
           await invoiceService.create(data, invoiceItems, {
             related_delivery_note_ids: relatedDeliveryNoteIds,
           });
-          await settingsService.consumeSeriesTemplateNumber(selectedSeriesTemplateId);
+          const selectedSeriesTemplate = invoiceSeriesTemplates.find((template) => template.id === selectedSeriesTemplateId);
+          if (selectedSeriesTemplate && data.series === selectedSeriesTemplate.prefix) {
+            await settingsService.registerSeriesTemplateUsage(selectedSeriesTemplateId, data.invoice_number);
+          }
         }
 
         toast.success(section.saveSuccess);
