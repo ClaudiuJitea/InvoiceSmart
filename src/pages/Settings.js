@@ -94,6 +94,27 @@ function getAiStatusText(aiConfig) {
   return t('ai.statusMissingKey');
 }
 
+function getCompanyImportUiState(aiConfig) {
+  if (!aiConfig?.enabled) {
+    return {
+      canExtract: false,
+      hint: t('ai.companyImportDisabledHint'),
+    };
+  }
+
+  if (!aiConfig?.openrouter?.hasApiKey) {
+    return {
+      canExtract: false,
+      hint: t('ai.companyImportMissingKeyHint'),
+    };
+  }
+
+  return {
+    canExtract: true,
+    hint: t('ai.companyImportHint'),
+  };
+}
+
 function getCompanyCurrentValues(form) {
   return Object.fromEntries(
     Object.keys(COMPANY_FIELD_LABELS).map((key) => [key, form.elements.namedItem(key)?.value || ''])
@@ -452,6 +473,7 @@ function renderSettingsForm(settings, locales, aiConfig, aiModels) {
   const activeProvider = dbConfig.provider || 'sqlite';
   const providerConfig = dbConfig[activeProvider] || {};
   const modelOptions = mergeAiModels(aiConfig, aiModels);
+  const companyImportUi = getCompanyImportUiState(aiConfig);
 
   return `
     <form id="settingsForm" class="card card-elevated">
@@ -460,17 +482,17 @@ function renderSettingsForm(settings, locales, aiConfig, aiModels) {
         <div class="form-section-header">
           <div>
             <h3 class="form-section-title">${t('settings.companyDetails')}</h3>
-            <p class="document-series-subtitle">${t('ai.companyImportHint')}</p>
+            <p class="document-series-subtitle">${companyImportUi.hint}</p>
           </div>
           <div class="form-section-actions">
             <button
               type="button"
               class="btn btn-tonal"
               id="extractCompanyFromDocumentBtn"
-              ${!aiConfig.enabled || !aiConfig.autoExtractCompany ? 'disabled' : ''}
+              ${!companyImportUi.canExtract ? 'disabled' : ''}
             >
-              ${icons.file}
-              ${t('ai.extractCompany')}
+              ${icons.upload}
+              ${t('ai.uploadCompanyDocument')}
             </button>
             <input type="file" id="companyAiFileInput" accept=".pdf,image/png,image/jpeg,image/webp" style="display:none;">
           </div>
