@@ -55,7 +55,7 @@ let latestData = {
 
 export function renderReports() {
     return `
-    <div class="page-container">
+    <div class="page-container reports-page">
       <div class="page-header-row">
         <div class="page-header-left">
           <h1 class="page-title">${t('reports.title')}</h1>
@@ -121,11 +121,11 @@ export function renderReports() {
 
       <div id="reportContent">
           <!-- Overview Stats -->
-          <div id="overview-stats" class="stats-grid" style="margin-bottom: var(--space-8);">
+          <div id="overview-stats" class="reports-overview-stats" style="margin-bottom: var(--space-8);">
              <!-- Skeleton loading -->
-             <div class="stat-card card-elevated" style="height: 120px; opacity: 0.5;"></div>
-             <div class="stat-card card-elevated" style="height: 120px; opacity: 0.5;"></div>
-             <div class="stat-card card-elevated" style="height: 120px; opacity: 0.5;"></div>
+             <div class="dashboard-stat-card" style="height: 120px; opacity: 0.5;"></div>
+             <div class="dashboard-stat-card" style="height: 120px; opacity: 0.5;"></div>
+             <div class="dashboard-stat-card" style="height: 120px; opacity: 0.5;"></div>
           </div>
     
           <div class="grid grid-cols-2" style="gap: var(--space-6);">
@@ -338,48 +338,29 @@ function renderOverview(data, currency) {
     if (!data) return;
 
     const stats = [
-        { label: t('reports.totalRevenue'), value: data.totalRevenue || 0, color: 'primary', icon: icons.money },
-        { label: t('reports.outstanding'), value: data.outstanding || 0, color: 'warning', icon: icons.clock },
-        { label: t('reports.overdue'), value: data.overdue || 0, color: 'error', icon: icons.trash }
+        { label: t('reports.totalRevenue'), value: data.totalRevenue || 0, iconClass: 'stat-icon-blue', cardClass: 'dashboard-stat-revenue', icon: icons.money },
+        { label: t('reports.outstanding'), value: data.outstanding || 0, iconClass: 'stat-icon-amber', cardClass: 'dashboard-stat-pending', icon: icons.clock },
+        { label: t('reports.overdue'), value: data.overdue || 0, iconClass: 'stat-icon-indigo', cardClass: 'dashboard-stat-clients', icon: icons.trash }
     ];
 
     container.innerHTML = stats.map(stat => {
-        // Map color names to standard classes
-        // In components.css we have stat-icon-primary, stat-icon-secondary, stat-icon-tertiary, stat-icon-warning
-        // We don't have stat-icon-error. 
-        // We can mimic it or just use warning/primary. Let's stick strictly to classes in components.css to ensure theme consistency.
-        // If 'error' is not standard, let's use 'warning' but with custom style inline if absolutely necessary, or just 'warning'.
-        // Actually, let's look at components.css again. It doesn't define .stat-icon-error.
-        // But it defines .chip-error, .btn-danger.
-        // I'll manually style the overdue icon if needed or just use primary/warning.
-        // Let's use 'warning' for outstanding (clock) and maybe 'tertiary' (money-like) for overdue? Or just 'warning' for both.
-        // Or I can add a dedicated class. But I want to avoid adding custom CSS.
-        // Let's use `stat-icon-warning` for both but different colors if possible? 
-        // Actually, looking at components.css:
-        // .stat-icon is just base.
-        // We probably missed where .stat-icon-primary etc are defined in components.css?
-        // Wait, I viewed components.css in Step 120.
-        // I don't see .stat-icon-primary definition there!
-        // Ah, line 689: .stat-icon { ... }
-        // I don't see .stat-icon-primary.
-        // Let's re-read components.css carefully.
-        // It has .btn-filled (primary).
-        // Maybe I missed it.
-        // Let's check Dashboard.js again to see what it uses.
-        // Dashboard uses: stat-icon-primary, stat-icon-secondary, stat-icon-tertiary, stat-icon-warning.
-        // So they MUST be defined somewhere. Maybe in app.css?
-
-        const iconClass = `stat-icon-${stat.color === 'error' ? 'warning' : stat.color}`;
-
         return `
-        <div class="stat-card card-elevated">
-            <div class="stat-icon ${iconClass}">
-                ${stat.icon}
+        <div class="dashboard-stat-card ${stat.cardClass}">
+            <div class="stat-card-glow"></div>
+            <div class="stat-card-content">
+                <div class="stat-icon-wrapper ${stat.iconClass}">
+                    <div class="stat-icon-bg"></div>
+                    ${stat.icon}
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">${stat.label}</span>
+                    <div class="stat-value-row">
+                        <span class="stat-number stat-number-sm">${Number(stat.value).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        <span class="reports-stat-currency">${currency}</span>
+                    </div>
+                </div>
             </div>
-            <div class="stat-content">
-              <div class="stat-label">${stat.label}</div>
-              <div class="stat-value" style="font-size: 1.8rem;">${Number(stat.value).toLocaleString(undefined, { minimumFractionDigits: 2 })} <span style="font-size: 1rem; color: var(--md-on-surface-variant);">${currency}</span></div>
-            </div>
+            <div class="stat-card-decoration"></div>
         </div>
     `}).join('');
 }

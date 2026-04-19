@@ -1049,3 +1049,36 @@
 .sidebar-collapsed .sidebar-nav-label {
     width: 0;
 }
+
+.reports-overview-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-5);
+}
+
+.reports-page .reports-overview-stats .dashboard-stat-card {
+    min-height: 120px;
+}
+
+.reports-page .reports-overview-stats .stat-number {
+    font-size: 1.8rem;
+}
+
+.reports-stat-currency {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--md-on-surface-variant);
+}
+
+@media (max-width: 1200px) {
+    .reports-overview-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .reports-overview-stats {
+        grid-template-columns: 1fr;
+    }
+}
