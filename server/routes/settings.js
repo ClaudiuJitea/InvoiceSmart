@@ -7,6 +7,7 @@ import {
   saveDatabaseConfig,
 } from '../databaseConfig.js';
 import {
+  exportDatabaseToSnapshot,
   exportSqliteToSnapshot,
   importSnapshotToTarget,
   migrateSqliteToTarget,
@@ -136,11 +137,22 @@ router.put('/database', async (req, res) => {
 
 router.post('/database/export', async (req, res) => {
   try {
-    const snapshot = await exportSqliteToSnapshot({
-      source: {
-        sqliteFilePath: req.body?.source?.sqliteFilePath,
-      },
-    });
+    const currentConfig = loadDatabaseConfig();
+    const requestedProvider = String(req.body?.provider || currentConfig.provider || 'sqlite');
+    const providerPatch = {
+      [requestedProvider]: req.body?.providerConfig || {},
+    };
+    const patched = applySecretPreservation(currentConfig, providerPatch);
+    const sourceConfig = buildTargetConfigPatch(patched, requestedProvider, patched[requestedProvider]);
+    const explicitSqlitePath = String(req.body?.source?.sqliteFilePath || '').trim();
+
+    const snapshot = explicitSqlitePath
+      ? await exportSqliteToSnapshot({
+        source: {
+          sqliteFilePath: explicitSqlitePath,
+        },
+      })
+      : await exportDatabaseToSnapshot({ sourceConfig });
 
     res.json({
       success: true,

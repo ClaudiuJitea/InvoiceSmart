@@ -2,6 +2,7 @@
 import { t } from '../i18n/index.js';
 import { icons } from '../components/icons.js';
 import { invoiceService } from '../db/services/invoiceService.js';
+import { clientService } from '../db/services/clientService.js';
 import { settingsService } from '../db/services/settingsService.js';
 import { toast } from '../components/common/Toast.js';
 import { confirm } from '../components/common/Modal.js';
@@ -10,6 +11,73 @@ import { renderTemplate } from '../templates/index.js';
 import { exportToPdfBlob } from '../services/pdfService.js';
 import { createZipBlob } from '../utils/zip.js';
 import { CustomSelect } from '../components/common/CustomSelect.js';
+import {
+  downloadCsv,
+  downloadWorkbook,
+  groupRowsBy,
+  readStructuredFile,
+  resolveFirstValue,
+  toNullableString,
+  toNumber,
+  toTrimmedString,
+} from '../utils/importExport.js';
+import { normalizeSeriesTemplates } from '../utils/seriesTemplates.js';
+
+const INVOICE_EXPORT_COLUMNS = [
+  { key: 'document_type', label: 'document_type' },
+  { key: 'invoice_number', label: 'invoice_number' },
+  { key: 'series', label: 'series' },
+  { key: 'client_name', label: 'client_name' },
+  { key: 'client_cif', label: 'client_cif' },
+  { key: 'client_reg_no', label: 'client_reg_no' },
+  { key: 'client_address', label: 'client_address' },
+  { key: 'client_city', label: 'client_city' },
+  { key: 'client_country', label: 'client_country' },
+  { key: 'client_email', label: 'client_email' },
+  { key: 'client_phone', label: 'client_phone' },
+  { key: 'issue_date', label: 'issue_date' },
+  { key: 'due_date', label: 'due_date' },
+  { key: 'currency', label: 'currency' },
+  { key: 'secondary_currency', label: 'secondary_currency' },
+  { key: 'exchange_rate', label: 'exchange_rate' },
+  { key: 'status', label: 'status' },
+  { key: 'template', label: 'template' },
+  { key: 'payment_method', label: 'payment_method' },
+  { key: 'language', label: 'language' },
+  { key: 'secondary_language', label: 'secondary_language' },
+  { key: 'language_mode', label: 'language_mode' },
+  { key: 'notes', label: 'notes' },
+  { key: 'item_description', label: 'item_description' },
+  { key: 'item_unit', label: 'item_unit' },
+  { key: 'item_quantity', label: 'item_quantity' },
+  { key: 'item_unit_price', label: 'item_unit_price' },
+  { key: 'item_tax_rate', label: 'item_tax_rate' },
+  { key: 'item_total', label: 'item_total' },
+];
+
+function buildInvoiceItemPayload(row, fallbackTaxRate = 0) {
+  const description = toTrimmedString(resolveFirstValue(row, ['item_description', 'description', 'line_description']));
+  if (!description) return null;
+
+  const quantity = toNumber(resolveFirstValue(row, ['item_quantity', 'quantity']), 1);
+  const unitPrice = toNumber(resolveFirstValue(row, ['item_unit_price', 'unit_price', 'price']), 0);
+  const taxRate = toNumber(resolveFirstValue(row, ['item_tax_rate', 'tax_rate', 'vat_rate']), fallbackTaxRate);
+  const explicitTotal = resolveFirstValue(row, ['item_total', 'total', 'line_total']);
+
+  return {
+    description,
+    unit: toTrimmedString(resolveFirstValue(row, ['item_unit', 'unit'])) || 'hrs',
+    quantity,
+    unit_price: unitPrice,
+    tax_rate: taxRate,
+    total: explicitTotal === '' ? quantity * unitPrice : toNumber(explicitTotal, quantity * unitPrice),
+  };
+}
+
+function extractSeriesNumber(invoiceNumber) {
+  const match = String(invoiceNumber || '').match(/(\d+)(?!.*\d)/);
+  return match ? parseInt(match[1], 10) : null;
+}
 
 function getSectionConfig(params = {}) {
   const isDeliveryNotes = params?.document_type === 'delivery_note';
@@ -46,6 +114,7 @@ export function renderInvoices(params = {}) {
         </div>
         <div class="page-header-actions" id="invoicesHeaderActions"></div>
       </div>
+      <input type="file" id="invoiceImportInput" accept=".csv,.xlsx,.xls" style="display:none;">
 
       <div id="invoicesListContainer">
         <div class="card card-elevated" style="padding: 40px; text-align: center;">
@@ -61,6 +130,7 @@ export async function initInvoices(params = {}) {
   const section = getSectionConfig(params);
   const container = document.getElementById('invoicesListContainer');
   const headerActions = document.getElementById('invoicesHeaderActions');
+  const invoiceImportInput = document.getElementById('invoiceImportInput');
 
   let currentInvoices = [];
   let currentSettings = {};
@@ -170,8 +240,28 @@ export async function initInvoices(params = {}) {
     const selectedCount = getSelectedCount();
     const selectedInFilteredCount = getSelectedInFilteredCount(filteredInvoices);
     const allFilteredSelected = filteredInvoices.length > 0 && selectedInFilteredCount === filteredInvoices.length;
+    const baseExportName = `${section.zipNamePrefix}-${new Date().toISOString().slice(0, 10)}`;
 
     headerActions.innerHTML = `
+      <button class="btn btn-tonal btn-sm" id="importInvoicesBtn" type="button">
+        ${icons.upload}
+        ${t('dataExchange.import')}
+      </button>
+      <details class="header-action-dropdown" ${filteredInvoices.length === 0 ? 'data-disabled="true"' : ''}>
+        <summary class="btn btn-tonal btn-sm ${filteredInvoices.length === 0 ? 'is-disabled' : ''}">
+          ${icons.download}
+          ${t('dataExchange.exportAs')}
+          ${icons.chevronDown}
+        </summary>
+        <div class="header-action-menu">
+          <button class="header-action-menu-btn" id="exportInvoicesCsvBtn" type="button">
+            CSV
+          </button>
+          <button class="header-action-menu-btn" id="exportInvoicesExcelBtn" type="button">
+            Excel
+          </button>
+        </div>
+      </details>
       ${selectedCount > 0 ? `
         <div class="bulk-actions-bar">
           <span class="bulk-actions-count">${t('invoices.selectedCount', { count: selectedCount })}</span>
@@ -204,13 +294,35 @@ export async function initInvoices(params = {}) {
           </button>
         </div>
       ` : ''}
-      ${currentInvoices.length > 0 ? `
-        <a href="#${section.basePath}/new" class="btn btn-filled">
-          ${icons.plus}
-          ${section.newLabel}
-        </a>
-      ` : ''}
+      <a href="#${section.basePath}/new" class="btn btn-filled">
+        ${icons.plus}
+        ${section.newLabel}
+      </a>
     `;
+
+    document.getElementById('importInvoicesBtn')?.addEventListener('click', () => {
+      invoiceImportInput?.click();
+    });
+
+    document.getElementById('exportInvoicesCsvBtn')?.addEventListener('click', async () => {
+      try {
+        const rows = await buildInvoiceExportRows(filteredInvoices);
+        downloadCsv(`${baseExportName}.csv`, rows, INVOICE_EXPORT_COLUMNS);
+        document.getElementById('exportInvoicesCsvBtn')?.closest('details')?.removeAttribute('open');
+      } catch (error) {
+        toast.error(`${t('dataExchange.exportFailed')}: ${error.message}`);
+      }
+    });
+
+    document.getElementById('exportInvoicesExcelBtn')?.addEventListener('click', async () => {
+      try {
+        const rows = await buildInvoiceExportRows(filteredInvoices);
+        await downloadWorkbook(`${baseExportName}.xlsx`, rows, INVOICE_EXPORT_COLUMNS, section.isDeliveryNotes ? 'Delivery Notes' : 'Invoices');
+        document.getElementById('exportInvoicesExcelBtn')?.closest('details')?.removeAttribute('open');
+      } catch (error) {
+        toast.error(`${t('dataExchange.exportFailed')}: ${error.message}`);
+      }
+    });
 
     if (selectedCount > 0) {
       const toggleSelectAllBtn = document.getElementById('toggleSelectAllBtn');
@@ -571,6 +683,129 @@ export async function initInvoices(params = {}) {
     router.navigate(`/invoices/new/from-delivery-notes/${ids}`);
   }
 
+  async function buildInvoiceExportRows(invoices) {
+    const detailedInvoices = await Promise.all(
+      invoices.map((invoice) => invoiceService.getById(invoice.id))
+    );
+
+    return detailedInvoices.flatMap((invoice) => {
+      if (!invoice) return [];
+
+      const baseRow = {
+        document_type: invoice.document_type || section.documentType,
+        invoice_number: invoice.invoice_number || '',
+        series: invoice.series || '',
+        client_name: invoice.client_name || '',
+        client_cif: invoice.client_cif || '',
+        client_reg_no: invoice.client_reg_no || '',
+        client_address: invoice.client_address || '',
+        client_city: invoice.client_city || '',
+        client_country: invoice.client_country || '',
+        client_email: invoice.client_email || '',
+        client_phone: invoice.client_phone || '',
+        issue_date: String(invoice.issue_date || '').slice(0, 10),
+        due_date: String(invoice.due_date || '').slice(0, 10),
+        currency: invoice.currency || 'EUR',
+        secondary_currency: invoice.secondary_currency || 'RON',
+        exchange_rate: invoice.exchange_rate ?? 1,
+        status: invoice.status || 'draft',
+        template: invoice.template || 'modern',
+        payment_method: invoice.payment_method || '',
+        language: invoice.language || 'en',
+        secondary_language: invoice.secondary_language || 'ro',
+        language_mode: invoice.language_mode || 'single',
+        notes: invoice.notes || '',
+      };
+
+      if (!Array.isArray(invoice.items) || invoice.items.length === 0) {
+        return [{
+          ...baseRow,
+          item_description: '',
+          item_unit: '',
+          item_quantity: '',
+          item_unit_price: '',
+          item_tax_rate: '',
+          item_total: '',
+        }];
+      }
+
+      return invoice.items.map((item) => ({
+        ...baseRow,
+        item_description: item.description || '',
+        item_unit: item.unit || '',
+        item_quantity: item.quantity ?? '',
+        item_unit_price: item.unit_price ?? '',
+        item_tax_rate: item.tax_rate ?? '',
+        item_total: item.total ?? '',
+      }));
+    });
+  }
+
+  async function resolveClientForImport(baseRow, clientsByCif, clientsByName) {
+    const clientName = toTrimmedString(resolveFirstValue(baseRow, ['client_name', 'name', 'company_name']));
+    const clientCif = toNullableString(resolveFirstValue(baseRow, ['client_cif', 'client_vat', 'cif', 'vat']));
+
+    if (!clientName) {
+      throw new Error(t('dataExchange.invoiceImportMissingClient'));
+    }
+
+    const existingClient = (clientCif && clientsByCif.get(clientCif.toLowerCase()))
+      || clientsByName.get(clientName.toLowerCase());
+
+    if (existingClient) {
+      return existingClient.id;
+    }
+
+    const payload = {
+      name: clientName,
+      cif: clientCif,
+      reg_no: toNullableString(resolveFirstValue(baseRow, ['client_reg_no', 'reg_no'])),
+      address: toNullableString(resolveFirstValue(baseRow, ['client_address', 'address'])),
+      city: toNullableString(resolveFirstValue(baseRow, ['client_city', 'city'])),
+      country: toNullableString(resolveFirstValue(baseRow, ['client_country', 'country'])),
+      email: toNullableString(resolveFirstValue(baseRow, ['client_email', 'email'])),
+      phone: toNullableString(resolveFirstValue(baseRow, ['client_phone', 'phone'])),
+      bank_account: toNullableString(resolveFirstValue(baseRow, ['client_bank_account', 'bank_account', 'iban'])),
+      bank_name: toNullableString(resolveFirstValue(baseRow, ['client_bank_name', 'bank_name'])),
+      notes: null,
+    };
+
+    const id = await clientService.create(payload);
+    const createdClient = { id, ...payload };
+    clientsByName.set(clientName.toLowerCase(), createdClient);
+    if (clientCif) clientsByCif.set(clientCif.toLowerCase(), createdClient);
+    return id;
+  }
+
+  async function syncSeriesCounters(importedInvoices) {
+    const settings = await settingsService.get();
+    const templates = normalizeSeriesTemplates(settings || {});
+    let changed = false;
+
+    importedInvoices.forEach((invoice) => {
+      const importedNumber = extractSeriesNumber(invoice.invoice_number);
+      if (!Number.isInteger(importedNumber)) return;
+
+      const template = templates.find((item) => (
+        item.document_type === (invoice.document_type || section.documentType)
+        && item.prefix === invoice.series
+      ));
+
+      if (template && importedNumber >= template.next_number) {
+        template.next_number = importedNumber + 1;
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      currentSettings = {
+        ...settings,
+        document_series_templates: templates,
+      };
+      await settingsService.update(currentSettings);
+    }
+  }
+
   function attachEventListeners(filteredInvoices, allFilteredSelected) {
     const invoiceNumberFilterInput = container.querySelector('#invoiceNumberFilterInput');
     const invoiceClientFilterInput = container.querySelector('#invoiceClientFilterInput');
@@ -735,6 +970,120 @@ export async function initInvoices(params = {}) {
       container.innerHTML = `<div class="p-4 text-center text-error">${t('invoices.loadError')}</div>`;
     }
   }
+
+  invoiceImportInput?.addEventListener('change', async () => {
+    const file = invoiceImportInput.files?.[0];
+    if (!file) return;
+
+    try {
+      const rows = await readStructuredFile(file);
+      if (!rows.length) {
+        toast.error(t('dataExchange.importNoRows'));
+        return;
+      }
+
+      const groupedRows = groupRowsBy(rows, (row, index) => {
+        const invoiceNumber = toTrimmedString(resolveFirstValue(row, ['invoice_number', 'number']));
+        return invoiceNumber || `row_${index}`;
+      });
+
+      const [existingInvoices, existingClients] = await Promise.all([
+        invoiceService.getAll({ document_type: section.documentType }),
+        clientService.getAll(),
+      ]);
+
+      const existingInvoicesByNumber = new Map(
+        existingInvoices.map((invoice) => [String(invoice.invoice_number || '').trim().toLowerCase(), invoice])
+      );
+      const clientsByCif = new Map();
+      const clientsByName = new Map();
+      existingClients.forEach((client) => {
+        if (client.cif) clientsByCif.set(String(client.cif).trim().toLowerCase(), client);
+        if (client.name) clientsByName.set(String(client.name).trim().toLowerCase(), client);
+      });
+
+      let created = 0;
+      let updated = 0;
+      let skipped = 0;
+      const importedInvoices = [];
+
+      for (const grouped of groupedRows.values()) {
+        const baseRow = grouped[0] || {};
+        const invoiceNumber = toTrimmedString(resolveFirstValue(baseRow, ['invoice_number', 'number']));
+        if (!invoiceNumber) {
+          skipped += 1;
+          continue;
+        }
+
+        try {
+          const clientId = await resolveClientForImport(baseRow, clientsByCif, clientsByName);
+          const invoiceTaxRate = toNumber(resolveFirstValue(baseRow, ['tax_rate', 'default_tax_rate']), 0);
+          const items = grouped
+            .map((row) => buildInvoiceItemPayload(row, invoiceTaxRate))
+            .filter(Boolean);
+
+          if (items.length === 0) {
+            skipped += 1;
+            continue;
+          }
+
+          const series = toTrimmedString(resolveFirstValue(baseRow, ['series'])) || (section.isDeliveryNotes ? 'AVZ' : 'INV');
+          const issueDate = toTrimmedString(resolveFirstValue(baseRow, ['issue_date', 'date'])) || new Date().toISOString().slice(0, 10);
+          const dueDate = toTrimmedString(resolveFirstValue(baseRow, ['due_date'])) || issueDate;
+          const payload = {
+            invoice_number: invoiceNumber,
+            series,
+            client_id: clientId,
+            issue_date: issueDate,
+            due_date: dueDate,
+            currency: toTrimmedString(resolveFirstValue(baseRow, ['currency'])) || 'EUR',
+            exchange_rate: toNumber(resolveFirstValue(baseRow, ['exchange_rate']), 1),
+            tax_rate: invoiceTaxRate,
+            payment_method: toNullableString(resolveFirstValue(baseRow, ['payment_method'])),
+            notes: toNullableString(resolveFirstValue(baseRow, ['notes'])),
+            document_type: section.documentType,
+            status: toTrimmedString(resolveFirstValue(baseRow, ['status'])) || 'draft',
+            template: toTrimmedString(resolveFirstValue(baseRow, ['template'])) || 'modern',
+            language: toTrimmedString(resolveFirstValue(baseRow, ['language'])) || 'en',
+            secondary_language: toTrimmedString(resolveFirstValue(baseRow, ['secondary_language'])) || 'ro',
+            language_mode: toTrimmedString(resolveFirstValue(baseRow, ['language_mode'])) || 'single',
+            secondary_currency: toTrimmedString(resolveFirstValue(baseRow, ['secondary_currency'])) || currentSettings.secondary_currency || 'RON',
+          };
+
+          const existing = existingInvoicesByNumber.get(invoiceNumber.toLowerCase());
+          if (existing) {
+            await invoiceService.update(existing.id, payload, items);
+            updated += 1;
+          } else {
+            const id = await invoiceService.create(payload, items);
+            created += 1;
+            existingInvoicesByNumber.set(invoiceNumber.toLowerCase(), { id, ...payload });
+          }
+
+          importedInvoices.push({
+            document_type: section.documentType,
+            series,
+            invoice_number: invoiceNumber,
+          });
+        } catch (error) {
+          console.error('Failed to import invoice row group:', error);
+          skipped += 1;
+        }
+      }
+
+      if (importedInvoices.length > 0) {
+        await syncSeriesCounters(importedInvoices);
+      }
+
+      toast.success(t('dataExchange.importCompleted', { created, updated, skipped }));
+      await loadInvoices();
+    } catch (error) {
+      console.error('Failed to import invoices:', error);
+      toast.error(`${t('dataExchange.importFailed')}: ${error.message}`);
+    } finally {
+      invoiceImportInput.value = '';
+    }
+  });
 
   await loadInvoices();
 }

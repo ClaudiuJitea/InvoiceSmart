@@ -180,7 +180,12 @@ async function importIntoTarget(targetDb, targetProvider, snapshot, mode = 'repl
 
 export async function exportSqliteToSnapshot({ source }) {
   const sourceConfig = prepareSourceSqliteConfig(source);
-  const sourceDb = await createAdapterFromConfig(sourceConfig);
+  return exportDatabaseToSnapshot({ sourceConfig });
+}
+
+export async function exportDatabaseToSnapshot({ sourceConfig }) {
+  const normalizedSourceConfig = normalizeTargetConfig(sourceConfig || {});
+  const sourceDb = await createAdapterFromConfig(normalizedSourceConfig);
 
   try {
     const tables = {};
@@ -191,7 +196,9 @@ export async function exportSqliteToSnapshot({ source }) {
     return {
       version: 1,
       exportedAt: new Date().toISOString(),
-      source: `sqlite:${sourceConfig.sqlite.filePath}`,
+      source: normalizedSourceConfig.provider === 'sqlite'
+        ? `sqlite:${normalizedSourceConfig.sqlite.filePath}`
+        : normalizedSourceConfig.provider,
       tables,
     };
   } finally {

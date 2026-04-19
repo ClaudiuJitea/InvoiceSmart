@@ -4,6 +4,7 @@ import { icons } from '../components/icons.js';
 import { settingsService } from '../db/services/settingsService.js';
 import { toast } from '../components/common/Toast.js';
 import { CustomSelect } from '../components/common/CustomSelect.js';
+import { openExtractionReviewModal } from '../components/common/ExtractionReviewModal.js';
 import { modal, confirm } from '../components/common/Modal.js';
 import { aiService } from '../services/aiService.js';
 import {
@@ -16,6 +17,19 @@ import {
 const DOCUMENT_TYPES = ['invoice', 'quote', 'receipt', 'delivery_note'];
 const DATABASE_PROVIDERS = ['sqlite', 'postgres', 'mysql', 'mariadb', 'supabase'];
 const DEFAULT_AI_MODEL = 'google/gemma-4-26b-a4b-it';
+const COMPANY_FIELD_LABELS = {
+  company_name: 'settings.companyName',
+  company_cif: 'settings.companyCif',
+  company_reg_no: 'settings.companyRegNo',
+  company_address: 'settings.companyAddress',
+  company_city: 'settings.companyCity',
+  company_country: 'settings.companyCountry',
+  company_email: 'settings.companyEmail',
+  company_phone: 'settings.companyPhone',
+  company_bank_account: 'settings.bankAccount',
+  company_swift: 'settings.bankSwift',
+  company_bank_name: 'settings.bankName',
+};
 
 function normalizeAiConfigForUi(config = {}) {
   const openrouter = config.openrouter || {};
@@ -78,6 +92,12 @@ function getAiStatusText(aiConfig) {
   if (!aiConfig?.enabled) return t('ai.statusDisabled');
   if (aiConfig?.openrouter?.hasApiKey) return t('ai.statusConfigured');
   return t('ai.statusMissingKey');
+}
+
+function getCompanyCurrentValues(form) {
+  return Object.fromEntries(
+    Object.keys(COMPANY_FIELD_LABELS).map((key) => [key, form.elements.namedItem(key)?.value || ''])
+  );
 }
 
 function isSqlProvider(provider) {
@@ -745,6 +765,30 @@ function renderSettingsForm(settings, locales, aiConfig, aiModels) {
         </div>
       </div>
 
+      <div class="form-section">
+        <div class="form-section-header">
+          <div>
+            <h3 class="form-section-title">${t('dataExchange.backupTitle')}</h3>
+            <p class="document-series-subtitle">${t('dataExchange.backupHint')}</p>
+          </div>
+          <div class="form-section-actions">
+            <button type="button" class="btn btn-tonal" id="downloadDatabaseBackupBtn">
+              ${icons.database}
+              ${t('dataExchange.downloadBackup')}
+            </button>
+            <button type="button" class="btn btn-filled" id="restoreDatabaseBackupBtn">
+              ${icons.upload}
+              ${t('dataExchange.restoreBackup')}
+            </button>
+          </div>
+        </div>
+        <div class="settings-backup-note">
+          <strong>${t('settings.dbActiveProvider')}:</strong> ${getDatabaseProviderLabel(activeProvider)}.
+          ${t('dataExchange.backupIncludes')}
+        </div>
+        <input type="file" id="restoreDatabaseBackupInput" accept="application/json" style="display:none;">
+      </div>
+
       <!-- Document Series Templates -->
       <div class="form-section">
         <div class="document-series-header">
@@ -1131,9 +1175,20 @@ export async function initSettings() {
         try {
           collectCurrentFormState(form);
           const result = await aiService.extractCompanyFromFile(file);
-          draftSettings = mergeNonEmptyFields(draftSettings, result.fields);
-          toast.success(result.warnings?.length ? `${t('ai.extractSuccessWithWarnings')} ${result.warnings.join(' ')}` : t('ai.extractSuccess'));
-          renderForm();
+          openExtractionReviewModal({
+            title: t('ai.reviewCompanyTitle'),
+            fieldLabels: Object.fromEntries(
+              Object.entries(COMPANY_FIELD_LABELS).map(([key, labelKey]) => [key, t(labelKey)])
+            ),
+            currentValues: getCompanyCurrentValues(form),
+            review: result.review || {},
+            warnings: result.warnings || [],
+            onApply: (selected) => {
+              draftSettings = mergeNonEmptyFields(draftSettings, selected);
+              toast.success(result.warnings?.length ? `${t('ai.extractSuccessWithWarnings')} ${result.warnings.join(' ')}` : t('ai.extractSuccess'));
+              renderForm();
+            },
+          });
         } catch (error) {
           toast.error(error.message || t('ai.extractFailed'));
         } finally {
@@ -1182,6 +1237,65 @@ export async function initSettings() {
             renderForm();
           },
         });
+      });
+
+      const restoreDatabaseBackupInput = document.getElementById('restoreDatabaseBackupInput');
+
+      document.getElementById('downloadDatabaseBackupBtn')?.addEventListener('click', async () => {
+        try {
+          const activeDatabaseConfig = await settingsService.getDatabaseConfig();
+          const activeProvider = activeDatabaseConfig.provider || 'sqlite';
+          const snapshot = await settingsService.exportDatabaseSnapshot({
+            provider: activeProvider,
+            providerConfig: activeDatabaseConfig[activeProvider],
+          });
+          const date = new Date().toISOString().replace(/[:.]/g, '-');
+          downloadJsonFile(`invoicesmart-backup-${date}.json`, snapshot);
+          toast.success(t('dataExchange.backupDownloadSuccess'));
+        } catch (error) {
+          toast.error(`${t('dataExchange.backupDownloadFailed')}: ${error.message}`);
+        }
+      });
+
+      document.getElementById('restoreDatabaseBackupBtn')?.addEventListener('click', () => {
+        restoreDatabaseBackupInput?.click();
+      });
+
+      restoreDatabaseBackupInput?.addEventListener('change', async () => {
+        const file = restoreDatabaseBackupInput.files?.[0];
+        if (!file) return;
+
+        try {
+          const raw = await readFileAsText(file);
+          const snapshot = JSON.parse(raw);
+          const activeDatabaseConfig = await settingsService.getDatabaseConfig();
+          const activeProvider = activeDatabaseConfig.provider || 'sqlite';
+
+          confirm({
+            title: t('dataExchange.restoreBackup'),
+            message: t('dataExchange.restoreBackupConfirm'),
+            confirmText: t('dataExchange.restoreBackup'),
+            cancelText: t('actions.cancel'),
+            onConfirm: async () => {
+              try {
+                await settingsService.importSnapshot({
+                  provider: activeProvider,
+                  providerConfig: activeDatabaseConfig[activeProvider],
+                  snapshot,
+                  mode: 'replace',
+                });
+                toast.success(t('dataExchange.restoreSuccess'));
+                window.dispatchEvent(new CustomEvent('app:refresh'));
+              } catch (error) {
+                toast.error(`${t('dataExchange.restoreFailed')}: ${error.message}`);
+              }
+            },
+          });
+        } catch (error) {
+          toast.error(`${t('dataExchange.restoreFailed')}: ${error.message}`);
+        } finally {
+          restoreDatabaseBackupInput.value = '';
+        }
       });
 
       document.getElementById('addSeriesTemplateBtn')?.addEventListener('click', () => {

@@ -3,8 +3,23 @@ import { t } from '../i18n/index.js';
 import { icons } from '../components/icons.js';
 import { clientService } from '../db/services/clientService.js';
 import { toast } from '../components/common/Toast.js';
+import { openExtractionReviewModal } from '../components/common/ExtractionReviewModal.js';
 import { router } from '../router.js';
 import { aiService } from '../services/aiService.js';
+
+const CLIENT_FIELD_LABELS = {
+  name: 'clients.name',
+  cif: 'clients.cif',
+  reg_no: 'clients.regNo',
+  address: 'clients.address',
+  city: 'clients.city',
+  country: 'clients.country',
+  email: 'clients.email',
+  phone: 'clients.phone',
+  bank_account: 'settings.bankAccount',
+  bank_name: 'settings.bankName',
+  notes: 'clients.notes',
+};
 
 function applyClientExtractedFields(form, fields = {}) {
   Object.entries(fields).forEach(([key, value]) => {
@@ -14,6 +29,12 @@ function applyClientExtractedFields(form, fields = {}) {
       input.value = value.trim();
     }
   });
+}
+
+function getClientCurrentValues(form) {
+  return Object.fromEntries(
+    Object.keys(CLIENT_FIELD_LABELS).map((key) => [key, form.elements.namedItem(key)?.value || ''])
+  );
 }
 
 export function renderClientForm(params = {}) {
@@ -153,8 +174,19 @@ export async function initClientForm(params = {}) {
 
         try {
           const result = await aiService.extractClientFromFile(file);
-          applyClientExtractedFields(form, result.fields);
-          toast.success(result.warnings?.length ? `${t('ai.extractSuccessWithWarnings')} ${result.warnings.join(' ')}` : t('ai.extractSuccess'));
+          openExtractionReviewModal({
+            title: t('ai.reviewClientTitle'),
+            fieldLabels: Object.fromEntries(
+              Object.entries(CLIENT_FIELD_LABELS).map(([key, labelKey]) => [key, t(labelKey)])
+            ),
+            currentValues: getClientCurrentValues(form),
+            review: result.review || {},
+            warnings: result.warnings || [],
+            onApply: (selected) => {
+              applyClientExtractedFields(form, selected);
+              toast.success(result.warnings?.length ? `${t('ai.extractSuccessWithWarnings')} ${result.warnings.join(' ')}` : t('ai.extractSuccess'));
+            },
+          });
         } catch (error) {
           console.error('Failed to extract client data:', error);
           toast.error(error.message || t('ai.extractFailed'));

@@ -32,7 +32,7 @@ import { renderAdminDashboard, initAdminDashboard } from './pages/AdminDashboard
 // App state
 let currentPage = null;
 let currentParams = {};
-const FORCE_LOGIN_ON_STARTUP = true;
+const FORCE_LOGIN_ON_STARTUP = false;
 
 // Auth pages (no sidebar)
 const authPages = ['login', 'register'];
@@ -40,6 +40,14 @@ const authPages = ['login', 'register'];
 // Check if current page requires auth
 function isAuthPage() {
   return authPages.includes(currentPage);
+}
+
+function requireAuthOrRedirect() {
+  if (!authService.isLoggedIn()) {
+    router.navigate('/login');
+    return false;
+  }
+  return true;
 }
 
 // Render the entire app
@@ -227,31 +235,37 @@ function setupRoutes() {
       renderApp();
     })
     .on('/clients', () => {
+      if (!requireAuthOrRedirect()) return;
       currentPage = 'clients';
       currentParams = {};
       renderApp();
     })
     .on('/clients/new', () => {
+      if (!requireAuthOrRedirect()) return;
       currentPage = 'clientForm';
       currentParams = { id: 'new' };
       renderApp();
     })
     .on('/clients/:id', (params) => {
+      if (!requireAuthOrRedirect()) return;
       currentPage = 'clientForm';
       currentParams = params;
       renderApp();
     })
     .on('/invoices', () => {
+      if (!requireAuthOrRedirect()) return;
       currentPage = 'invoices';
       currentParams = { document_type: 'invoice' };
       renderApp();
     })
     .on('/invoices/new', () => {
+      if (!requireAuthOrRedirect()) return;
       currentPage = 'invoiceForm';
       currentParams = { id: 'new', document_type: 'invoice' };
       renderApp();
     })
     .on('/invoices/new/from-delivery-notes/:deliveryNoteIds', (params) => {
+      if (!requireAuthOrRedirect()) return;
       currentPage = 'invoiceForm';
       currentParams = {
         id: 'new',
@@ -261,51 +275,61 @@ function setupRoutes() {
       renderApp();
     })
     .on('/invoices/:id', (params) => {
+      if (!requireAuthOrRedirect()) return;
       currentPage = 'invoiceForm';
       currentParams = { ...params, document_type: 'invoice' };
       renderApp();
     })
     .on('/invoices/:id/preview', (params) => {
+      if (!requireAuthOrRedirect()) return;
       currentPage = 'invoicePreview';
       currentParams = { ...params, document_type: 'invoice' };
       renderApp();
     })
     .on('/delivery-notes', () => {
+      if (!requireAuthOrRedirect()) return;
       currentPage = 'invoices';
       currentParams = { document_type: 'delivery_note' };
       renderApp();
     })
     .on('/delivery-notes/new', () => {
+      if (!requireAuthOrRedirect()) return;
       currentPage = 'invoiceForm';
       currentParams = { id: 'new', document_type: 'delivery_note' };
       renderApp();
     })
     .on('/delivery-notes/:id', (params) => {
+      if (!requireAuthOrRedirect()) return;
       currentPage = 'invoiceForm';
       currentParams = { ...params, document_type: 'delivery_note' };
       renderApp();
     })
     .on('/delivery-notes/:id/preview', (params) => {
+      if (!requireAuthOrRedirect()) return;
       currentPage = 'invoicePreview';
       currentParams = { ...params, document_type: 'delivery_note' };
       renderApp();
     })
     .on('/settings', () => {
+      if (!requireAuthOrRedirect()) return;
       currentPage = 'settings';
       currentParams = {};
       renderApp();
     })
     .on('/reports', () => {
+      if (!requireAuthOrRedirect()) return;
       currentPage = 'reports';
       currentParams = {};
       renderApp();
     })
     .on('/receipts', () => {
+      if (!requireAuthOrRedirect()) return;
       currentPage = 'receipts';
       currentParams = {};
       renderApp();
     })
     .on('/products-services', () => {
+      if (!requireAuthOrRedirect()) return;
       currentPage = 'productsServices';
       currentParams = {};
       renderApp();
@@ -334,11 +358,11 @@ window.addEventListener('app:refresh', () => {
 
 // Auth event handlers
 window.addEventListener('auth:login', () => {
-  renderApp();
+  router.navigate('/');
 });
 
 window.addEventListener('auth:logout', () => {
-  renderApp();
+  router.navigate('/login');
 });
 
 // Initialize app

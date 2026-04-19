@@ -4,8 +4,46 @@ import { productService } from '../db/services/productService.js';
 import { toast } from '../components/common/Toast.js';
 import { confirm } from '../components/common/Modal.js';
 import { CustomSelect } from '../components/common/CustomSelect.js';
+import {
+  downloadCsv,
+  downloadWorkbook,
+  readStructuredFile,
+  resolveFirstValue,
+  toBoolean,
+  toNullableString,
+  toNumber,
+  toTrimmedString,
+} from '../utils/importExport.js';
 
 let searchQuery = '';
+
+const PRODUCT_EXPORT_COLUMNS = [
+  { key: 'name', label: 'name' },
+  { key: 'producer', label: 'producer' },
+  { key: 'category', label: 'category' },
+  { key: 'product_code', label: 'product_code' },
+  { key: 'unit', label: 'unit' },
+  { key: 'unit_price', label: 'unit_price' },
+  { key: 'tax_rate', label: 'tax_rate' },
+  { key: 'stock_quantity', label: 'stock_quantity' },
+  { key: 'notes', label: 'notes' },
+  { key: 'is_active', label: 'is_active' },
+];
+
+function buildProductImportPayload(row) {
+  return {
+    name: toTrimmedString(resolveFirstValue(row, ['name', 'product_name', 'service_name'])),
+    producer: toNullableString(resolveFirstValue(row, ['producer', 'brand', 'vendor'])),
+    category: toNullableString(resolveFirstValue(row, ['category'])),
+    product_code: toNullableString(resolveFirstValue(row, ['product_code', 'code', 'sku'])),
+    unit: toTrimmedString(resolveFirstValue(row, ['unit'])) || 'pcs',
+    unit_price: toNumber(resolveFirstValue(row, ['unit_price', 'price']), 0),
+    tax_rate: toNumber(resolveFirstValue(row, ['tax_rate', 'vat_rate']), 0),
+    stock_quantity: toNumber(resolveFirstValue(row, ['stock_quantity', 'quantity', 'stock']), 0),
+    notes: toNullableString(resolveFirstValue(row, ['notes'])),
+    is_active: toBoolean(resolveFirstValue(row, ['is_active', 'active', 'enabled']), true),
+  };
+}
 
 export function renderProductsServices() {
   return `
@@ -24,10 +62,30 @@ export function renderProductsServices() {
                    placeholder="${t('productsServices.searchPlaceholder')}"
                    value="${searchQuery}">
           </div>
+          <button class="btn btn-tonal btn-sm" id="importProductsBtn" type="button">
+            ${icons.upload}
+            ${t('dataExchange.import')}
+          </button>
+          <details class="header-action-dropdown">
+            <summary class="btn btn-tonal btn-sm">
+              ${icons.download}
+              ${t('dataExchange.exportAs')}
+              ${icons.chevronDown}
+            </summary>
+            <div class="header-action-menu">
+              <button class="header-action-menu-btn" id="exportProductsCsvBtn" type="button">
+                CSV
+              </button>
+              <button class="header-action-menu-btn" id="exportProductsExcelBtn" type="button">
+                Excel
+              </button>
+            </div>
+          </details>
           <button class="btn btn-filled products-add-btn" id="addProductBtn">
             ${icons.plus}
             ${t('productsServices.addProduct')}
           </button>
+          <input type="file" id="productsImportInput" accept=".csv,.xlsx,.xls" style="display:none;">
         </div>
       </div>
 
@@ -106,6 +164,10 @@ export async function initProductsServices() {
   const container = document.getElementById('productsListContainer');
   const searchInput = document.getElementById('productSearch');
   const addProductBtn = document.getElementById('addProductBtn');
+  const importProductsBtn = document.getElementById('importProductsBtn');
+  const exportProductsCsvBtn = document.getElementById('exportProductsCsvBtn');
+  const exportProductsExcelBtn = document.getElementById('exportProductsExcelBtn');
+  const productsImportInput = document.getElementById('productsImportInput');
 
   const modal = document.getElementById('productModal');
   const form = document.getElementById('productForm');
@@ -251,10 +313,87 @@ export async function initProductsServices() {
   }
 
   addProductBtn?.addEventListener('click', () => openModal());
+  importProductsBtn?.addEventListener('click', () => {
+    productsImportInput?.click();
+  });
   closeModalBtn?.addEventListener('click', closeModal);
   cancelModalBtn?.addEventListener('click', closeModal);
   modal?.addEventListener('click', (e) => {
     if (e.target === modal) closeModal();
+  });
+
+  exportProductsCsvBtn?.addEventListener('click', () => {
+    const date = new Date().toISOString().slice(0, 10);
+    downloadCsv(`products-${date}.csv`, products, PRODUCT_EXPORT_COLUMNS);
+    exportProductsCsvBtn.closest('details')?.removeAttribute('open');
+  });
+
+  exportProductsExcelBtn?.addEventListener('click', async () => {
+    try {
+      const date = new Date().toISOString().slice(0, 10);
+      await downloadWorkbook(`products-${date}.xlsx`, products, PRODUCT_EXPORT_COLUMNS, 'Products');
+      exportProductsExcelBtn.closest('details')?.removeAttribute('open');
+    } catch (error) {
+      toast.error(`${t('dataExchange.exportFailed')}: ${error.message}`);
+    }
+  });
+
+  productsImportInput?.addEventListener('change', async () => {
+    const file = productsImportInput.files?.[0];
+    if (!file) return;
+
+    try {
+      const rows = await readStructuredFile(file);
+      if (!rows.length) {
+        toast.error(t('dataExchange.importNoRows'));
+        return;
+      }
+
+      const existingProducts = await productService.getAll();
+      const byCode = new Map();
+      const byName = new Map();
+      existingProducts.forEach((product) => {
+        if (product.product_code) byCode.set(String(product.product_code).trim().toLowerCase(), product);
+        if (product.name) byName.set(String(product.name).trim().toLowerCase(), product);
+      });
+
+      let created = 0;
+      let updated = 0;
+      let skipped = 0;
+
+      for (const row of rows) {
+        const payload = buildProductImportPayload(row);
+        if (!payload.name) {
+          skipped += 1;
+          continue;
+        }
+
+        const match = (payload.product_code && byCode.get(payload.product_code.toLowerCase()))
+          || byName.get(payload.name.toLowerCase());
+
+        if (match) {
+          await productService.update(match.id, payload);
+          updated += 1;
+          const nextProduct = { ...match, ...payload };
+          byName.set(payload.name.toLowerCase(), nextProduct);
+          if (payload.product_code) byCode.set(payload.product_code.toLowerCase(), nextProduct);
+        } else {
+          const id = await productService.create(payload);
+          created += 1;
+          const createdProduct = { id, ...payload };
+          byName.set(payload.name.toLowerCase(), createdProduct);
+          if (payload.product_code) byCode.set(payload.product_code.toLowerCase(), createdProduct);
+        }
+      }
+
+      toast.success(t('dataExchange.importCompleted', { created, updated, skipped }));
+      await loadProducts();
+    } catch (error) {
+      console.error('Failed to import products:', error);
+      toast.error(`${t('dataExchange.importFailed')}: ${error.message}`);
+    } finally {
+      productsImportInput.value = '';
+    }
   });
 
   form?.addEventListener('submit', async (e) => {
