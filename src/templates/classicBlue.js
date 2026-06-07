@@ -9,6 +9,7 @@ export function renderClassicBlueTemplate(invoice) {
         `
         : 'FACTURA';
     const items = invoice.items || [];
+    const hasVat = (invoice.tax_amount > 0) || items.some(item => (item.tax_rate ?? invoice.tax_rate ?? 0) > 0);
     // Classic Blue color palette
     const colors = {
         primary: '#21618C',
@@ -123,10 +124,10 @@ export function renderClassicBlueTemplate(invoice) {
         .invoice-classic-blue .col-idx { width: 30px; text-align: center; }
         .invoice-classic-blue .col-desc { }
         .invoice-classic-blue .col-unit { width: 40px; text-align: center; }
-        .invoice-classic-blue .col-qty { width: 40px; text-align: right; }
-        .invoice-classic-blue .col-price { width: 80px; text-align: right; }
-        .invoice-classic-blue .col-val { width: 80px; text-align: right; }
-        .invoice-classic-blue .col-vat { width: 80px; text-align: right; }
+        .invoice-classic-blue .col-qty { width: 40px; text-align: center; }
+        .invoice-classic-blue .col-price { width: 80px; text-align: center; }
+        .invoice-classic-blue .col-val { width: 80px; text-align: center; }
+        .invoice-classic-blue .col-vat { width: 80px; text-align: center; }
 
         .invoice-classic-blue .col-number { text-align: center; font-size: 8pt; }
         .invoice-classic-blue .items-table .filler-row td {
@@ -204,7 +205,7 @@ export function renderClassicBlueTemplate(invoice) {
             <div>${settings.company_address || settings.company_city || settings.company_country ? `Adresa: ${settings.company_address ? settings.company_address.trim().replace(/,$/, '') + ', ' : ''}<br>${[settings.company_city, settings.company_country].filter(Boolean).map(s => s.trim().replace(/,$/, '')).join(', ')}` : ''}</div>
             <div>${settings.company_bank_account ? `Cont: ${settings.company_bank_account}` : ''}</div>
             <div>${settings.company_bank_name ? `Banca: ${settings.company_bank_name}` : ''}</div>
-            <div style="margin-top: 10px;">Cota TVA: ${invoice.tax_rate || 19}%</div>
+            ${hasVat ? `<div style="margin-top: 10px;">Cota TVA: ${invoice.tax_rate || 19}%</div>` : ''}
         </div>
 
         <!-- Invoice Title (Center) -->
@@ -237,9 +238,9 @@ export function renderClassicBlueTemplate(invoice) {
             <th class="col-desc">Denumirea produselor sau a serviciilor</th>
             <th class="col-unit">U.M.</th>
             <th class="col-qty">Cant.</th>
-            <th class="col-price">Pret unitar<br>(fara TVA)<br>-${primaryCurrency}-</th>
+            <th class="col-price">Pret unitar<br>${hasVat ? '(fara TVA)<br>' : ''}-${primaryCurrency}-</th>
             <th class="col-val">Valoare<br>-${primaryCurrency}-</th>
-            <th class="col-vat">Valoare TVA<br>-${primaryCurrency}-</th>
+            ${hasVat ? `<th class="col-vat">Valoare TVA<br>-${primaryCurrency}-</th>` : ''}
           </tr>
           <tr style="font-size: 8pt; background-color: ${colors.bgLight};">
             <th class="col-idx">0</th>
@@ -248,7 +249,7 @@ export function renderClassicBlueTemplate(invoice) {
             <th class="col-qty">3</th>
             <th class="col-price">4</th>
             <th class="col-val">5(3x4)</th>
-            <th class="col-vat">6</th>
+            ${hasVat ? `<th class="col-vat">6</th>` : ''}
           </tr>
         </thead>
         <tbody>
@@ -260,7 +261,7 @@ export function renderClassicBlueTemplate(invoice) {
               <td class="col-qty">${item.quantity}</td>
               <td class="col-price">${formatAmount(item.unit_price)}</td>
               <td class="col-val">${formatAmount(item.total)}</td>
-              <td class="col-vat">${formatAmount(item.total * ((item.tax_rate ?? invoice.tax_rate ?? 0) / 100))}</td>
+              ${hasVat ? `<td class="col-vat">${formatAmount(item.total * ((item.tax_rate ?? invoice.tax_rate ?? 0) / 100))}</td>` : ''}
             </tr>
           `).join('')}
           ${fillerHeight > 0 ? `
@@ -271,7 +272,7 @@ export function renderClassicBlueTemplate(invoice) {
                 <td class="col-qty"></td>
                 <td class="col-price"></td>
                 <td class="col-val"></td>
-                <td class="col-vat"></td>
+                ${hasVat ? `<td class="col-vat"></td>` : ''}
             </tr>
           ` : ''}
         </tbody>
@@ -291,6 +292,7 @@ export function renderClassicBlueTemplate(invoice) {
             </div>
         </div>
         <div class="footer-totals">
+            ${hasVat ? `
             <div class="footer-total-row">
                 <div style="width: 80px; padding: 5px; text-align: right; border-right: 1px solid ${colors.border};">
                     ${formatAmount(invoice.subtotal)}
@@ -299,13 +301,14 @@ export function renderClassicBlueTemplate(invoice) {
                     ${formatAmount(invoice.tax_amount)}
                 </div>
             </div>
+            ` : ''}
             <div class="footer-total-row" style="flex: 1;">
-                 <div class="footer-total-label" style="border-right: 1px solid ${colors.border}; font-size: 14pt;">
+                 <div class="footer-total-label" style="${hasVat ? `border-right: 1px solid ${colors.border};` : ''} font-size: 14pt;">
                     Total (${primaryCurrency})
                  </div>
-                 <div class="footer-total-val" style="display: flex; align-items: center; justify-content: flex-end; font-size: 12pt; font-weight: bold; border-left: none;">
+                 <div class="footer-total-val" style="display: flex; align-items: center; justify-content: flex-end; font-size: 12pt; font-weight: bold; border-left: none; width: 80px;">
                     ${formatAmount(invoice.total)}
-                 </div>
+                  </div>
             </div>
             ${hasSecondaryTotal ? `
             <div class="footer-total-row">

@@ -10,6 +10,7 @@ export function renderCreativeTemplate(invoice) {
   const items = invoice.items || [];
   const minVisibleRows = 12;
   const fillerHeight = Math.max(0, (minVisibleRows - items.length) * 30);
+  const hasVat = (invoice.tax_amount > 0) || items.some(item => (item.tax_rate ?? invoice.tax_rate ?? 0) > 0);
 
   // Helper to get text based on mode
   // The image shows specific bilingual labels (RO/EN) regardless of mode for some headers
@@ -182,25 +183,25 @@ export function renderCreativeTemplate(invoice) {
         }
         
         .invoice-creative .items-table th.text-right {
-            text-align: right;
+            text-align: right !important;
         }
         
         .invoice-creative .items-table th.text-center {
-            text-align: center;
+            text-align: center !important;
         }
 
         .invoice-creative .items-table td {
-            padding: 8px 5px;
+            padding: 8px 6px;
             border-bottom: 1px solid #eee;
             vertical-align: top;
         }
 
         .invoice-creative .items-table td.text-right {
-            text-align: right;
+            text-align: right !important;
         }
         
         .invoice-creative .items-table td.text-center {
-            text-align: center;
+            text-align: center !important;
         }
         .invoice-creative .items-table .filler-row td {
             height: ${fillerHeight}px;
@@ -339,9 +340,9 @@ export function renderCreativeTemplate(invoice) {
                 <th>${labels.table.item}</th>
                 <th class="text-center" style="width: 60px;">${labels.table.unit}</th>
                 <th class="text-center" style="width: 60px;">${labels.table.qty}</th>
-                <th class="text-right" style="width: 100px;">${labels.table.price}</th>
-                <th class="text-right" style="width: 60px;">${labels.table.vat}</th>
-                <th class="text-right" style="width: 100px;">${labels.table.amount}</th>
+                <th class="text-center" style="width: 100px;">${labels.table.price}</th>
+                ${hasVat ? `<th class="text-center" style="width: 60px;">${labels.table.vat}</th>` : ''}
+                <th class="text-center" style="width: 100px;">${labels.table.amount}</th>
             </tr>
         </thead>
         <tbody>
@@ -351,20 +352,22 @@ export function renderCreativeTemplate(invoice) {
                     <td>${item.description}</td>
                     <td class="text-center">${item.unit}</td>
                     <td class="text-center">${item.quantity}</td>
-                    <td class="text-right">
+                    <td class="text-center">
                         <div>${item.unit_price.toFixed(2)} ${invoice.currency}</div>
                     </td>
-                    <td class="text-right">
+                    ${hasVat ? `
+                    <td class="text-center">
                         <div>${item.tax_rate || 0}%</div>
                     </td>
-                    <td class="text-right">
+                    ` : ''}
+                    <td class="text-center">
                         <div>${item.total.toFixed(2)} ${invoice.currency}</div>
                     </td>
                 </tr>
             `).join('')}
             ${fillerHeight > 0 ? `
                 <tr class="filler-row">
-                    <td colspan="7"></td>
+                    <td colspan="${hasVat ? 7 : 6}"></td>
                 </tr>
             ` : ''}
         </tbody>

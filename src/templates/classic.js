@@ -318,23 +318,23 @@ export function renderClassicTemplate(invoice) {
       <table class="items-table">
         <thead>
           <tr>
-            <th style="width: 40px">Nr.</th>
+            <th style="width: 40px; text-align: center;">Nr.</th>
             <th>${t('invoice.description')}</th>
-            <th style="width: 60px">${t('invoice.unit')}</th>
-            <th style="width: 70px">${t('invoice.quantity')}</th>
-            <th style="width: 100px">${t('invoice.unitPrice')}</th>
-            <th style="width: 110px">${t('invoice.amount')}</th>
+            <th style="width: 60px; text-align: center;">${t('invoice.unit')}</th>
+            <th style="width: 70px; text-align: center;">${t('invoice.quantity')}</th>
+            <th style="width: 100px; text-align: center;">${t('invoice.unitPrice')}</th>
+            <th style="width: 110px; text-align: center;">${t('invoice.amount')}</th>
           </tr>
         </thead>
         <tbody>
           ${items.map((item, index) => `
             <tr>
-              <td class="number">${index + 1}</td>
+              <td class="number" style="text-align: center;">${index + 1}</td>
               <td>${item.description}</td>
-              <td class="number">${item.unit}</td>
-              <td class="number">${item.quantity}</td>
-              <td style="text-align: right">${item.unit_price.toFixed(2)}</td>
-              <td>${item.total.toFixed(2)} ${invoice.currency}</td>
+              <td class="number" style="text-align: center;">${item.unit}</td>
+              <td class="number" style="text-align: center;">${item.quantity}</td>
+              <td style="text-align: center;">${item.unit_price.toFixed(2)}</td>
+              <td style="text-align: center;">${item.total.toFixed(2)} ${invoice.currency}</td>
             </tr>
           `).join('')}
           ${fillerHeight > 0 ? `

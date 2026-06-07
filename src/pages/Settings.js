@@ -789,24 +789,27 @@ function renderSettingsForm(settings, locales, aiConfig, aiModels) {
 
       <div class="form-section">
         <div class="form-section-header">
-          <div>
-            <h3 class="form-section-title">${t('dataExchange.backupTitle')}</h3>
-            <p class="document-series-subtitle">${t('dataExchange.backupHint')}</p>
-          </div>
-          <div class="form-section-actions">
-            <button type="button" class="btn btn-tonal" id="downloadDatabaseBackupBtn">
-              ${icons.database}
-              ${t('dataExchange.downloadBackup')}
-            </button>
-            <button type="button" class="btn btn-filled" id="restoreDatabaseBackupBtn">
-              ${icons.upload}
-              ${t('dataExchange.restoreBackup')}
-            </button>
-          </div>
+          <h3 class="form-section-title">${t('dataExchange.backupTitle')}</h3>
         </div>
-        <div class="settings-backup-note">
+        
+        <p class="document-series-subtitle" style="margin-bottom: var(--space-4); max-width: 700px;">
+          ${t('dataExchange.backupHint')}
+        </p>
+
+        <div class="settings-backup-note" style="margin-bottom: var(--space-4);">
           <strong>${t('settings.dbActiveProvider')}:</strong> ${getDatabaseProviderLabel(activeProvider)}.
           ${t('dataExchange.backupIncludes')}
+        </div>
+
+        <div class="form-actions" style="margin-top: var(--space-4); padding-top: 0; border-top: none; flex-wrap: wrap;">
+          <button type="button" class="btn btn-tonal" id="downloadDatabaseBackupBtn">
+            ${icons.database}
+            ${t('dataExchange.downloadBackup')}
+          </button>
+          <button type="button" class="btn btn-filled" id="restoreDatabaseBackupBtn">
+            ${icons.upload}
+            ${t('dataExchange.restoreBackup')}
+          </button>
         </div>
         <input type="file" id="restoreDatabaseBackupInput" accept="application/json" style="display:none;">
       </div>

@@ -214,7 +214,7 @@ export function renderModernTemplate(invoice) {
         .invoice-modern .items-table .col-unit-price,
         .invoice-modern .items-table .col-amount {
           width: 18%;
-          text-align: right;
+          text-align: center;
         }
         .invoice-modern .items-table td.col-description {
           word-break: break-word;
@@ -240,8 +240,8 @@ export function renderModernTemplate(invoice) {
         }
         .invoice-modern .items-table th.col-unit-price .header-label,
         .invoice-modern .items-table th.col-amount .header-label {
-          align-items: flex-end;
-          text-align: right;
+          align-items: center;
+          text-align: center;
         }
         .invoice-modern .items-table .filler-row td {
           height: ${fillerHeight}px;

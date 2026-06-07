@@ -726,9 +726,24 @@
 
 .form-section-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
+    border-bottom: 1px solid var(--md-outline-variant);
+    padding-bottom: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.document-series-header {
+    border-bottom: 1px solid var(--md-outline-variant);
+    padding-bottom: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.invoice-import-section-header {
+    align-items: center;
+    border-bottom: 1px solid var(--md-outline-variant);
+    padding-bottom: var(--space-3);
     margin-bottom: var(--space-4);
 }
 
@@ -748,8 +763,12 @@
     border-bottom: 1px solid var(--md-outline-variant);
 }
 
-.form-section-header .form-section-title {
+.form-section-header .form-section-title,
+.document-series-header .form-section-title,
+.invoice-import-section-header .form-section-title {
     margin-bottom: 0;
+    border-bottom: none;
+    padding-bottom: 0;
 }
 
 .form-row {
