@@ -438,7 +438,7 @@ export async function initInvoiceForm(params = {}) {
         </div>
 
         <!-- Status & Template -->
-        <div class="form-section">
+        <div class="form-section" style="margin-top: var(--space-8);">
           <div class="form-row" style="grid-template-columns: repeat(3, 1fr);">
             <div class="input-group">
               <label class="input-label">${t('invoices.status')}</label>
@@ -461,7 +461,8 @@ export async function initInvoiceForm(params = {}) {
             </div>
             <div class="input-group">
               <label class="input-label">${t('invoices.paymentMethod')}</label>
-              <input type="text" class="input" name="payment_method" value="${invoice?.payment_method || ''}">
+              <input type="text" class="input" name="payment_method" value="${invoice?.payment_method || ''}" placeholder="${t('invoices.paymentMethodPlaceholder')}">
+              <span class="input-helper" style="font-size: 11px; margin-top: 6px; color: var(--md-on-surface-variant); opacity: 0.85; display: block; line-height: 1.4;">${t('invoices.paymentMethodHelp')}</span>
             </div>
           </div>
         </div>

@@ -211,6 +211,8 @@ export default {
         template: 'Șablon',
         notes: 'Observații',
         paymentMethod: 'Modalitate de Plată',
+        paymentMethodPlaceholder: 'ex: Numerar, Ordin de plată, Card',
+        paymentMethodHelp: 'Scrieți "Numerar" sau "Ramburs" pentru a genera automat chitanță la încasare.',
         paymentTerms: 'Termen de Plată',
         days: 'zile',
 

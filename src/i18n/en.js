@@ -211,6 +211,8 @@ export default {
         template: 'Template',
         notes: 'Notes',
         paymentMethod: 'Payment Method',
+        paymentMethodPlaceholder: 'e.g., Cash, Bank Transfer, Card',
+        paymentMethodHelp: 'Type "Cash" to auto-generate a receipt when marked as paid.',
         paymentTerms: 'Payment Terms',
         days: 'days',
 
