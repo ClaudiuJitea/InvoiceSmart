@@ -365,11 +365,57 @@ function renderOverview(data, currency) {
     `}).join('');
 }
 
+function getThemeColor(variableName, fallback) {
+    try {
+        const val = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+        return val || fallback;
+    } catch (e) {
+        return fallback;
+    }
+}
+
+function hexToRgba(colorStr, alpha) {
+    if (!colorStr) return `rgba(30, 58, 95, ${alpha})`;
+    colorStr = colorStr.trim();
+    if (colorStr.startsWith('#')) {
+        let hex = colorStr.substring(1);
+        if (hex.length === 3) {
+            hex = hex.split('').map(char => char + char).join('');
+        }
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    if (colorStr.startsWith('rgb')) {
+        return colorStr.replace(/rgb(a)?/g, 'rgba').replace(/\)$/g, `, ${alpha})`).replace(/,\s*,/g, ',');
+    }
+    return colorStr;
+}
+
 function renderRevenueChart(data, currency) {
     const ctx = document.getElementById('revenueChart');
     if (!ctx) return;
 
     if (charts.revenue) charts.revenue.destroy();
+
+    const primaryColor = getThemeColor('--md-primary', '#1E3A5F');
+    const outlineVariant = getThemeColor('--md-outline-variant', '#D9DDE3');
+    const onSurfaceVariant = getThemeColor('--md-on-surface-variant', '#5A6169');
+
+    const chartCtx = ctx.getContext('2d');
+    let gradient = 'rgba(30, 58, 95, 0.08)';
+    if (chartCtx) {
+        const h = ctx.clientHeight || 300;
+        gradient = chartCtx.createLinearGradient(0, 0, 0, h);
+        try {
+            gradient.addColorStop(0, hexToRgba(primaryColor, 0.25));
+            gradient.addColorStop(0.5, hexToRgba(primaryColor, 0.08));
+            gradient.addColorStop(1, hexToRgba(primaryColor, 0.00));
+        } catch (e) {
+            gradient = 'rgba(30, 58, 95, 0.08)';
+        }
+    }
 
     charts.revenue = new Chart(ctx, {
         type: 'line',
@@ -378,36 +424,86 @@ function renderRevenueChart(data, currency) {
             datasets: [{
                 label: `${t('reports.totalRevenue')} (${currency})`,
                 data: data.map(d => d.revenue),
-                borderColor: '#1E3A5F',
-                backgroundColor: 'rgba(30, 58, 95, 0.08)',
+                borderColor: primaryColor,
+                borderWidth: 3.5,
+                backgroundColor: gradient,
                 fill: true,
                 tension: 0.4,
-                pointRadius: 4,
-                pointBackgroundColor: '#1E3A5F',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2
+                pointRadius: 0,
+                pointHoverRadius: 6,
+                pointBackgroundColor: primaryColor,
+                pointHoverBackgroundColor: primaryColor,
+                pointBorderColor: '#ffffff',
+                pointHoverBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointHoverBorderWidth: 3
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
             plugins: {
                 legend: { display: false },
                 tooltip: {
+                    backgroundColor: '#ffffff',
+                    titleColor: '#1A1D21',
+                    bodyColor: '#1A1D21',
+                    borderColor: outlineVariant,
+                    borderWidth: 1,
+                    padding: 12,
+                    cornerRadius: 12,
+                    boxPadding: 6,
+                    titleFont: {
+                        family: "'Inter', sans-serif",
+                        size: 13,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        family: "'Inter', sans-serif",
+                        size: 13,
+                        weight: 500
+                    },
                     callbacks: {
-                        label: (c) => `${Number(c.parsed.y).toLocaleString()} ${currency}`
+                        label: (context) => ` ${t('reports.totalRevenue')}: ${Number(context.parsed.y).toLocaleString(undefined, { minimumFractionDigits: 2 })} ${currency}`
                     }
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: '#f0f0f0' },
-                    ticks: { color: '#666' }
+                    grid: {
+                        color: hexToRgba(outlineVariant, 0.4),
+                        drawBorder: false,
+                        borderDash: [5, 5],
+                        lineWidth: 0.8
+                    },
+                    border: { display: false },
+                    ticks: {
+                        color: onSurfaceVariant,
+                        font: {
+                            family: "'Inter', sans-serif",
+                            size: 11,
+                            weight: 500
+                        },
+                        padding: 8
+                    }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#666' }
+                    border: { display: false },
+                    ticks: {
+                        color: onSurfaceVariant,
+                        font: {
+                            family: "'Inter', sans-serif",
+                            size: 11,
+                            weight: 500
+                        },
+                        padding: 8
+                    }
                 }
             }
         }
@@ -420,12 +516,15 @@ function renderStatusChart(data) {
 
     if (charts.status) charts.status.destroy();
 
+    const outlineVariant = getThemeColor('--md-outline-variant', '#D9DDE3');
+    const onSurfaceVariant = getThemeColor('--md-on-surface-variant', '#5A6169');
+
     const colors = {
-        draft: '#8C96A1',
-        sent: '#1E3A5F',
-        paid: '#2E7D32',
-        overdue: '#D32F2F',
-        cancelled: '#ED6C02'
+        draft: getThemeColor('--md-outline', '#8C96A1'),
+        sent: getThemeColor('--md-primary', '#1E3A5F'),
+        paid: getThemeColor('--md-success', '#2E7D32'),
+        overdue: getThemeColor('--md-error', '#D32F2F'),
+        cancelled: getThemeColor('--md-warning', '#ED6C02')
     };
     const labels = {
         draft: t('invoices.statusDraft'),
@@ -442,23 +541,53 @@ function renderStatusChart(data) {
             datasets: [{
                 data: data.map(d => d.count),
                 backgroundColor: data.map(d => colors[d.status] || '#ccc'),
-                borderWidth: 2,
-                borderColor: '#fff',
-                hoverOffset: 4,
+                borderWidth: 0,
+                spacing: 4,
+                borderRadius: 4,
+                hoverOffset: 6
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '70%',
+            cutout: '78%',
             plugins: {
                 legend: {
                     position: 'bottom',
                     labels: {
                         usePointStyle: true,
-                        padding: 16,
-                        font: { size: 12 }
+                        pointStyle: 'circle',
+                        padding: 20,
+                        color: onSurfaceVariant,
+                        font: {
+                            family: "'Inter', sans-serif",
+                            size: 12,
+                            weight: 500
+                        }
                     }
+                },
+                tooltip: {
+                    backgroundColor: '#ffffff',
+                    titleColor: '#1A1D21',
+                    bodyColor: '#1A1D21',
+                    borderColor: outlineVariant,
+                    borderWidth: 1,
+                    padding: 12,
+                    cornerRadius: 12,
+                    boxPadding: 6,
+                    titleFont: {
+                        family: "'Inter', sans-serif",
+                        size: 13,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        family: "'Inter', sans-serif",
+                        size: 13,
+                        weight: 500
+                    },
+                    usePointStyle: true,
+                    boxWidth: 8,
+                    boxHeight: 8
                 }
             }
         }

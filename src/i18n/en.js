@@ -45,7 +45,7 @@ export default {
 
     dataExchange: {
         import: 'Import',
-        exportAs: 'Export As',
+        exportAs: 'Export',
         importCompleted: 'Import finished: {created} created, {updated} updated, {skipped} skipped',
         importFailed: 'Import failed',
         importNoRows: 'The selected file does not contain any usable rows',

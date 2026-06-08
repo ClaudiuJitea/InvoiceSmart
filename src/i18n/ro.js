@@ -45,7 +45,7 @@ export default {
 
     dataExchange: {
         import: 'Importă',
-        exportAs: 'Exportă ca',
+        exportAs: 'Exportă',
         importCompleted: 'Import finalizat: {created} create, {updated} actualizate, {skipped} omise',
         importFailed: 'Importul a eșuat',
         importNoRows: 'Fișierul selectat nu conține rânduri utilizabile',
