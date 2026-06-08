@@ -30,14 +30,26 @@ async function ensureReceiptForInvoice(db, req, invoiceId) {
         return; // Receipt already exists, do nothing
     }
 
+    // 1. Get the invoice details
+    const invoice = await db.get('SELECT * FROM invoices WHERE id = ?', [invoiceId]);
+    if (!invoice) {
+        throw new Error('Invoice not found');
+    }
+
+    // 2. Check if payment method is cash-like (cash, numerar, ramburs, cod, livrare)
+    const method = (invoice.payment_method || '').toLowerCase().trim();
+    const isCash = method.includes('cash') || 
+                   method.includes('numerar') || 
+                   method.includes('ramburs') || 
+                   method.includes('cod') ||
+                   method.includes('livrare');
+                   
+    if (!isCash) {
+        return; // Only auto-generate receipts for cash-like payments
+    }
+
     await db.exec('BEGIN TRANSACTION');
     try {
-        // 1. Get the invoice details
-        const invoice = await db.get('SELECT * FROM invoices WHERE id = ?', [invoiceId]);
-        if (!invoice) {
-            throw new Error('Invoice not found');
-        }
-
         // 2. Get settings for receipt numbering
         const settings = await db.get('SELECT receipt_series, next_receipt_number FROM settings WHERE id = 1');
         const series = (settings && settings.receipt_series) || 'RC';
