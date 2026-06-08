@@ -24,6 +24,82 @@ function sanitizeDeliveryNoteIds(rawIds) {
     return [...new Set(parsed)];
 }
 
+async function ensureReceiptForInvoice(db, req, invoiceId) {
+    const existingReceipt = await db.get('SELECT id FROM receipts WHERE invoice_id = ?', [invoiceId]);
+    if (existingReceipt) {
+        return; // Receipt already exists, do nothing
+    }
+
+    await db.exec('BEGIN TRANSACTION');
+    try {
+        // 1. Get the invoice details
+        const invoice = await db.get('SELECT * FROM invoices WHERE id = ?', [invoiceId]);
+        if (!invoice) {
+            throw new Error('Invoice not found');
+        }
+
+        // 2. Get settings for receipt numbering
+        const settings = await db.get('SELECT receipt_series, next_receipt_number FROM settings WHERE id = 1');
+        const series = (settings && settings.receipt_series) || 'RC';
+        const number = (settings && settings.next_receipt_number) || 1;
+        const receipt_number = `${series}${String(number).padStart(4, '0')}`;
+
+        // 3. Create the receipt
+        const result = await db.run(
+            `INSERT INTO receipts (
+              invoice_id, 
+              receipt_number, 
+              series, 
+              number, 
+              issue_date, 
+              amount, 
+              currency, 
+              notes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                invoiceId,
+                receipt_number,
+                series,
+                number,
+                new Date().toISOString().split('T')[0],
+                invoice.total,
+                invoice.currency,
+                ''
+            ]
+        );
+
+        // 4. Update settings
+        await db.run('UPDATE settings SET next_receipt_number = ? WHERE id = 1', [number + 1]);
+
+        await db.exec('COMMIT');
+
+        // 5. Log audit event
+        const newReceipt = await db.get('SELECT * FROM receipts WHERE id = ?', [result.lastID]);
+        if (newReceipt) {
+            await logAuditEvent({
+                ...buildRequestAuditContext(req),
+                userId: req.user?.id || null,
+                username: req.user?.username || null,
+                action: 'receipt.create',
+                method: 'POST',
+                path: '/api/receipts',
+                statusCode: 201,
+                details: {
+                    id: newReceipt.id,
+                    receipt_number: newReceipt.receipt_number,
+                    invoice_id: newReceipt.invoice_id,
+                    amount: newReceipt.amount,
+                    currency: newReceipt.currency,
+                    auto_generated: true
+                },
+            });
+        }
+    } catch (error) {
+        await db.exec('ROLLBACK');
+        throw error;
+    }
+}
+
 async function validateDeliveryNotesForInvoice(db, deliveryNoteIds, currentInvoiceId = null) {
     if (deliveryNoteIds.length === 0) return [];
 
@@ -381,6 +457,10 @@ router.post('/', async (req, res) => {
 
         await db.exec('COMMIT');
 
+        if ((invoice.status || 'draft') === 'paid' && (invoice.document_type || 'invoice') === 'invoice') {
+            await ensureReceiptForInvoice(db, req, invoiceId);
+        }
+
         await logAuditEvent({
             ...buildRequestAuditContext(req),
             userId: req.user?.id || null,
@@ -518,6 +598,10 @@ router.put('/:id', async (req, res) => {
 
         await db.exec('COMMIT');
 
+        if ((invoice.status || 'draft') === 'paid' && (invoice.document_type || 'invoice') === 'invoice') {
+            await ensureReceiptForInvoice(db, req, id);
+        }
+
         await logAuditEvent({
             ...buildRequestAuditContext(req),
             userId: req.user?.id || null,
@@ -589,6 +673,10 @@ router.patch('/:id/status', async (req, res) => {
         }
 
         await db.run('UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [status, req.params.id]);
+
+        if (status === 'paid' && existing.document_type === 'invoice') {
+            await ensureReceiptForInvoice(db, req, req.params.id);
+        }
 
         await logAuditEvent({
             ...buildRequestAuditContext(req),
